@@ -70,6 +70,18 @@ export class Editor {
 
   refrescar() { this.cm.refresh(); }
 
+  // Marca (o desmarca, con linea null) la línea que se está ejecutando en la visualización.
+  marcarEjecucion(nombre, linea) {
+    if (this.marca) { this.marca.doc.removeLineClass(this.marca.linea, 'background', 'linea-ejecucion'); this.marca = null; }
+    if (!linea) return;
+    const d = this.docs.get(nombre);
+    if (!d) return;
+    if (this.actual !== nombre) this.abrir(nombre);
+    d.doc.addLineClass(linea - 1, 'background', 'linea-ejecucion');
+    this.marca = { doc: d.doc, linea: linea - 1 };
+    this.cm.scrollIntoView({ line: linea - 1, ch: 0 }, 60);
+  }
+
   // Tamaño de letra (px) del código; también lo usan el asistente y los tests (variable --letra).
   letra(px) {
     document.documentElement.style.setProperty('--letra', px + 'px');
