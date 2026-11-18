@@ -1,12 +1,12 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181523';
-import { Runner } from './runner.js?v=202611181523';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR } from './ejercicios.js?v=202611181523';
-import { svgLista } from './visual.js?v=202611181523';
-import { solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181523';
-import { Asistente } from './asistente.js?v=202611181523';
-import { activarDivisores } from './divisores.js?v=202611181523';
-import { correrTests, htmlResultados } from './tests.js?v=202611181523';
+import { Editor } from './editor.js?v=202611181525';
+import { Runner } from './runner.js?v=202611181525';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181525';
+import { svgLista } from './visual.js?v=202611181525';
+import { solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181525';
+import { Asistente } from './asistente.js?v=202611181525';
+import { activarDivisores } from './divisores.js?v=202611181525';
+import { correrTests, htmlResultados } from './tests.js?v=202611181525';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -67,7 +67,7 @@ function ocupar(si) {
 
 async function abrirEjercicio(id) {
   E = await cargarEjercicio(id);
-  if (MODO_PROFESOR) E.originales[E.ej.alumno] = solucionCompleta(E.ej, E.originales[E.ej.alumno], E.ocultos[E.ej.referencia]);
+  if (MODO_PROFESOR) E.originales[E.ej.alumno] = solucionCompleta(E.ej, E.originales[E.ej.alumno], await pedirSolucion(E.ej));
   archivos = archivosGuardados(E.ej, E.originales);
   estadoPasos = E.ej.pasos.map(() => null);
   $('titulo-ejercicio').textContent = E.ej.titulo;
@@ -395,6 +395,25 @@ $('restaurar').onclick = () => {
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); probar(e.shiftKey); }
 });
+
+// Modo profesor: pide la contraseña (se recuerda mientras la pestaña esté abierta) y descifra
+// la solución. Sin la contraseña correcta, vuelve al modo normal.
+async function pedirSolucion(ej) {
+  let clave = null;
+  try { clave = sessionStorage.getItem('ide-c:clave-profesor'); } catch { /* sin almacenamiento */ }
+  for (let intento = 0; ; intento++) {
+    if (!clave) clave = prompt(intento ? 'Contraseña incorrecta. Contraseña del profesor:' : 'Modo profesor: escribe la contraseña.');
+    if (!clave) { location.search = ''; throw new Error('modo profesor cancelado'); }
+    try {
+      const sol = await cargarSolucion(ej, clave);
+      try { sessionStorage.setItem('ide-c:clave-profesor', clave); } catch { /* sin almacenamiento */ }
+      return sol;
+    } catch (e) {
+      if (!/contraseña/.test(e.message)) throw e;
+      clave = null;
+    }
+  }
+}
 
 // ---------- Inicio ----------
 

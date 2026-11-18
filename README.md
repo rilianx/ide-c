@@ -62,6 +62,22 @@ Cómo funciona: `js/proyecto.js` (`instrumentar`) agrega `__volcar(línea, L);` 
 
 Con `?profesor` en la URL (https://rilianx.github.io/ide-c/?profesor), `list.c` parte con todas las funciones de los pasos ya hechas (las de la referencia) y aparece la marca **Profesor** arriba. Sirve para mostrar en clase los tests y la visualización paso a paso con las funciones completas. Lo que se cambie en este modo se guarda aparte: no toca lo del modo normal. «⟲ Restaurar archivos» vuelve a las funciones del curso.
 
+Pide una **contraseña**: la solución legible está en `oculto/solucion.enc`, cifrada con AES-GCM (clave derivada de la contraseña con PBKDF2) y sin la contraseña no se puede leer. La contraseña se recuerda mientras la pestaña esté abierta.
+
+## Archivos cifrados
+
+- `oculto/solucion.enc`: la solución completa, con comentarios (modo profesor; con la contraseña).
+- `oculto/list_ref.c.enc`: la misma solución compactada (sin comentarios), cifrada con una clave que va en la página (`js/cifrado.js`). La usa el modo estudiante para las funciones que aún no escribe: como el navegador tiene que compilarla, esto solo evita que se lea abriendo el archivo; quien sepa usar las herramientas del navegador la puede sacar.
+- Los fuentes en claro van en `ejercicios/<ej>/fuente/`, que **no se sube a git**. Para editar la solución:
+
+```
+node herramientas/cifrar.mjs descifrar ejercicios/lab2-lista CONTRASEÑA   # crea fuente/list_ref.c
+# editar fuente/list_ref.c y comprobar: node herramientas/probar-nativo.mjs ejercicios/lab2-lista
+node herramientas/cifrar.mjs cifrar ejercicios/lab2-lista CONTRASEÑA      # vuelve a crear los .enc
+```
+
+Para cambiar la contraseña: descifrar con la antigua y cifrar con la nueva.
+
 ## Pendiente
 
 - Visualización: elegir qué variables dibujar, otras estructuras (pilas, colas, árboles) y marcar nodos liberados.

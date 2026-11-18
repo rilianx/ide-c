@@ -2,6 +2,8 @@
 // ejercicio.json, sus archivos visibles y los ocultos (referencia y ayudas).
 // Lo que escribe el estudiante se guarda en el navegador (localStorage), por ejercicio.
 
+import { descifrar, CLAVE_INTERNA } from './cifrado.js?v=202611181525';
+
 const BASE = new URL('../ejercicios/', import.meta.url);
 
 async function texto(url) {
@@ -20,7 +22,10 @@ export async function cargarEjercicio(id) {
   const originales = {}, ocultos = {};
   await Promise.all([
     ...ej.archivos.map(async a => { originales[a.nombre] = await texto(new URL(a.nombre, dir)); }),
-    ...ej.ocultos.map(async o => { ocultos[o] = await texto(new URL(o, dir)); }),
+    ...ej.ocultos.map(async o => {   // los .enc vienen cifrados con la clave interna
+      const t = await texto(new URL(o, dir));
+      ocultos[o] = o.endsWith('.enc') ? await descifrar(t, CLAVE_INTERNA) : t;
+    }),
   ]);
   return { ej, originales, ocultos };
 }
@@ -28,6 +33,13 @@ export async function cargarEjercicio(id) {
 // Modo profesor (?profesor en la URL): list.c parte con todas las funciones hechas (las del curso),
 // y se guarda aparte, sin tocar lo del modo normal.
 export const MODO_PROFESOR = new URLSearchParams(location.search).has('profesor');
+// La solución legible (modo profesor), cifrada con la contraseña del profesor.
+// Lanza «contraseña incorrecta» si no corresponde.
+export async function cargarSolucion(ej, contrasena) {
+  if (!ej.solucion) throw new Error('este ejercicio no tiene solución cifrada');
+  return descifrar(await texto(new URL(ej.solucion, new URL(ej.id + '/', BASE))), contrasena);
+}
+
 const clave = id => `ide-c:${id}` + (MODO_PROFESOR ? ':profesor' : '');
 
 // Archivos editables guardados; si no hay, los originales.

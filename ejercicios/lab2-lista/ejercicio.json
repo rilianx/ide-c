@@ -17,11 +17,11 @@
     }
   ],
   "ocultos": [
-    "oculto/list_ref.c",
+    "oculto/list_ref.c.enc",
     "oculto/vis.c"
   ],
   "alumno": "list.c",
-  "referencia": "oculto/list_ref.c",
+  "referencia": "oculto/list_ref.c.enc",
   "ayudas": "ayudas.c",
   "estructuras": {
     "List": {
@@ -329,5 +329,6 @@
     "archivo": "oculto/vis.c",
     "variable": "L",
     "tipo": "List"
-  }
+  },
+  "solucion": "oculto/solucion.enc"
 }

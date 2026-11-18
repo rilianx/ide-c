@@ -9,7 +9,8 @@ const P = await import(new URL('../js/proyecto.js', import.meta.url));
 const ej = JSON.parse(readFileSync(EJ + '/ejercicio.json', 'utf8'));
 const archivos = {}; for (const a of ej.archivos) archivos[a.nombre] = readFileSync(EJ + '/' + a.nombre, 'utf8');
 if (ALUMNO) archivos[ej.alumno] = readFileSync(ALUMNO, 'utf8');
-const ocultos = {}; for (const o of ej.ocultos ?? []) ocultos[o] = readFileSync(EJ + '/' + o, 'utf8');
+const { descifrar, CLAVE_INTERNA } = await import(new URL('../js/cifrado.js', import.meta.url));
+const ocultos = {}; for (const o of ej.ocultos ?? []) { const t = readFileSync(EJ + '/' + o, 'utf8'); ocultos[o] = o.endsWith('.enc') ? await descifrar(t, CLAVE_INTERNA) : t; }
 const tests = ej.pasos.flatMap((p, k) => p.tests.map(t => ({ ...t, paso: k + 1 })));
 const prog = P.armarTests(ej, archivos, ocultos, tests);
 rmSync(OUT, { recursive: true, force: true }); mkdirSync(OUT, { recursive: true });
