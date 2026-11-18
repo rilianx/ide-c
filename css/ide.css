@@ -200,13 +200,22 @@ svg.memoria .etiqueta { fill: #fff3a3; stroke: #c9a400; } svg.memoria text.var {
 svg.memoria .flecha.var { stroke: #c9a400; } svg.memoria .punta.var { fill: #c9a400; }
 svg.memoria .flecha.current { stroke: var(--c-current); stroke-dasharray: 5 3; } svg.memoria .punta.current, svg.memoria .punto.current { fill: var(--c-current); }
 
+/* Celular: tres pestañas (Función, Código, Tests), una a la vez y a pantalla completa */
+.pestanas-movil { display: none; }
 @media (max-width: 1000px) {
-  body { overflow: auto; }
-  main#codigo { flex: none; grid-template-columns: 1fr !important; grid-template-rows: auto 75vh auto; }
+  body { height: 100dvh; overflow: hidden; }
+  .pestanas-movil { display: flex; border-bottom: 1px solid var(--borde); background: var(--panel); }
+  .pestanas-movil button { flex: 1; border: none; border-bottom: 3px solid transparent; border-radius: 0; background: none; padding: 9px 4px; color: var(--suave); font-weight: 600; }
+  .pestanas-movil button.activa { color: var(--acento); border-bottom-color: var(--acento); }
+  #resumen-movil { font-weight: 400; font-size: 12px; }
+  main#codigo { flex: 1; min-height: 0; grid-template-columns: 1fr !important; grid-template-rows: minmax(0, 1fr); }
+  main#codigo > * { grid-row: 1; grid-column: 1; }
+  main#codigo[data-movil=pasos] > :not(.pasos),
+  main#codigo[data-movil=centro] > :not(.centro),
+  main#codigo[data-movil=tests] > :not(.panel) { display: none !important; }
   .divisor { display: none; }
-  main#codigo.sin-izq .pasos, main#codigo.sin-der .panel { overflow: visible; padding: revert; }
-  .pasos { border-bottom: 1px solid var(--borde); }
-  .panel { border-top: 1px solid var(--borde); min-height: 50vh; }
+  main#codigo.sin-izq .pasos, main#codigo.sin-der .panel { overflow: auto; padding: revert; }
+  .panel { overflow-y: auto; }
   .estado { margin-left: 0; width: 100%; }
 }
 

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IDE C · Estructuras de Datos</title>
 <link rel="stylesheet" href="vendor/codemirror/codemirror.css">
-<link rel="stylesheet" href="css/ide.css?v=202611181532">
+<link rel="stylesheet" href="css/ide.css?v=202611181541">
 <script src="vendor/codemirror/codemirror.js"></script>
 <script src="vendor/codemirror/clike.js"></script>
 <script src="vendor/codemirror/matchbrackets.js"></script>
@@ -20,7 +20,7 @@
   addEventListener('error', e => errorInicio(e.message || 'no se pudo cargar ' + (e.target && (e.target.src || e.target.href) || 'un archivo')), true);
   addEventListener('unhandledrejection', e => errorInicio(String(e.reason && e.reason.message || e.reason)));
 </script>
-<script type="module" src="js/main.js?v=202611181532"></script>
+<script type="module" src="js/main.js?v=202611181541"></script>
 </head>
 <body>
 <header>
@@ -28,6 +28,12 @@
   <select id="ejercicio" aria-label="Ejercicio"></select>
   <span id="estado" class="estado">Cargando el compilador…</span>
 </header>
+
+<nav id="pestanas-movil" class="pestanas-movil" aria-label="Secciones">
+  <button data-p="pasos">Función</button>
+  <button data-p="centro">Código</button>
+  <button data-p="tests">Tests <span id="resumen-movil"></span></button>
+</nav>
 
 
 <main id="codigo">

@@ -1,12 +1,12 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181532';
-import { Runner } from './runner.js?v=202611181532';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181532';
-import { svgLista } from './visual.js?v=202611181532';
-import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181532';
-import { Asistente } from './asistente.js?v=202611181532';
-import { activarDivisores } from './divisores.js?v=202611181532';
-import { correrTests, htmlResultados } from './tests.js?v=202611181532';
+import { Editor } from './editor.js?v=202611181541';
+import { Runner } from './runner.js?v=202611181541';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181541';
+import { svgLista } from './visual.js?v=202611181541';
+import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181541';
+import { Asistente } from './asistente.js?v=202611181541';
+import { activarDivisores } from './divisores.js?v=202611181541';
+import { correrTests, htmlResultados } from './tests.js?v=202611181541';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -102,12 +102,14 @@ function elegirPaso(k, conFoco = true, fn = null) {
   const faltan = p.funciones.filter(f => !funcionesDefinidas(archivos[E.ej.alumno], [f]).length);
   $('enunciado').innerHTML = md(p.enunciado) + (faltan.length
     ? `<button id="escribir">✎ Escribir ${faltan.map(f => `<code>${f}</code>`).join(' y ')} en ${E.ej.alumno}</button>`
-    : `<p class="descripcion">Ya está en ${E.ej.alumno}: ▶ Probar actual para revisarla.</p>`);
+    : `<p class="descripcion">Ya está en ${E.ej.alumno} (<a href="#" id="ir-codigo">ir al código</a>): ▶ Probar actual para revisarla.</p>`);
+  if (!faltan.length) $('ir-codigo').onclick = e => { e.preventDefault(); asistente.irAFuncion(p.funciones[0]); irPestana('centro'); };
   if (faltan.length) $('escribir').onclick = () => {
     editor.abrir(E.ej.alumno);
     editor.poner(E.ej.alumno, agregarPlantilla(editor.texto(E.ej.alumno), p));
     asistente.irAFuncion(faltan[0]);
     elegirPaso(k, false);
+    irPestana('centro');
   };
   dibujarPasos();
   if (testsMostrados !== k) mostrarTestsSinCorrer();
@@ -396,6 +398,7 @@ document.addEventListener('keydown', e => {
 
 // Lleva el editor a esa línea del archivo del estudiante.
 function irACodigo(linea) {
+  irPestana('centro');
   editor.abrir(E.ej.alumno, linea);
 }
 const mensajesDe = r => r.compilado ? mensajesCompilador(r.compilado.mensajes) : [{ archivo: null, linea: null, texto: 'El compilador no respondió.' }];
@@ -443,6 +446,21 @@ function pedirClave(error) {
     $('clave-profesor').focus();
   });
 }
+
+// ---------- Pestañas del celular ----------
+// En pantallas angostas se ve una sección a la vez: Función, Código o Tests.
+function irPestana(p) {
+  $('codigo').dataset.movil = p;
+  document.querySelectorAll('#pestanas-movil button').forEach(b => b.classList.toggle('activa', b.dataset.p === p));
+  try { localStorage.setItem('ide-c:pestana', p); } catch { /* sin almacenamiento */ }
+  if (p === 'centro') setTimeout(() => editor.refrescar(), 0);
+}
+document.querySelectorAll('#pestanas-movil button').forEach(b => b.onclick = () => irPestana(b.dataset.p));
+let pestanaInicial = 'pasos';
+try { pestanaInicial = localStorage.getItem('ide-c:pestana') || 'pasos'; } catch { /* sin almacenamiento */ }
+irPestana(pestanaInicial);
+new MutationObserver(() => { $('resumen-movil').textContent = $('resumen-tests').textContent; })
+  .observe($('resumen-tests'), { childList: true, characterData: true, subtree: true });
 
 // ---------- Inicio ----------
 
