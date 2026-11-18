@@ -24,12 +24,15 @@ js/divisores.js    columnas de ancho ajustable
 js/editor.js       editor con pestañas de archivo (CodeMirror 5)
 js/proyecto.js     lógica pura: funciones y variables del archivo, armar el programa, comparar salidas
 js/tests.js        correr los tests y mostrar esperado vs. obtenido
+js/modelos.js      lo que depende de la estructura del ejercicio (lista o tabla hash): dibujo, entrada/salida de los tests, comparación, diagnóstico
+js/visual.js       dibujo de una lista doble (Lab 2)
+js/tabla.js        tests declarativos y dibujo de una tabla hash (Lab 3)
 js/runner.js       habla con el worker y lo reinicia si algo se cuelga
 js/worker.js       compila y ejecuta con xcc-wasm (en un Web Worker)
 js/ejercicios.js   carga los ejercicios y guarda lo del estudiante (localStorage)
 ejercicios/        un directorio por lab
 vendor/            xcc-wasm y CodeMirror (MIT), copiados para no depender de un CDN
-herramientas/      validar un ejercicio con gcc
+herramientas/      validar un ejercicio con gcc, cifrar la referencia, generar los tests del Lab 3
 ```
 
 Son módulos ES nativos, sin paso de compilación: la carpeta se publica tal cual.
@@ -41,6 +44,7 @@ Son módulos ES nativos, sin paso de compilación: la carpeta se publica tal cua
    - `oculto/<ref>.c`: la implementación completa, con cada función de la interfaz entre `#ifndef ALUMNO_<funcion>` … `#endif`;
    - `oculto/ayudas.c` (opcional): funciones para los tests, que usan solo la interfaz;
    - `ejercicio.json`: archivos (cuáles se pueden editar), funciones de la interfaz, `estructuras` (los campos de cada struct y su tipo, para las piezas del asistente), `constructores` (como `createNode`) y pasos. Cada paso tiene su enunciado, la plantilla de cada función y sus tests (`nombre`, `codigo`, `esperado`). Opcional: `migrar`, pares [antes, después] que se reemplazan en lo que el estudiante tiene guardado (por ejemplo, si cambia el nombre de un .h).
+   - `modelo` (opcional): `"tabla"` para una tabla hash; si no, es una lista. Con `visual.textos` se muestran también las variables `char *`. Los campos de `estructuras` pueden ser `"Node"` (puntero, forma corta), `"Pair **"`, `"long"`, `"char *"`…; con campos enteros o arreglos el asistente agrega plantillas para índices (`long pos = hash(_, _);`, `_ = (_ + 1) % _;`, `calloc`, `is_equal`, `for`). `constructores` puede tener varios parámetros (`params`) y `llamadas` lista otras funciones que se pueden llamar desde el asistente (`enlarge(map)`, `searchMap`…).
 2. Agregarlo a `ejercicios/index.json`.
 3. Validarlo con gcc: `node herramientas/probar-nativo.mjs ejercicios/<id>` (con la referencia deben pasar todos). Con un archivo de estudiante como segundo argumento se puede ver qué tests fallan.
 
@@ -66,6 +70,17 @@ Cada test se describe con datos, no con código (en `ejercicio.json`):
 - `salida`: lo que retorna cada llamada que retorna algo, cómo queda la lista (head y tail se deducen) y dónde queda current (si se omite, no se revisa). Siempre se revisa que los enlaces `prev`/`next` sean consistentes.
 
 `prepararTests` (`js/proyecto.js`) genera el código C del test (con `listaCon`, `irA`, `retorno` y `resultado` de `ayudas.c`) y la salida esperada; en la app se muestran como Entrada / Llamada / Se espera. También se puede escribir un test con `codigo` y `esperado` directamente.
+
+### Lab 3 (tabla hash)
+
+```json
+{ "nombre": "colisión: «mano» (hash 7) avanza hasta la 9",
+  "entrada": { "tabla": ["olla", null, "case", null, "cesa", null, "saco", "carro", "casa", null] },
+  "llamadas": [["insertMap", "mano", 7]],
+  "salida": { "tabla": ["olla", null, "case", null, "cesa", null, "saco", "carro", "casa", "mano"], "size": 7, "current": 9 } }
+```
+
+`null` es una casilla vacía y `"~cesa"` (en la entrada) o `"~"` (en la salida) un par inválido (key NULL). Se arma con `tablaCon` de `ayudas.c` y se revisan las claves de cada casilla, `size`, `capacity` y `current` (si viene). Los tests del Lab 3 se generan con `node herramientas/generar-lab3.mjs` (calcula la salida simulando la referencia) y se validan con `probar-nativo.mjs`. La función `hash` usa `unsigned long long`, para dar lo mismo en gcc y en el navegador.
 
 ## Visualización
 

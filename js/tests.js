@@ -1,8 +1,8 @@
 // Tests: cada uno es un trozo de C que usa solo la interfaz (.h) e imprime algo;
 // se compara su salida con la esperada. Si un test se cuelga (ciclo infinito),
 // se detiene y se siguen corriendo los que faltan.
-import { svgLista, estadoDeLista } from './visual.js?v=202611182317';
-import { armarTests, mismaSalida, mensajes, describirTest } from './proyecto.js?v=202611182317';
+import { modeloDe } from './modelos.js?v=202611182339';
+import { armarTests, mismaSalida, mensajes, describirTest } from './proyecto.js?v=202611182339';
 
 // tests: [{nombre, codigo, esperado, paso}]; alActualizar(resultados) se llama a medida que avanzan.
 // Devuelve {compilacion, resultados} con resultados[i] = {estado, obtenido, error}.
@@ -45,13 +45,14 @@ export async function correrTests(runner, ej, archivos, ocultos, tests, alActual
 }
 
 // El test: entrada, llamadas y salida esperada (o su código, si es un test escrito en C).
-export function htmlTest(t, variable = 'L') {
+export function htmlTest(t) {
   const d = describirTest(t);
   if (!d) return `<pre class="codigo-test">${esc(t.codigo)}</pre>`;
-  const e = t.entrada ?? {}, s = t.salida ?? {};
-  const entrada = e.lista === null || e.lista === undefined ? '<span class="nota">(sin lista)</span>'
-    : svgLista(estadoDeLista(e.lista, Number.isInteger(e.current) ? e.current : null), variable, { sinDirecciones: true, escala: 0.42, porFila: 5 });
-  const salida = svgLista(estadoDeLista(s.lista, 'current' in s ? s.current : undefined, true), variable, { sinDirecciones: true, escala: 0.42, porFila: 5 });
+  const M = modeloDe({ modelo: t.modelo }), variable = t.variable ?? 'L', s = t.salida ?? {};
+  const op = { sinDirecciones: true, escala: 0.42, ...M.opcionesMini };
+  const ent = M.estadoEntrada(t);
+  const entrada = ent ? M.svg(ent, variable, op) : `<span class="nota">(${M.sinEntrada})</span>`;
+  const salida = M.svg(M.estadoSalida(t), variable, op);
   const rets = (s.retornos ?? []).map(r => `<span class="ret">↩ ${esc(r === null ? 'NULL' : r)}</span>`).join(' ');
   return `<div class="test-dibujo"><div class="lado"><span class="rot">entrada</span>${entrada}</div>`
     + `<div class="llamada"><code>${esc(d.llamadas)}</code><span>→</span></div>`

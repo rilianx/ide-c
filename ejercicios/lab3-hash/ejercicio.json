@@ -1,0 +1,1182 @@
+{
+  "id": "lab3-hash",
+  "titulo": "Lab 3. Tabla hash (mapa)",
+  "descripcion": "Implementa un mapa con una tabla hash (direccionamiento abierto con sondeo lineal), una función a la vez en hashmap.c. Las funciones que no escribas usan la implementación del curso, así puedes probar cada una por separado. createPair, hash e is_equal están en hashmap.h. En los dibujos, ~ es un par inválido (key NULL).",
+  "archivos": [
+    {
+      "nombre": "hashmap.c",
+      "editable": true
+    },
+    {
+      "nombre": "hashmap.h",
+      "editable": false
+    },
+    {
+      "nombre": "ayudas.c",
+      "editable": false
+    }
+  ],
+  "ocultos": [
+    "oculto/hashmap_ref.c.enc",
+    "oculto/vis.c"
+  ],
+  "alumno": "hashmap.c",
+  "referencia": "oculto/hashmap_ref.c.enc",
+  "ayudas": "ayudas.c",
+  "modelo": "tabla",
+  "estructuras": {
+    "HashMap": {
+      "buckets": "Pair **",
+      "size": "long",
+      "capacity": "long",
+      "current": "long"
+    },
+    "Pair": {
+      "key": "char *",
+      "value": "void *"
+    }
+  },
+  "constructores": [
+    {
+      "nombre": "createPair",
+      "tipo": "Pair",
+      "params": [
+        "char *",
+        "void *"
+      ]
+    }
+  ],
+  "llamadas": [
+    {
+      "nombre": "insertMap",
+      "params": [
+        "HashMap *",
+        "char *",
+        "void *"
+      ]
+    },
+    {
+      "nombre": "enlarge",
+      "params": [
+        "HashMap *"
+      ]
+    },
+    {
+      "nombre": "searchMap",
+      "params": [
+        "HashMap *",
+        "char *"
+      ],
+      "retorno": "Pair *"
+    }
+  ],
+  "funciones": [
+    "createMap",
+    "insertMap",
+    "searchMap",
+    "eraseMap",
+    "firstMap",
+    "nextMap",
+    "enlarge"
+  ],
+  "visual": {
+    "archivo": "oculto/vis.c",
+    "variable": "map",
+    "tipo": "HashMap",
+    "textos": true
+  },
+  "solucion": "oculto/solucion.enc",
+  "pasos": [
+    {
+      "titulo": "1. createMap",
+      "funciones": [
+        "createMap"
+      ],
+      "enunciado": "Implementa `HashMap * createMap(long capacity)`: reserva memoria para un `HashMap`, crea el arreglo `buckets` con `capacity` casillas nulas (con `calloc`), deja `size` en 0, `capacity` en la capacidad dada y `current` en -1, y retorna el mapa.",
+      "tests": [
+        {
+          "nombre": "crea una tabla vacía de 10 casillas",
+          "entrada": {
+            "tabla": null
+          },
+          "llamadas": [
+            [
+              "createMap",
+              10
+            ]
+          ],
+          "salida": {
+            "tabla": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "size": 0,
+            "current": -1
+          }
+        },
+        {
+          "nombre": "con otra capacidad (5)",
+          "entrada": {
+            "tabla": null
+          },
+          "llamadas": [
+            [
+              "createMap",
+              5
+            ]
+          ],
+          "salida": {
+            "tabla": [
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "size": 0,
+            "current": -1
+          }
+        }
+      ],
+      "plantillas": {
+        "createMap": "HashMap * createMap(long capacity) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "2. insertMap",
+      "funciones": [
+        "insertMap"
+      ],
+      "enunciado": "Implementa `void insertMap(HashMap * map, char * key, void * value)`: inserta el par (key, value) y deja `current` en su posición.\n\n1. Calcula la posición con `hash(key, map->capacity)`.\n2. Si la casilla está ocupada por un par válido, avanza a la siguiente (el arreglo es **circular**: después de la última viene la 0). Una casilla está disponible si es `NULL` o si tiene un par inválido (`key == NULL`).\n3. Pon ahí el par nuevo (`createPair`) y aumenta `size`.\n\nNo insertes claves repetidas (usa `is_equal`). Si después de insertar `size > 0.7 * capacity`, llama a `enlarge(map)`.",
+      "tests": [
+        {
+          "nombre": "sin colisión: «gato» (hash 3) va a la casilla 3",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ]
+          },
+          "llamadas": [
+            [
+              "insertMap",
+              "gato",
+              7
+            ]
+          ],
+          "salida": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              "gato",
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "size": 7,
+            "current": 3
+          }
+        },
+        {
+          "nombre": "clave repetida: «case» no se inserta",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ]
+          },
+          "llamadas": [
+            [
+              "insertMap",
+              "case",
+              9
+            ]
+          ],
+          "salida": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "size": 6
+          }
+        },
+        {
+          "nombre": "colisión: «mano» (hash 7) avanza hasta la 9",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ]
+          },
+          "llamadas": [
+            [
+              "insertMap",
+              "mano",
+              7
+            ]
+          ],
+          "salida": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              "mano"
+            ],
+            "size": 7,
+            "current": 9
+          }
+        },
+        {
+          "nombre": "circular: «sol» (hash 6) pasa por la 9 y sigue en la 0",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              null,
+              null,
+              null,
+              null,
+              "saco",
+              "carro",
+              "casa",
+              "lago"
+            ]
+          },
+          "llamadas": [
+            [
+              "insertMap",
+              "sol",
+              7
+            ]
+          ],
+          "salida": {
+            "tabla": [
+              "olla",
+              "sol",
+              null,
+              null,
+              null,
+              null,
+              "saco",
+              "carro",
+              "casa",
+              "lago"
+            ],
+            "size": 6,
+            "current": 1
+          }
+        },
+        {
+          "nombre": "usa la casilla de un par inválido: «uva» (hash 4)",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "~cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ]
+          },
+          "llamadas": [
+            [
+              "insertMap",
+              "uva",
+              7
+            ]
+          ],
+          "salida": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "uva",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "size": 6,
+            "current": 4
+          }
+        },
+        {
+          "nombre": "con más de 0.7 de carga llama a enlarge",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              "gato",
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ]
+          },
+          "llamadas": [
+            [
+              "insertMap",
+              "mano",
+              8
+            ]
+          ],
+          "salida": {
+            "tabla": [
+              "olla",
+              null,
+              null,
+              "gato",
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              "mano",
+              null,
+              null,
+              "case",
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "size": 8
+          }
+        }
+      ],
+      "plantillas": {
+        "insertMap": "void insertMap(HashMap * map, char * key, void * value) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "3. searchMap",
+      "funciones": [
+        "searchMap"
+      ],
+      "enunciado": "Implementa `Pair * searchMap(HashMap * map, char * key)`: retorna el par con esa clave y deja `current` en su posición.\n\n1. Calcula la posición con `hash(key, map->capacity)`.\n2. Si ahí no está la clave, avanza a la siguiente casilla (circular).\n3. Si llegas a una casilla `NULL`, la clave no está: retorna `NULL` sin seguir avanzando.\n\nUn par inválido (`key == NULL`) no detiene la búsqueda: hay que pasarlo.",
+      "tests": [
+        {
+          "nombre": "encuentra «carro» en su casilla (7)",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ]
+          },
+          "llamadas": [
+            [
+              "searchMap",
+              "carro"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              "carro"
+            ],
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "size": 6,
+            "current": 7
+          }
+        },
+        {
+          "nombre": "encuentra «mano» después de una colisión (casilla 9)",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              "mano"
+            ]
+          },
+          "llamadas": [
+            [
+              "searchMap",
+              "mano"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              "mano"
+            ],
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              "mano"
+            ],
+            "size": 7,
+            "current": 9
+          }
+        },
+        {
+          "nombre": "«holo» (hash 2) no está: retorna NULL",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ]
+          },
+          "llamadas": [
+            [
+              "searchMap",
+              "holo"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "size": 6
+          }
+        },
+        {
+          "nombre": "pasa sobre un par inválido y encuentra «mano»",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "~casa",
+              "mano"
+            ]
+          },
+          "llamadas": [
+            [
+              "searchMap",
+              "mano"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              "mano"
+            ],
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "~",
+              "mano"
+            ],
+            "size": 6,
+            "current": 9
+          }
+        },
+        {
+          "nombre": "circular: «sol» (hash 6) está en la casilla 1",
+          "entrada": {
+            "tabla": [
+              "olla",
+              "sol",
+              null,
+              null,
+              null,
+              null,
+              "saco",
+              "carro",
+              "casa",
+              "lago"
+            ]
+          },
+          "llamadas": [
+            [
+              "searchMap",
+              "sol"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              "sol"
+            ],
+            "tabla": [
+              "olla",
+              "sol",
+              null,
+              null,
+              null,
+              null,
+              "saco",
+              "carro",
+              "casa",
+              "lago"
+            ],
+            "size": 6,
+            "current": 1
+          }
+        }
+      ],
+      "plantillas": {
+        "searchMap": "Pair * searchMap(HashMap * map, char * key) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "4. eraseMap",
+      "funciones": [
+        "eraseMap"
+      ],
+      "enunciado": "Implementa `void eraseMap(HashMap * map, char * key)`: busca el par con esa clave y lo invalida, poniendo su clave en `NULL` (`par->key = NULL`). **No elimines el par**. Disminuye `size`. Si la clave no está, no hace nada.",
+      "tests": [
+        {
+          "nombre": "invalida «olla» (casilla 0)",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ]
+          },
+          "llamadas": [
+            [
+              "eraseMap",
+              "olla"
+            ]
+          ],
+          "salida": {
+            "tabla": [
+              "~",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "size": 5
+          }
+        },
+        {
+          "nombre": "invalida «mano», que está después de una colisión",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              "mano"
+            ]
+          },
+          "llamadas": [
+            [
+              "eraseMap",
+              "mano"
+            ]
+          ],
+          "salida": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              "~"
+            ],
+            "size": 6
+          }
+        },
+        {
+          "nombre": "«holo» no está: la tabla no cambia",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ]
+          },
+          "llamadas": [
+            [
+              "eraseMap",
+              "holo"
+            ]
+          ],
+          "salida": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "size": 6
+          }
+        }
+      ],
+      "plantillas": {
+        "eraseMap": "void eraseMap(HashMap * map, char * key) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "5. firstMap",
+      "funciones": [
+        "firstMap"
+      ],
+      "enunciado": "Implementa `Pair * firstMap(HashMap * map)`: retorna el primer par **válido** del arreglo (de la casilla 0 en adelante) y deja `current` en su posición. Si no hay ninguno, retorna `NULL`.",
+      "tests": [
+        {
+          "nombre": "retorna «olla» (casilla 0)",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ]
+          },
+          "llamadas": [
+            [
+              "firstMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              "olla"
+            ],
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "size": 6,
+            "current": 0
+          }
+        },
+        {
+          "nombre": "salta un par inválido: retorna «case» (casilla 2)",
+          "entrada": {
+            "tabla": [
+              "~olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ]
+          },
+          "llamadas": [
+            [
+              "firstMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              "case"
+            ],
+            "tabla": [
+              "~",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "size": 5,
+            "current": 2
+          }
+        },
+        {
+          "nombre": "en una tabla vacía retorna NULL",
+          "entrada": {
+            "tabla": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          },
+          "llamadas": [
+            [
+              "firstMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "tabla": [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "size": 0,
+            "current": -1
+          }
+        }
+      ],
+      "plantillas": {
+        "firstMap": "Pair * firstMap(HashMap * map) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "6. nextMap",
+      "funciones": [
+        "nextMap"
+      ],
+      "enunciado": "Implementa `Pair * nextMap(HashMap * map)`: retorna el siguiente par **válido** después de la casilla `current` y actualiza `current`. Si no hay más, retorna `NULL`.",
+      "tests": [
+        {
+          "nombre": "desde la casilla 0 retorna «case» (casilla 2)",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "current": 0
+          },
+          "llamadas": [
+            [
+              "nextMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              "case"
+            ],
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "size": 6,
+            "current": 2
+          }
+        },
+        {
+          "nombre": "desde la casilla 7 retorna «casa» (casilla 8)",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "current": 7
+          },
+          "llamadas": [
+            [
+              "nextMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              "casa"
+            ],
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "size": 6,
+            "current": 8
+          }
+        },
+        {
+          "nombre": "desde la última ocupada (8) retorna NULL",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "current": 8
+          },
+          "llamadas": [
+            [
+              "nextMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "size": 6,
+            "current": 8
+          }
+        },
+        {
+          "nombre": "salta un par inválido: desde la 2 retorna «saco» (casilla 6)",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "~cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "current": 2
+          },
+          "llamadas": [
+            [
+              "nextMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              "saco"
+            ],
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "~",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "size": 5,
+            "current": 6
+          }
+        }
+      ],
+      "plantillas": {
+        "nextMap": "Pair * nextMap(HashMap * map) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "7. enlarge",
+      "funciones": [
+        "enlarge"
+      ],
+      "enunciado": "Implementa `void enlarge(HashMap * map)`: duplica la capacidad y reubica los pares.\n\n1. Guarda el arreglo actual en una variable auxiliar (`Pair ** old_buckets = map->buckets;`).\n2. Duplica `capacity`.\n3. Asigna a `map->buckets` un arreglo nuevo con la nueva capacidad (casillas nulas).\n4. Deja `size` en 0.\n5. Inserta en el mapa los pares **válidos** del arreglo antiguo (usa `insertMap`).",
+      "tests": [
+        {
+          "nombre": "duplica la capacidad y reubica los 6 pares",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ]
+          },
+          "llamadas": [
+            [
+              "enlarge"
+            ]
+          ],
+          "salida": {
+            "tabla": [
+              "olla",
+              null,
+              null,
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null,
+              null,
+              null,
+              "case",
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "size": 6
+          }
+        },
+        {
+          "nombre": "los pares inválidos no se reinsertan",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "~cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ]
+          },
+          "llamadas": [
+            [
+              "enlarge"
+            ]
+          ],
+          "salida": {
+            "tabla": [
+              "olla",
+              null,
+              null,
+              null,
+              null,
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null,
+              null,
+              null,
+              "case",
+              null,
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            "size": 5
+          }
+        }
+      ],
+      "plantillas": {
+        "enlarge": "void enlarge(HashMap * map) {\n\n}\n"
+      }
+    }
+  ]
+}

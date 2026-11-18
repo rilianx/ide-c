@@ -1,13 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611182317';
-import { Runner } from './runner.js?v=202611182317';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182317';
-import { traducirMensaje } from './mensajes.js?v=202611182317';
-import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado, estadoDeLista } from './visual.js?v=202611182317';
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182317';
-import { Asistente } from './asistente.js?v=202611182317';
-import { activarDivisores } from './divisores.js?v=202611182317';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182317';
+import { Editor } from './editor.js?v=202611182339';
+import { Runner } from './runner.js?v=202611182339';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182339';
+import { traducirMensaje } from './mensajes.js?v=202611182339';
+import { modeloDe } from './modelos.js?v=202611182339';
+const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182339';
+import { Asistente } from './asistente.js?v=202611182339';
+import { activarDivisores } from './divisores.js?v=202611182339';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182339';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -132,6 +133,8 @@ function ocupar(si) {
 
 async function abrirEjercicio(id) {
   E = await cargarEjercicio(id);
+  $('ejercicio').value = id;
+  try { localStorage.setItem('ide-c:ej', id); } catch { /* sin almacenamiento */ }
   prepararTests(E.ej, E.originales);   // tests declarativos (entrada, llamadas, salida) → código y salida esperada
   if (MODO_PROFESOR) E.originales[E.ej.alumno] = solucionCompleta(E.ej, E.originales[E.ej.alumno], await pedirSolucion(E.ej));
   archivos = archivosGuardados(E.ej, E.originales);
@@ -420,7 +423,7 @@ async function dibujarVisual(soloSiCambio = false, posicion = 'auto') {
         error: textoFalla ?? (seCayo ? traducir(d.error ?? d.stderr ?? 'No se pudo ejecutar') : null) };
       vis.salidaFinal = salida;
       vis.sinEscribir = !delPaso.length;
-      vis.lugares = lugaresDe(cuadros.map(c => c.estado));   // cada nodo en un lugar fijo durante toda la ejecución
+      vis.lugares = MOD().lugares(cuadros.map(c => c.estado));   // cada nodo en un lugar fijo durante toda la ejecución
       if (posicion === 'auto') vis.i = pasoAuto();
       if (irAEntrada) {   // deslizar en el celular: la línea de definición de la función (su entrada)
         irAEntrada = false;
@@ -428,10 +431,10 @@ async function dibujarVisual(soloSiCambio = false, posicion = 'auto') {
         const j = cuadros.findIndex(c => c.dentro && !c.condicion && fnsPaso.includes(c.fn?.nombre) && c.linea === c.fn.cabecera);
         if (j >= 0) { vis.i = j; const l = cuadros[j].fn.cabecera - 1; editor.cm.setCursor({ line: l, ch: editor.cm.getLine(l).length }); }
       }
+      const pasa = !seCayo && mismaSalida(test.esperado, salida);
+      vis.pasa = pasa;   // antes de dibujar: la ventana se tiñe verde o roja según esto
       mostrarPaso();
       visDibujado = { test: visElegido, codigo: codigoAlumno };
-      const pasa = !seCayo && mismaSalida(test.esperado, salida);
-      vis.pasa = pasa;
       if (vis.sinEscribir) resultadoVivo(`<span class="nota">✎ Escribe tu ${esc(E.ej.pasos[k].funciones.join(', '))}: arriba, la entrada y cómo debe quedar</span>`);
       else resultadoVivo(seCayo ? '<span class="res-mal">💥 El test se cae (ver la línea marcada)</span>'
         : pasa ? '<span class="res-bien">✅ Este test pasa</span>' : (test.salida ? '<span class="res-mal">❌ Todavía no: mira lo marcado en rojo al final</span>' : '<span class="res-mal">❌ Todavía no: compara Esperado y Obtenido</span>'));
@@ -457,9 +460,11 @@ function pasoAuto() {
 }
 
 // ---------- Tocar una línea de la función: la ejecución vuelve (o va) a ese momento ----------
-let tLinea = null;
+let tLinea = null, tocado = 0;   // solo cuando el estudiante toca o mueve el cursor (no cuando lo mueve la app)
+for (const ev of ['mousedown', 'touchstart', 'keydown']) editor.cm.getWrapperElement().addEventListener(ev, () => { tocado = Date.now(); }, true);
 editor.cm.on('cursorActivity', () => {
   clearTimeout(tLinea);
+  if (Date.now() - tocado > 1500) return;
   tLinea = setTimeout(() => {
     if (!ejecucionVisible() || editor.actual !== E.ej.alumno || ocupado) return;
     const linea = editor.cm.getCursor().line + 1, act = vis.cuadros[vis.i];
@@ -566,7 +571,7 @@ async function ejecutarEnVivo() {
 function htmlComparacion(cmp) {
   const rets = cmp.retornos.map(r => r.obtenido === r.esperado ? `<span class="ret ok">↩ ${esc(r.obtenido)}</span>`
     : `<span class="ret mal">↩ ${esc(r.obtenido)} <small>(se espera ${esc(r.esperado)})</small></span>`).join(' ');
-  const nombres = { datos: 'los datos de la lista', head: 'head', tail: 'tail', current: 'current', prev: 'los prev', lista: 'la lista' };
+  const nombres = MOD().nombresFallas;
   const todoBien = !cmp.fallas.length && cmp.retornos.every(r => r.obtenido === r.esperado);
   return `<div class="comparacion">${rets}${todoBien ? '<span class="res-bien">✓ como se espera</span>'
     : cmp.fallas.length ? `<span class="res-mal">✗ revisa: ${cmp.fallas.map(f => nombres[f]).join(', ')}</span>` : ''}</div>`;
@@ -575,7 +580,7 @@ function htmlComparacion(cmp) {
 // Explicación de un paso con error (la línea y qué puntero no se podía seguir).
 function htmlDiagnostico(c, dentro) {
   const codigoLinea = dentro ? vis.lineasAlumno[c.linea - 1] : vis.lineasTest[c.linea - 1];
-  let diag = diagnosticar(codigoLinea ?? '', c.estado, dentro ? c.fn.lista : E.ej.visual.variable);
+  let diag = MOD().diagnosticar(codigoLinea ?? '', c.estado, dentro ? c.fn.lista : E.ej.visual.variable);
   if (!diag && !dentro) {   // ¿la línea del test llama a una función tuya? el error pudo ser adentro
     const llamada = vis.fns.find(f => new RegExp(`\\b${f.nombre}\\s*\\(`).test(codigoLinea ?? ''));
     if (llamada) diag = `el error ocurrió dentro de tu <code>${esc(llamada.nombre)}</code>, llamada desde esta línea (revisa los punteros que sigue con <code>-></code>).`;
@@ -595,8 +600,13 @@ const enTest = i => i < 0 || !vis.cuadros[i].dentro;
 function proximoDelTest(i) { for (let k = i + 1; k < vis.cuadros.length; k++) if (!vis.cuadros[k].dentro) return k; return null; }
 function finDeLlamada(i) {
   const c = vis.cuadros[i];
+  // el último cuadro de esta llamada (saltando las llamadas a otras funciones que hace adentro,
+  // como enlarge → insertMap)
   let k = i;
-  while (vis.cuadros[k + 1]?.dentro && vis.cuadros[k + 1].fn === c.fn && vis.cuadros[k + 1].llamada === c.llamada) k++;
+  for (let j = i + 1; vis.cuadros[j]?.dentro; j++) {
+    const x = vis.cuadros[j];
+    if (x.fn === c.fn) { if (x.llamada === c.llamada) k = j; else break; }
+  }
   return k;
 }
 function anteriorDelTest(i) { for (let k = i - 1; k >= 0; k--) if (!vis.cuadros[k].dentro) return k; return -1; }
@@ -642,11 +652,12 @@ function mostrarPaso() {
   // al final de un test declarativo: el estado obtenido marcado (verde = como se espera, rojo = no)
   let comparacion = null;
   if (ultimo && c && !c.error && !dentro && vis.test.salida) {
-    comparacion = compararConEsperado(c.estado, vis.test.salida);
+    comparacion = MOD().comparar(c.estado, vis.test.salida);
     const obtenidos = [...(vis.salidaFinal ?? '').matchAll(/^retorna: (.*)$/gm)].map(m => m[1].trim());
     comparacion.retornos = (vis.test.salida.retornos ?? []).map((r, k) => ({ esperado: r === null ? 'NULL' : String(r), obtenido: obtenidos[k] ?? '—' }));
   }
-  const dibujoFinal = dibujo ?? svgLista(c.estado, dentro ? c.fn.lista : E.ej.visual.variable, { lugares: vis.lugares, marcas: comparacion?.marcas });
+  const indices = dentro ? new Set([...vis.lineasAlumno.slice(c.fn.cabecera - 1, c.fn.fin).join('\n').matchAll(/\[\s*([A-Za-z_]\w*)\s*\]/g)].map(m => m[1])) : null;   // variables que se usan como índice
+  const dibujoFinal = dibujo ?? MOD().svg(c.estado, dentro ? c.fn.lista : E.ej.visual.variable, { lugares: vis.lugares, marcas: comparacion?.marcas, indices });
   const proxFn = cuadros[i + 1]?.dentro ? cuadros[i + 1].fn.nombre : '';
   const salida = (i < 0 ? '' : ultimo ? vis.salidaFinal : c.salida).trim();
   const puede = a => { const j = acciones[a](i); return j !== null && j !== undefined && j !== i; };
@@ -664,7 +675,7 @@ function mostrarPaso() {
     </div>
     <div class="paso-cuerpo${dentro ? ' dentro' : ''}">
       <div class="paso-codigo">${codigo}</div>
-      <div class="paso-dibujo">${dibujoFinal}${comparacion ? htmlComparacion(comparacion) : ''}${c && !c.error ? htmlVariables(c.estado) : ''}
+      <div class="paso-dibujo">${dibujoFinal}${comparacion ? htmlComparacion(comparacion) : ''}${c && !c.error ? MOD().htmlVariables(c.estado) : ''}
         ${ultimo && vis.error ? `<p class="error-ej">${esc(vis.error)}</p>` : ''}
         ${c?.error ? htmlDiagnostico(c, dentro) : ''}
         ${vis.test.salida ? '<details class="salida-texto"><summary>salida en texto</summary>' : ''}<div class="salidas vis-salidas">
@@ -690,14 +701,14 @@ function mostrarPaso() {
   // celular: solo el dibujo; en la línea de definición de la función, también la salida esperada
   const esEntrada = c?.dentro && !c.condicion && !c.error && c.linea === c.fn?.cabecera;
   const sal = vis.test.salida;
-  const esperadoMini = esEntrada && sal ? `<div class="esperado-mini"><span class="rot">→ se espera</span>${svgLista(estadoDeLista(sal.lista, 'current' in sal ? sal.current : undefined, true), c.fn.lista, { sinDirecciones: true, escala: 0.5, porFila: 5 })}${(sal.retornos ?? []).map(r => `<span class="ret">↩ ${esc(r === null ? 'NULL' : r)}</span>`).join(' ')}</div>` : '';
-  const entradaVacia = esEntrada && !c.estado?.lista && !(c.estado?.nodos ?? []).length;
-  const entradaHtml = esEntrada ? `<div class="entrada-mini"><span class="rot">entrada</span>${entradaVacia ? `<code>${esc(c.fn.nombre)}()</code><span class="nota">sin lista</span>` : dibujoFinal}</div>` : dibujoFinal;
+  const mini = { sinDirecciones: true, escala: 0.5, ...MOD().opcionesMini };
+  const esperadoMini = esEntrada && sal ? `<div class="esperado-mini"><span class="rot">→ se espera</span>${MOD().svg(MOD().estadoSalida(vis.test), c.fn.lista, mini)}${(sal.retornos ?? []).map(r => `<span class="ret">↩ ${esc(r === null ? 'NULL' : r)}</span>`).join(' ')}</div>` : '';
+  const entradaVacia = esEntrada && MOD().vacio(c.estado);
+  const entradaHtml = esEntrada ? `<div class="entrada-mini"><span class="rot">entrada</span>${entradaVacia ? `<code>${esc(c.fn.nombre)}()</code><span class="nota">${MOD().sinEntrada}</span>` : dibujoFinal}</div>` : dibujoFinal;
   if (vis.sinEscribir && sal) {   // la función del paso aún no está escrita: la entrada del test y lo que se espera
-    const ent = vis.test.entrada ?? {}, fn0 = E.ej.pasos[vis.paso].funciones[0];
-    const dibEnt = ent.lista == null ? `<code>${esc(fn0)}()</code><span class="nota">sin lista</span>`
-      : svgLista(estadoDeLista(ent.lista, ent.current ?? undefined), E.ej.visual.variable, { sinDirecciones: true, escala: 0.5, porFila: 5 });
-    const dibEsp = svgLista(estadoDeLista(sal.lista, 'current' in sal ? sal.current : undefined, true), E.ej.visual.variable, { sinDirecciones: true, escala: 0.5, porFila: 5 })
+    const fn0 = E.ej.pasos[vis.paso].funciones[0], ent = MOD().estadoEntrada(vis.test);
+    const dibEnt = !ent ? `<code>${esc(fn0)}()</code><span class="nota">${MOD().sinEntrada}</span>` : MOD().svg(ent, E.ej.visual.variable, mini);
+    const dibEsp = MOD().svg(MOD().estadoSalida(vis.test), E.ej.visual.variable, mini)
       + (sal.retornos ?? []).map(r => `<span class="ret">↩ ${esc(r === null ? 'NULL' : r)}</span>`).join(' ');
     $('vivo-zoom').innerHTML = `<div class="vivo-fila"><div class="entrada-mini"><span class="rot">entrada</span>${dibEnt}</div><div class="esperado-mini"><span class="rot">→ se espera</span>${dibEsp}</div></div>`;
     $('vivo').classList.remove('pasa', 'falla');
@@ -788,4 +799,6 @@ if (MODO_PROFESOR) document.title += ' · Profesor';
 const lista = await listaEjercicios();
 $('ejercicio').innerHTML = lista.map(e => `<option value="${esc(e.id)}">${esc(e.titulo)}</option>`).join('');
 $('ejercicio').onchange = () => abrirEjercicio($('ejercicio').value);
-await abrirEjercicio(new URLSearchParams(location.search).get('ej') ?? lista[0].id);
+let ejInicial = new URLSearchParams(location.search).get('ej');
+try { ejInicial ??= localStorage.getItem('ide-c:ej'); } catch { /* sin almacenamiento */ }
+await abrirEjercicio(lista.some(e => e.id === ejInicial) ? ejInicial : lista[0].id);

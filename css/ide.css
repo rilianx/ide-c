@@ -345,3 +345,15 @@ svg.memoria text.var { font-size: 14px; font-weight: 500; }
 .entrada-mini .rot { font-size: 10px; color: var(--suave); text-transform: uppercase; }
 .entrada-mini code { font-family: var(--mono); font-size: 15px; margin-top: 6px; }
 .enter-linea { display: inline-block; margin-left: 10px; padding: 0 9px; border: 1px solid var(--borde); border-radius: 6px; background: var(--panel); color: var(--suave); font-size: .9em; line-height: 1.3; cursor: pointer; user-select: none; }
+
+/* Tabla hash (Lab 3) */
+svg.memoria .casilla { fill: var(--panel); stroke: var(--texto); stroke-width: 1.3; }
+svg.memoria .casilla.es-current { stroke: var(--c-current); stroke-width: 2.5; }
+svg.memoria .indice { font-size: 12px; fill: var(--suave); text-anchor: middle; }
+svg.memoria .indice.current { fill: var(--c-current); font-weight: 700; }
+svg.memoria .nodo.par.invalido { stroke: var(--suave); stroke-dasharray: 4 3; fill: color-mix(in srgb, var(--suave) 10%, var(--panel)); }
+svg.memoria .nodo.par.fuera { stroke-dasharray: 5 3; }
+svg.memoria .clave { font-size: 14px; fill: var(--texto); text-anchor: middle; font-weight: 600; }
+svg.memoria .clave.nula { fill: var(--suave); font-weight: 400; font-style: italic; font-size: 12px; }
+svg.memoria .valor { font-size: 12px; fill: var(--suave); text-anchor: middle; }
+svg.memoria .dato.num { font-size: 17px; }

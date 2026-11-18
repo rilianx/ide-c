@@ -2,25 +2,38 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar } from './proyecto.js?v=202611182317';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611182339';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
 const nombreTipo = t => t.ptr ? `${t.base} *` : t.base;
-const mismo = (a, b) => a && b && a.base === b.base && a.ptr === b.ptr;
+const NUM = /^(int|long|short|unsigned|signed|char|size_t)$/;
+const esNum = t => t && t.ptr === 0 && NUM.test(t.base);
+// mismo tipo (los enteros entre sí cuentan como iguales)
+const mismo = (a, b) => a && b && a.ptr === b.ptr && (a.base === b.base || (esNum(a) && esNum(b)));
 
-// Expresiones de puntero disponibles: variables y sus campos (hasta dos niveles: aux->next->data).
+// Expresiones disponibles: variables (punteros y enteros) y sus campos (hasta dos niveles:
+// aux->next->data), y las casillas de un arreglo de punteros con cada índice entero (map->buckets[pos]->key).
 function expresiones(vars, est) {
   const out = [];
+  const indices = vars.filter(v => esNum(v)).map(v => v.nombre);
+  const camposDe = (texto, base, desde) => {   // los campos de un struct al que se llega con `texto`
+    for (const [c2, t2] of Object.entries(est[base] ?? {})) { const tb2 = tipoCampo(t2, est); if (tb2) out.push({ texto: `${texto}->${c2}`, ...tb2 }); }
+  };
+  const casillas = (texto, base) => { for (const ix of indices) { out.push({ texto: `${texto}[${ix}]`, ...T(base) }); camposDe(`${texto}[${ix}]`, base); } };
   for (const v of vars) {
-    if (!v.ptr) continue;
+    if (!v.ptr) { if (esNum(v)) out.push({ texto: v.nombre, ...T(v.base, 0) }); continue; }
     out.push({ texto: v.nombre, ...T(v.base, v.ptr) });
+    if (v.ptr === 2 && est[v.base]) { casillas(v.nombre, v.base); continue; }   // Pair ** old_buckets
     const campos = v.ptr === 1 ? est[v.base] : null;
     if (!campos) continue;
-    for (const [c, tb] of Object.entries(campos)) {
-      out.push({ texto: `${v.nombre}->${c}`, ...T(tb) });
+    for (const [c, ts] of Object.entries(campos)) {
+      const tb = tipoCampo(ts, est);
+      if (!tb) continue;
+      out.push({ texto: `${v.nombre}->${c}`, ...tb });
+      if (tb.ptr === 2 && est[tb.base]) casillas(`${v.nombre}->${c}`, tb.base);   // map->buckets[pos]
       // dos niveles solo desde un contenedor (list->head->next), no nodo→nodo→nodo
-      if (est[tb] && tb !== v.base) for (const [c2, tb2] of Object.entries(est[tb])) out.push({ texto: `${v.nombre}->${c}->${c2}`, ...T(tb2) });
+      else if (tb.ptr === 1 && est[tb.base] && tb.base !== v.base) camposDe(`${v.nombre}->${c}`, tb.base);
     }
   }
   return out;
@@ -43,9 +56,13 @@ const juntar = (...listas) => [...new Set(listas.flat())];
 
 // Plantillas: huecos que se llenan en orden; cada uno sabe qué piezas acepta.
 //   nombre: un nombre nuevo · lval: algo asignable · expr: una expresión (de tipo dado) · ret: lo que retorna la función
-function plantillas(est, ctors, retorno, nombres = {}) {
+function plantillas(est, ctors, retorno, nombres = {}, llamadas = []) {
   const structs = Object.keys(est);
   const out = [];
+  // ¿hay campos enteros o arreglos (tabla hash)? → plantillas para índices, hash, calloc…
+  const tipos = Object.values(est).flatMap(c => Object.values(c).map(t => tipoCampo(t, est)));
+  const conNumeros = tipos.some(t => t && t.ptr === 0), arreglos = tipos.filter(t => t && t.ptr === 2 && est[t.base]);
+  const LONG = () => T('long', 0);
   const sug = (tipo, extra) => juntar(nombres[tipo] ?? [], extra).slice(0, 8);
   for (const s of structs) out.push({
     cat: 'Variables', etiqueta: `${s} * _ = _;`, clase: 'decl',
@@ -67,11 +84,55 @@ function plantillas(est, ctors, retorno, nombres = {}) {
     huecos: [{ k: 'nombre', sug: sug(s, s === 'List' ? ['lista', 'l'] : ['nuevo', 'n']) }],
     armar: v => [`${s} * ${v[0].texto} = (${s} *)malloc(sizeof(${s}));`],
   });
-  for (const c of ctors) out.push({
-    cat: 'Memoria', etiqueta: `${c.tipo} * _ = ${c.nombre}(_);`, clase: 'mem',
-    huecos: [{ k: 'nombre', sug: sug(c.tipo, ['nuevo', 'n', 'aux']) }, { k: 'expr', tipo: () => T(c.param) }],
-    armar: v => [`${c.tipo} * ${v[0].texto} = ${c.nombre}(${v[1].texto});`],
-  });
+  for (const c of ctors) {
+    const ps = (c.params ?? [c.param]).map(p => tipoCampo(p, est) ?? T(p));
+    const huecosPs = ps.map(t => ({ k: 'expr', tipo: () => t }));
+    const llamada = v => `${c.nombre}(${v.map(x => x.texto).join(', ')})`;
+    out.push({
+      cat: 'Memoria', etiqueta: `${c.tipo} * _ = ${c.nombre}(${ps.map(() => '_').join(', ')});`, clase: 'mem',
+      huecos: [{ k: 'nombre', sug: sug(c.tipo, ['nuevo', 'n', 'aux', 'par']) }, ...huecosPs],
+      armar: v => [`${c.tipo} * ${v[0].texto} = ${llamada(v.slice(1))};`],
+    });
+    if (c.params) out.push({
+      cat: 'Memoria', etiqueta: `_ = ${c.nombre}(${ps.map(() => '_').join(', ')});`, clase: 'mem',
+      huecos: [{ k: 'lval', tipo: () => T(c.tipo) }, ...huecosPs],
+      armar: v => [`${v[0].texto} = ${llamada(v.slice(1))};`],
+    });
+  }
+  if (conNumeros) {
+    out.push({ cat: 'Variables', etiqueta: 'long _ = _;', clase: 'decl',
+      huecos: [{ k: 'nombre', sug: sug('long', ['pos', 'i', 'old_capacity']) }, { k: 'expr', tipo: LONG }],
+      armar: v => [`long ${v[0].texto} = ${v[1].texto};`] });
+    out.push({ cat: 'Variables', etiqueta: 'long _ = hash(_, _);', clase: 'decl',
+      huecos: [{ k: 'nombre', sug: sug('long', ['pos', 'i']) }, { k: 'expr', tipo: () => T('char') }, { k: 'expr', tipo: LONG }],
+      armar: v => [`long ${v[0].texto} = hash(${v[1].texto}, ${v[2].texto});`] });
+    for (const a of arreglos) out.push({ cat: 'Variables', etiqueta: `${a.base} ** _ = _;`, clase: 'decl',
+      huecos: [{ k: 'nombre', sug: sug(a.base, ['old_buckets', 'viejo']) }, { k: 'expr', tipo: () => T(a.base, 2) }],
+      armar: v => [`${a.base} ** ${v[0].texto} = ${v[1].texto};`] });
+    out.push({ cat: 'Asignar', etiqueta: '_ = (_ + 1) % _;', huecos: [{ k: 'lval', num: true }, { k: 'expr', tipo: LONG }, { k: 'expr', tipo: LONG }],
+      armar: v => [`${v[0].texto} = (${v[1].texto} + 1) % ${v[2].texto};`] });
+    out.push({ cat: 'Asignar', etiqueta: '_++;', huecos: [{ k: 'lval', num: true }], armar: v => [`${v[0].texto}++;`] });
+    out.push({ cat: 'Asignar', etiqueta: '_--;', huecos: [{ k: 'lval', num: true }], armar: v => [`${v[0].texto}--;`] });
+    out.push({ cat: 'Asignar', etiqueta: '_ *= 2;', huecos: [{ k: 'lval', num: true }], armar: v => [`${v[0].texto} *= 2;`] });
+    for (const a of arreglos) out.push({ cat: 'Memoria', etiqueta: `_ = calloc(_, sizeof(${a.base} *));`, clase: 'mem',
+      huecos: [{ k: 'lval', tipo: () => T(a.base, 2) }, { k: 'expr', tipo: LONG }],
+      armar: v => [`${v[0].texto} = (${a.base} **)calloc(${v[1].texto}, sizeof(${a.base} *));`] });
+    out.push({ cat: 'Control', etiqueta: 'if (is_equal(_, _)) { … }', huecos: [{ k: 'expr', tipo: () => T('char') }, { k: 'expr', tipo: () => T('char') }],
+      armar: v => [`if (is_equal(${v[0].texto}, ${v[1].texto})) {`, '', '}'], dentro: 1 });
+    out.push({ cat: 'Control', etiqueta: 'for (long i = 0; i < _; i++) { … }', huecos: [{ k: 'expr', tipo: LONG }],
+      armar: v => [`for (long i = 0; i < ${v[0].texto}; i++) {`, '', '}'], dentro: 1 });
+    out.push({ cat: 'Control', etiqueta: 'if (_ > 0.7 * _) { … }', huecos: [{ k: 'expr', tipo: LONG }, { k: 'expr', tipo: LONG }],
+      armar: v => [`if (${v[0].texto} > 0.7 * ${v[1].texto}) {`, '', '}'], dentro: 1 });
+  }
+  // llamadas a otras funciones del ejercicio (enlarge(map), insertMap(map, k, v), searchMap…)
+  for (const f of llamadas) {
+    const ps = f.params.map(p => tipoCampo(p, est) ?? T(p)), huecos = ps.map(t => ({ k: 'expr', tipo: () => t }));
+    const ret = f.retorno && tipoCampo(f.retorno, est);
+    const args = v => v.map(x => x.texto).join(', ');
+    if (ret && ret.ptr) out.push({ cat: 'Llamar', etiqueta: `${ret.base} * _ = ${f.nombre}(${ps.map(() => '_').join(', ')});`, clase: 'decl',
+      huecos: [{ k: 'nombre', sug: sug(ret.base, ['par', 'aux']) }, ...huecos], armar: v => [`${ret.base} * ${v[0].texto} = ${f.nombre}(${args(v.slice(1))});`] });
+    else out.push({ cat: 'Llamar', etiqueta: `${f.nombre}(${ps.map(() => '_').join(', ')});`, huecos, armar: v => [`${f.nombre}(${args(v)});`] });
+  }
   out.push({
     cat: 'Memoria', etiqueta: 'free(_);', clase: 'mem',
     huecos: [{ k: 'expr', tipo: () => null, soloStructs: true, sinNull: true }],
@@ -153,10 +214,11 @@ export class Asistente {
       const usados = new Set(vars.map(v => v.nombre));
       return hueco.sug.filter(n => !usados.has(n)).map(n => ({ texto: n }));
     }
-    if (hueco.k === 'lval') return exprs.map(e => ({ ...e }));
+    if (hueco.k === 'lval') return exprs.filter(e => hueco.num ? esNum(e) : hueco.tipo ? mismo(e, hueco.tipo(valores)) : true).map(e => ({ ...e }));
     const deseado = hueco.k === 'ret' ? fn.retorno : hueco.tipo(valores);
     let lista = exprs.filter(e => deseado ? mismo(e, deseado) : (!hueco.soloStructs || ctx.est[e.base]));
-    if (!hueco.sinNull && (!deseado || deseado.ptr)) lista = [...lista, { texto: 'NULL', base: deseado?.base ?? 'void', ptr: 1 }];
+    if (esNum(deseado)) lista = [...lista, ...['0', '1', '-1'].map(t => ({ texto: t, ...T('long', 0) }))];
+    if (!hueco.sinNull && (!deseado || deseado.ptr)) lista = [...lista, { texto: 'NULL', base: deseado?.base ?? 'void', ptr: deseado?.ptr ?? 1 }];
     // un struct nuevo en memoria: (List *)malloc(sizeof(List))
     if (deseado?.ptr === 1 && ctx.est[deseado.base]) lista = [...lista, { texto: `(${deseado.base} *)malloc(sizeof(${deseado.base}))`, base: deseado.base, ptr: 1 }];
     return lista;
@@ -197,7 +259,7 @@ export class Asistente {
         this.nombres = nombresDelCodigo(textos, [...Object.keys(ctx.est), 'void'], campos);
         this.nombresDe = ej.id;
       }
-      const todas = plantillas(ctx.est, ej.constructores ?? [], ctx.fn.retorno, this.nombres);
+      const todas = plantillas(ctx.est, ej.constructores ?? [], ctx.fn.retorno, this.nombres, (ej.llamadas ?? []).filter(f => f.nombre !== ctx.fn.nombre));
       const sel = ctx.linea ? this.seleccion() : null;
       this.editor.marcarSeleccion(sel ? sel.ini : null, sel?.fin);
       if (ctx.linea && sel) {

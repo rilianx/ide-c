@@ -1,6 +1,16 @@
 // Lógica pura del proyecto (sin DOM): qué funciones escribió el estudiante,
 // cómo se arma el programa que se compila y cómo se comparan las salidas.
 // Se puede importar desde node para probarla.
+import { generarTestTabla, describirTestTabla } from './tabla.js?v=202611182339';
+
+// Tipo de un campo de struct en ej.estructuras: «Node» (puntero a Node, forma corta), «Pair **»,
+// «long», «char *»… → {base, ptr}.
+export function tipoCampo(t, est = {}) {
+  const m = /^\s*(?:const\s+|unsigned\s+|signed\s+)*([A-Za-z_]\w*)\s*(\**)\s*$/.exec(t ?? '');
+  if (!m) return null;
+  if (m[2]) return { base: m[1], ptr: m[2].length };
+  return { base: m[1], ptr: est[m[1]] || m[1] === 'void' ? 1 : 0 };
+}
 
 // Quita comentarios y literales de texto, para no confundir código comentado con código real.
 export function sinComentarios(texto) {
@@ -287,15 +297,23 @@ function condicionConVolcado(L, m, ex, soloIf = null) {
 export function conRevision(L, n, tipos, est) {
   const m = enmascarar(L);
   const cambios = [];
-  for (const r of m.matchAll(/\b([A-Za-z_]\w*)((?:\s*->\s*[A-Za-z_]\w*)+)/g)) {
+  for (const r of m.matchAll(/\b([A-Za-z_]\w*)((?:\s*->\s*[A-Za-z_]\w*|\s*\[[^\[\]]*\])+)/g)) {
     if (/(->|\.)\s*$/.test(m.slice(0, r.index))) continue;   // es parte de otra expresión
-    let tipo = tipos.get(r[1]);
-    if (!tipo || !est[tipo]) continue;
-    let expr = r[1];
-    for (const campo of r[2].split('->').slice(1).map(s => s.trim())) {
-      if (!tipo || !est[tipo]) { expr += `->${campo}`; tipo = null; continue; }
-      expr = `((${tipo} *)__ck((void *)(${expr}), ${n}))->${campo}`;
-      tipo = est[tipo][campo];
+    const t0 = tipos.get(r[1]);
+    let tipo = t0 && est[t0] ? { base: t0, ptr: 1 } : null;
+    if (!tipo || !/->/.test(r[2])) continue;
+    let expr = r[1], pos = r.index + r[1].length;
+    for (const seg of r[2].matchAll(/\s*->\s*([A-Za-z_]\w*)|\s*\[[^\[\]]*\]/g)) {
+      const original = L.slice(pos + seg.index, pos + seg.index + seg[0].length);   // con sus textos
+      if (seg[1]) {   // ->campo
+        if (tipo && tipo.ptr === 1 && est[tipo.base]) {
+          expr = `((${tipo.base} *)__ck((void *)(${expr}), ${n}))->${seg[1]}`;
+          tipo = tipoCampo(est[tipo.base][seg[1]], est);
+        } else { expr += original; tipo = null; }
+      } else {   // [índice]
+        expr += original;
+        tipo = tipo && tipo.ptr > 1 ? { base: tipo.base, ptr: tipo.ptr - 1 } : null;
+      }
     }
     cambios.push([r.index, r.index + r[0].length, expr]);
   }
@@ -332,10 +350,10 @@ export function instrumentarFuncion(texto, nombre, ej, revisar = true, soloRevis
   const lineaDe = pos => texto.slice(0, pos).split('\n').length - 1;   // 0-based
   const l0 = lineaDe(fn.cuerpo), l1 = lineaDe(fn.fin);
   // variables visibles: [{nombre, tipo, prof, clase}]; clase: lista, nodo, dato (void *), int, double
-  const clase = (base, ptr) => ptr === 1 ? (base === v.tipo ? 'lista' : base === nodo ? 'nodo' : base === 'void' ? 'dato' : null)
+  const clase = (base, ptr) => ptr === 1 ? (base === v.tipo ? 'lista' : base === nodo ? 'nodo' : base === 'void' ? 'dato' : base === 'char' && v.textos ? 'texto' : null)
     : ptr === 0 ? (/^(int|long|short|char|unsigned|signed)$/.test(base) ? 'int' : /^(double|float)$/.test(base) ? 'double' : null) : null;
   let vars = fn.params.map(q => ({ nombre: q.nombre, tipo: q.base, prof: 0, clase: clase(q.base, q.ptr) })).filter(x => x.clase);
-  const CODIGO = { nodo: 0, dato: 1, int: 2, double: 3 };
+  const CODIGO = { nodo: 0, dato: 1, int: 2, double: 3, texto: 4 };
   const arg = (x, valor = x.nombre) => `, ${CODIGO[x.clase]}, "${x.nombre}", ${x.clase === 'int' ? `(long)(${valor})` : x.clase === 'double' ? `(double)(${valor})` : `(void *)(${valor})`}`;
   const volcado = (n, extra = []) => {   // una expresión (sirve también dentro de una condición)
     const lista = [...vars].reverse().find(x => x.clase === 'lista')?.nombre ?? `(${v.tipo} *)0`;
@@ -474,12 +492,14 @@ export function generarTest(t, retornos, variable = 'L') {
 export function prepararTests(ej, archivos) {
   const h = Object.entries(archivos).find(([n]) => n.endsWith('.h'))?.[1];
   const retornos = retornosDelH(h);
-  for (const p of ej.pasos) for (const t of p.tests) if (t.llamadas) Object.assign(t, generarTest(t, retornos, ej.visual?.variable ?? 'L'));
+  const gen = ej.modelo === 'tabla' ? generarTestTabla : generarTest;
+  for (const p of ej.pasos) for (const t of p.tests) if (t.llamadas) Object.assign(t, gen(t, retornos, ej.visual?.variable ?? 'L'), { modelo: ej.modelo ?? 'lista', variable: ej.visual?.variable ?? 'L' });
 }
 
 // Descripción corta de un test declarativo (para mostrarlo en vez del código).
-export function describirTest(t) {
+export function describirTest(t, ej = null) {
   if (!t.llamadas) return null;
+  if ((ej?.modelo ?? t.modelo) === 'tabla') return describirTestTabla(t);
   const e = t.entrada ?? {}, s = t.salida ?? {};
   const lista = l => `[${(l ?? []).join(', ')}]`;
   const entrada = e.lista === null || e.lista === undefined ? 'sin lista'
