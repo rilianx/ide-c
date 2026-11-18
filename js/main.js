@@ -1,11 +1,11 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181237';
-import { Runner } from './runner.js?v=202611181237';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181237';
-import { agregarPlantilla, funcionesDefinidas } from './proyecto.js?v=202611181237';
-import { Asistente } from './asistente.js?v=202611181237';
-import { activarDivisores } from './divisores.js?v=202611181237';
-import { correrTests, htmlResultados } from './tests.js?v=202611181237';
+import { Editor } from './editor.js?v=202611181241';
+import { Runner } from './runner.js?v=202611181241';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181241';
+import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181241';
+import { Asistente } from './asistente.js?v=202611181241';
+import { activarDivisores } from './divisores.js?v=202611181241';
+import { correrTests, htmlResultados } from './tests.js?v=202611181241';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -136,7 +136,10 @@ function traducir(error) {
 async function probar(todos) {
   if (ocupado) return;
   ocupar(true);
-  const pasos = todos ? E.ej.pasos.map((p, k) => k) : [paso];
+  // «todos»: los pasos de las funciones que escribió el estudiante (no las plantillas vacías)
+  const propias = new Set(funcionesPropias(E.ej, archivos[E.ej.alumno] ?? ''));
+  const pasos = todos ? E.ej.pasos.map((p, k) => k).filter(k => E.ej.pasos[k].funciones.some(f => propias.has(f))) : [paso];
+  if (!pasos.length) { estado('Aún no has escrito ninguna función: elige un paso y toca ✎ Escribir.', true); ocupar(false); return; }
   const tests = pasos.flatMap(k => E.ej.pasos[k].tests.map(t => ({ ...t, paso: k })));
   $('compilacion-tests').innerHTML = '';
   estado('Compilando y probando…');

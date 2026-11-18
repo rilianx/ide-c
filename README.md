@@ -7,7 +7,7 @@ Un IDE en el navegador para hacer los labs del curso: archivos `.h`/`.c`, un asi
 - La app trae la **implementación completa** de la estructura, oculta (`oculto/list_ref.c`).
 - El estudiante escribe **una función a la vez** en `list.c`. Cada función que define reemplaza a la del curso; las que no escribió usan la referencia. Así cada función se prueba por separado.
 - Los **tests usan solo la interfaz** (`list.h`): cada test es un trozo de C que llama a la interfaz e imprime algo, y se compara su salida con la esperada.
-- **▶ Probar paso** compila `list.c` + la referencia y corre los tests del paso; **▶▶ Todos**, los de todos los pasos.
+- **▶ Probar paso** compila `list.c` + la referencia y corre los tests del paso; **▶▶ Mis funciones**, los de los pasos cuyas funciones ya escribiste.
 - **Asistente de comandos** (bajo el editor, como en Puntero C): se elige la función que se implementa y se arman líneas eligiendo piezas: declarar variables, reservar memoria (`malloc`, `createNode`), asignar campos, `if`/`else`/`while`, `return`. Las piezas son las variables y campos que existen en ese punto y del tipo que corresponde (`list->head`, `nuevo->next`…). También se puede escribir con el teclado.
 - Las columnas cambian de ancho arrastrando los divisores (doble clic: ocultar/mostrar).
 
