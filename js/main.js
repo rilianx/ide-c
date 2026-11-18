@@ -1,12 +1,12 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181626';
-import { Runner } from './runner.js?v=202611181626';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181626';
-import { svgLista, lugaresDe, diagnosticar } from './visual.js?v=202611181626';
-import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181626';
-import { Asistente } from './asistente.js?v=202611181626';
-import { activarDivisores } from './divisores.js?v=202611181626';
-import { correrTests, htmlResultados } from './tests.js?v=202611181626';
+import { Editor } from './editor.js?v=202611181629';
+import { Runner } from './runner.js?v=202611181629';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181629';
+import { svgLista, lugaresDe, diagnosticar } from './visual.js?v=202611181629';
+import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181629';
+import { Asistente } from './asistente.js?v=202611181629';
+import { activarDivisores } from './divisores.js?v=202611181629';
+import { correrTests, htmlResultados } from './tests.js?v=202611181629';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -298,7 +298,7 @@ async function dibujarVisual(soloSiCambio = false, mantenerPaso = false) {
     let sinDetalle = false;
     if (detalle && !r.compilado?.ok) {   // si no compila con el detalle, se intenta sin él
       const r2 = await runner.ejecutar(armarVisual(E.ej, archivos, E.ocultos, test, null));
-      if (r2.compilado?.ok) { r = r2; sinDetalle = true; }
+      if (r2.compilado?.ok) { sinDetalle = mensajesDe(r).map(x => (x.archivo ? `${x.archivo}:${x.linea}: ` : '') + x.texto).slice(0, 3).join('\n') || true; r = r2; }
     }
     if (!r.compilado?.ok) {
       caja.innerHTML = '<div class="cuadro"></div>';
@@ -309,7 +309,7 @@ async function dibujarVisual(soloSiCambio = false, mantenerPaso = false) {
       const { salida, cuadros, ultima } = leerVolcados(d.stdout);
       // si se cayó: un último paso en la línea que falló, con la memoria de justo antes
       if ((d.error || !d.ok) && ultima) cuadros.push({ ...ultima, error: true, estado: cuadros.at(-1)?.estado ?? null, salida });
-      const aviso = sinDetalle ? '<p class="nota">No se pudo preparar la vista por dentro de tus funciones (hay una línea que no supe instrumentar); se muestra solo el test.</p>'
+      const aviso = sinDetalle ? `<p class="nota">No se pudo preparar la vista por dentro de tus funciones (hay una línea que no supe instrumentar); se muestra solo el test.</p>${typeof sinDetalle === 'string' ? `<details class="nota"><summary>Detalle (para el profesor)</summary><pre>${esc(sinDetalle)}</pre></details>` : ''}`
         : !delPaso.length ? `<p class="nota">Tu <code>${esc(E.ej.pasos[k].funciones.join(', '))}</code> aún no está escrita: el test usa la del curso y no se puede entrar a ella.</p>` : '';
       // a qué función pertenece cada volcado de adentro (por su línea) y qué llamada es
       const cuenta = new Map();

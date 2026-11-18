@@ -307,7 +307,7 @@ export function instrumentarFuncion(texto, nombre, ej) {
 // detalle: funciones del estudiante para dibujar también por dentro (lista de nombres, o null).
 export function armarVisual(ej, archivos, ocultos, test, detalle = null) {
   const v = ej.visual;
-  const t = { ...test, codigo: `void __volcar(int, ${v.tipo} *);\n${instrumentar(test.codigo, v.variable)}` };   // (los prototipos de __voy van en __programa.c)
+  const t = { ...test, codigo: `int __volcar(int, ${v.tipo} *);\n${instrumentar(test.codigo, v.variable)}` };   // (los prototipos de __voy van en __programa.c)
   let alumno = archivos[ej.alumno] ?? '';
   for (const f of [].concat(detalle ?? [])) alumno = instrumentarFuncion(alumno, f, ej);
   const conDetalle = detalle ? { ...archivos, [ej.alumno]: alumno } : archivos;
@@ -315,8 +315,8 @@ export function armarVisual(ej, archivos, ocultos, test, detalle = null) {
   prog.files['__vis.c'] = ocultos[v.archivo];
   const h = ej.archivos.find(a => a.nombre.endsWith('.h'))?.nombre;
   // malloc/calloc/free pasan por __vis.c, para saber qué nodos se liberaron
-  prog.files['__programa.c'] = (h ? `#include "${h}"\n` : '') + `void __volcarv(int, ${v.tipo} *, int, ...);\n`
-    + 'void __voy(int);\nvoid __voyf(int);\n'
+  prog.files['__programa.c'] = (h ? `#include "${h}"\n` : '') + `int __volcarv(int, ${v.tipo} *, int, ...);\n`
+    + 'int __voy(int);\nint __voyf(int);\n'
     + 'void __liberar(void *);\nvoid * __reservar(unsigned long);\nvoid * __reservarc(unsigned long, unsigned long);\n'
     + '#define free(p) __liberar(p)\n#define malloc(n) __reservar(n)\n#define calloc(a, b) __reservarc(a, b)\n'
     + prog.files['__programa.c'] + '#include "__vis.c"\n';

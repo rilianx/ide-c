@@ -133,19 +133,21 @@ static void __volcarCon(const char * marca, int linea, List * L, int nv, const c
 
 // Marcas «ahora se ejecuta la línea n» (del test o de list.c): si el programa se cae,
 // la última dice en qué línea fue.
-void __voy(int n) { fflush(stdout); printf("@@L %d\n", n); fflush(stdout); }
-void __voyf(int n) { fflush(stdout); printf("@@LF %d\n", n); fflush(stdout); }
+// (devuelven int, no void, para poder usarlas en una condición: «(__voy(3), c)»)
+int __voy(int n) { fflush(stdout); printf("@@L %d\n", n); fflush(stdout); return 0; }
+int __voyf(int n) { fflush(stdout); printf("@@LF %d\n", n); fflush(stdout); return 0; }
 
 // Después de cada línea del test.
-void __volcar(int linea, List * L) { __volcarCon("VIS", linea, L, 0, 0, 0); }
+int __volcar(int linea, List * L) { __volcarCon("VIS", linea, L, 0, 0, 0); return 0; }
 
 // Dentro de una función del estudiante (línea de list.c; negativa: al evaluar una condición),
 // con sus variables Node *: __volcarv(linea, L, n, "nombre1", ptr1, "nombre2", ptr2, ...).
-void __volcarv(int linea, List * L, int nv, ...) {
+int __volcarv(int linea, List * L, int nv, ...) {
     const char * nombres[16]; void * ptrs[16];
     va_list a;
     va_start(a, nv);
     for (int k = 0; k < nv && k < 16; k++) { nombres[k] = va_arg(a, const char *); ptrs[k] = va_arg(a, void *); }
     va_end(a);
     __volcarCon("VISF", linea, L, nv < 16 ? nv : 16, nombres, ptrs);
+    return 0;
 }
