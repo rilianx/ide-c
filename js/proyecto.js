@@ -260,14 +260,18 @@ export function armarVisual(ej, archivos, ocultos, test, detalle = null) {
   return prog;
 }
 
-// Separa la salida del programa de los volcados: {salida, cuadros: [{dentro, linea, estado}]}
-// (dentro: el volcado es de adentro de la función del estudiante; linea es de list.c).
+// Separa la salida del programa de los volcados: {salida, cuadros: [{dentro, linea, estado, salida}]}
+// (dentro: el volcado es de adentro de la función del estudiante, y linea es de list.c;
+// salida: lo que el programa había impreso hasta ese momento).
 export function leerVolcados(stdout) {
-  const cuadros = [], salida = [];
-  for (const l of (stdout ?? '').split('\n')) {
-    const m = /^@@(VISF?) (\d+) (.*)$/.exec(l);
-    if (!m) { salida.push(l); continue; }
-    try { cuadros.push({ dentro: m[1] === 'VISF', linea: +m[2], estado: JSON.parse(m[3]) }); } catch { /* volcado cortado */ }
-  }
-  return { salida: salida.join('\n'), cuadros };
+  const cuadros = [], lineas = (stdout ?? '').split('\n');
+  let out = '';
+  lineas.forEach((l, k) => {
+    const i = l.search(/@@VISF? \d+ \{/);   // puede venir después de un printf sin \n
+    if (i < 0) { out += l + (k < lineas.length - 1 ? '\n' : ''); return; }
+    out += l.slice(0, i);
+    const m = /^@@(VISF?) (\d+) (.*)$/.exec(l.slice(i));
+    try { cuadros.push({ dentro: m[1] === 'VISF', linea: +m[2], estado: JSON.parse(m[3]), salida: out }); } catch { /* volcado cortado */ }
+  });
+  return { salida: out, cuadros };
 }

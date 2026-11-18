@@ -1,12 +1,12 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181330';
-import { Runner } from './runner.js?v=202611181330';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181330';
-import { svgLista } from './visual.js?v=202611181330';
-import { agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181330';
-import { Asistente } from './asistente.js?v=202611181330';
-import { activarDivisores } from './divisores.js?v=202611181330';
-import { correrTests, htmlResultados } from './tests.js?v=202611181330';
+import { Editor } from './editor.js?v=202611181335';
+import { Runner } from './runner.js?v=202611181335';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181335';
+import { svgLista } from './visual.js?v=202611181335';
+import { agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181335';
+import { Asistente } from './asistente.js?v=202611181335';
+import { activarDivisores } from './divisores.js?v=202611181335';
+import { correrTests, htmlResultados } from './tests.js?v=202611181335';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -230,7 +230,7 @@ function prepararVisual(dibujar = false) {
   if (!E.ej.visual) { $('vis-cuadros').innerHTML = '<p class="pronto">Este ejercicio aún no tiene visualización.</p>'; return; }
   $('vis-test').innerHTML = E.ej.pasos.map((p, k) => `<optgroup label="${esc(p.titulo)}">`
     + p.tests.map((t, i) => `<option value="${k}.${i}">${esc(t.nombre)}</option>`).join('') + '</optgroup>').join('');
-  $('vis-nota').textContent = 'Corre el test con tu ' + E.ej.alumno + ' y dibuja la memoria después de cada línea.';
+  $('vis-nota').textContent = 'Ejecuta el test con tu ' + E.ej.alumno + ' paso a paso: Siguiente avanza una línea y Entrar muestra tu función por dentro.';
   if (visPaso !== paso) { visPaso = paso; visElegido = `${paso}.0`; }
   $('vis-test').value = visElegido ?? `${paso}.0`;
   if (dibujar) dibujarVisual(true);   // solo si cambió el test o el código
@@ -273,49 +273,97 @@ async function dibujarVisual(soloSiCambio = false) {
     } else {
       const d = r.llamadas.get(0) ?? {};
       const { salida, cuadros } = leerVolcados(d.stdout);
-      // Agrupa: los volcados de adentro de la función van con la línea del test que la llamó;
-      // las líneas que no cambian la memoria se juntan con el dibujo anterior.
-      const juntar = lista => {
-        const grupos = [];
-        for (const c of lista) {
-          const clave = JSON.stringify(c.estado), g = grupos.at(-1);
-          if (g && g.clave === clave && !c.dentro?.length) g.lineas.push({ ...c, igual: true });
-          else grupos.push({ clave, estado: c.estado, lineas: [{ ...c, igual: false }] });
-        }
-        return grupos;
-      };
-      const delTest = [];
-      let adentro = [];
-      for (const c of cuadros) {
-        if (c.dentro) adentro.push(c);
-        else { delTest.push({ ...c, dentro: adentro }); adentro = []; }
-      }
-      const nombre = E.ej.visual.variable;
-      const htmlDentro = lista => {
-        // separa las llamadas (cada una empieza en la línea de la cabecera)
-        const llamadas = [];
-        for (const c of lista) { if (c.linea === lineaCabecera || !llamadas.length) llamadas.push([]); llamadas.at(-1).push(c); }
-        return llamadas.map((ll, n) => (llamadas.length > 1 ? `<h5>Llamada ${n + 1}</h5>` : '') + juntar(ll).map(g =>
-          `<div class="cuadro dentro">${g.lineas.map(l => `<div class="cuadro-linea${l.igual ? ' sin-cambio' : ''}"><a class="num" data-linea="${l.linea}" title="Ir a esta línea de ${esc(E.ej.alumno)}">${esc(E.ej.alumno)}:${l.linea}</a><code>${esc(l.linea === lineaCabecera ? 'al entrar a ' + detalle : lineasAlumno[l.linea - 1].trim())}</code>${l.igual ? '<span class="nota">(no cambia la memoria)</span>' : ''}</div>`).join('')}${svgLista(g.estado, nombreListaFn)}</div>`).join('')).join('');
-      };
-      const linea = l => `<div class="cuadro-linea${l.igual ? ' sin-cambio' : ''}"><span class="num">línea ${l.linea}</span><code>${esc(lineasTest[l.linea - 1].trim())}</code>${l.igual ? '<span class="nota">(no cambia la memoria)</span>' : ''}</div>`
-        + (l.dentro?.length ? `<details class="ver-dentro"><summary>🔍 Ver dentro de tu <code>${esc(detalle)}</code> (${l.dentro.length} paso${l.dentro.length === 1 ? '' : 's'})</summary>${htmlDentro(l.dentro)}</details>` : '');
-      const aviso = !detalle ? `<p class="nota">Tu <code>${esc(E.ej.pasos[k].funciones.join(', '))}</code> aún no está escrita: el test usa la del curso y no se puede ver por dentro.</p>`
+      const aviso = !detalle ? `<p class="nota">Tu <code>${esc(E.ej.pasos[k].funciones.join(', '))}</code> aún no está escrita: el test usa la del curso y no se puede entrar a ella.</p>`
         : sinDetalle ? `<p class="nota">No se pudo preparar la vista por dentro de <code>${esc(detalle)}</code> (hay una línea que no supe instrumentar); se muestra solo el test.</p>` : '';
-      caja.innerHTML = aviso + juntar(delTest).map(g => `<div class="cuadro">${g.lineas.map(linea).join('')}${svgLista(g.estado, nombre)}</div>`).join('')
-        + (d.error || !d.ok ? `<p class="error-ej">${esc(traducir(d.error ?? d.stderr ?? 'No se pudo ejecutar'))}${cuadros.length ? ` (después de la línea ${cuadros.at(-1).linea}${cuadros.at(-1).dentro ? ' de ' + esc(E.ej.alumno) : ' del test'})` : ''}</p>` : '')
-        + (adentro.length ? `<details class="ver-dentro" open><summary>🔍 Dentro de tu <code>${esc(detalle)}</code> hasta el error</summary>${htmlDentro(adentro)}</details>` : '')
-        + (salida.trim() ? `<h4>Lo que imprimió el test</h4><pre class="vis-salida">${esc(salida.trim())}</pre>` : '');
-      caja.querySelectorAll('a[data-linea]').forEach(a => a.onclick = () => irACodigo(+a.dataset.linea));
+      // numera las llamadas a la función (cada una empieza en la línea de la cabecera)
+      let llamada = 0;
+      for (const c of cuadros) if (c.dentro) { if (c.linea === lineaCabecera) llamada++; c.llamada = Math.max(llamada, 1); }
+      const lineaFin = fnInfo ? codigoAlumno.slice(0, fnInfo.fin).split('\n').length : null;
+      vis = { cuadros, i: -1, test, lineasTest, lineasAlumno, fnInfo, detalle, lineaCabecera, lineaFin, nombreListaFn, aviso,
+        error: d.error || !d.ok ? traducir(d.error ?? d.stderr ?? 'No se pudo ejecutar') : null };
+      vis.salidaFinal = salida;
+      mostrarPaso();
       visDibujado = { test: visElegido, codigo: codigoAlumno };
-      const n = caja.querySelectorAll('.cuadro:not(.dentro)').length;
-      estado(d.error || !d.ok ? 'El test se detuvo con un error.' : `Listo: ${n} dibujo${n === 1 ? '' : 's'}.`, !!(d.error || !d.ok));
+      estado(d.error || !d.ok ? 'El test se detuvo con un error (avanza hasta el final para verlo).' : 'Listo: avanza con Siguiente ▶ o con las flechas del teclado.', !!(d.error || !d.ok));
     }
   } catch (e) {
     estado('No se pudo dibujar: ' + e.message, true);
   }
   ocupar(false);
 }
+
+// ---------- Paso a paso ----------
+// vis.cuadros: los volcados en orden de ejecución (los del test y los de adentro de la función).
+// vis.i: el cuadro que se muestra (-1 = antes de empezar). «Siguiente» avanza una línea del test
+// (sin entrar a la función) o, si ya se está adentro, una línea de la función.
+let vis = null;
+const enTest = i => i < 0 || !vis.cuadros[i].dentro;
+function proximoDelTest(i) { for (let k = i + 1; k < vis.cuadros.length; k++) if (!vis.cuadros[k].dentro) return k; return null; }
+function finDeLlamada(i) { let k = i; while (vis.cuadros[k + 1]?.dentro && vis.cuadros[k + 1].llamada === vis.cuadros[i].llamada) k++; return k; }
+function anteriorDelTest(i) { for (let k = i - 1; k >= 0; k--) if (!vis.cuadros[k].dentro) return k; return -1; }
+const acciones = {
+  inicio: () => -1,
+  fin: () => vis.cuadros.length - 1,
+  siguiente: i => enTest(i) ? proximoDelTest(i) ?? (vis.cuadros.length - 1 > i ? vis.cuadros.length - 1 : null) : i + 1 < vis.cuadros.length ? i + 1 : null,
+  atras: i => i < 0 ? null : enTest(i) ? anteriorDelTest(i) : i - 1,
+  entrar: i => enTest(i) && vis.cuadros[i + 1]?.dentro ? i + 1 : null,
+  // salir: primero al final de la llamada actual (si la función se llama varias veces en la línea); luego al test
+  salir: i => enTest(i) ? null : finDeLlamada(i) !== i ? finDeLlamada(i) : proximoDelTest(i) ?? vis.cuadros.length - 1,
+};
+function mover(accion) {
+  if (!vis) return;
+  const j = acciones[accion](vis.i);
+  if (j === null || j === undefined || j === vis.i) return;
+  vis.i = j; mostrarPaso();
+}
+function mostrarPaso() {
+  const { cuadros, i } = vis, c = cuadros[i], dentro = c && c.dentro;
+  const numerar = (lineas, desde, actual, archivo) => lineas.map((l, k) =>
+    `<div class="lc${desde + k === actual ? ' actual' : ''}"><span class="n">${archivo && desde + k === actual ? '▶' : ''}${desde + k}</span><code>${esc(l) || ' '}</code></div>`).join('');
+  let codigo;
+  if (dentro) {
+    const ini = vis.lineaCabecera, fin = vis.lineaFin;
+    const llamadas = Math.max(...cuadros.filter(x => x.dentro).map(x => x.llamada));
+    codigo = `<h4>Dentro de tu <code>${esc(vis.detalle)}</code>${llamadas > 1 ? ` · llamada ${c.llamada} de ${llamadas}` : ''} <a class="ir" data-linea="${c.linea}" title="Ir a esta línea en la pestaña Código">${esc(E.ej.alumno)}:${c.linea} ✎</a></h4>`
+      + `<div class="codigo-paso">${numerar(vis.lineasAlumno.slice(ini - 1, fin), ini, c.linea, true)}</div>`;
+  } else {
+    codigo = `<h4>Test: ${esc(vis.test.nombre)}</h4><div class="codigo-paso">${numerar(vis.lineasTest, 1, c ? c.linea : 0, false)}</div>`;
+  }
+  const quePaso = i < 0 ? 'Antes de empezar.' : dentro
+    ? (c.linea === vis.lineaCabecera ? `Al entrar a ${esc(vis.detalle)}.` : `Después de la línea ${c.linea} de ${esc(E.ej.alumno)}.`)
+      + (finDeLlamada(i) === i ? (cuadros[i + 1]?.dentro ? ' La llamada terminó; Siguiente ▶ entra a la próxima.' : ' La llamada terminó.') : '')
+    : `Después de la línea ${c.linea} del test.`;
+  const dibujo = i < 0 ? '<p class="nota">Toca Siguiente ▶ para ejecutar la primera línea' + (cuadros[0]?.dentro ? ', o ⤵ Entrar para verla por dentro' : '') + '.</p>'
+    : svgLista(c.estado, dentro ? vis.nombreListaFn : E.ej.visual.variable);
+  const ultimo = i === cuadros.length - 1;
+  const salida = (i < 0 ? '' : ultimo ? vis.salidaFinal : c.salida).trim();
+  const puede = a => { const j = acciones[a](i); return j !== null && j !== undefined && j !== i; };
+  const proxEntra = puede('entrar');
+  $('vis-cuadros').innerHTML = vis.aviso + `<div class="paso-barra">
+      <button data-a="inicio" title="Al comienzo">⏮</button>
+      <button data-a="atras" title="Paso anterior (←)">◀ Atrás</button>
+      <button data-a="siguiente" class="principal" title="Siguiente línea (→)">Siguiente ▶</button>
+      <button data-a="entrar" title="Ver por dentro la llamada de la siguiente línea (↓)"${proxEntra ? '' : ' hidden'}>⤵ Entrar en ${esc(vis.detalle ?? '')}</button>
+      <button data-a="salir" title="Ir al final de esta llamada; otra vez: volver al test (↑)"${dentro ? '' : ' hidden'}>${dentro && finDeLlamada(i) !== i ? '⤴ Terminar la llamada' : '⤴ Volver al test'}</button>
+      <button data-a="fin" title="Al final">⏭</button>
+      <span class="paso-info">${quePaso}</span>
+    </div>
+    <div class="paso-cuerpo${dentro ? ' dentro' : ''}">
+      <div class="paso-codigo">${codigo}</div>
+      <div class="paso-dibujo">${dibujo}
+        ${ultimo && vis.error ? `<p class="error-ej">${esc(vis.error)}</p>` : ''}
+        ${salida ? `<h4>${ultimo ? 'Lo que imprimió el test' : 'Lo que imprimió hasta aquí'}</h4><pre class="vis-salida">${esc(salida)}</pre>` : ''}
+      </div>
+    </div>`;
+  const caja = $('vis-cuadros');
+  caja.querySelectorAll('[data-a]').forEach(b => { b.disabled = !puede(b.dataset.a); b.onclick = () => mover(b.dataset.a); });
+  caja.querySelectorAll('a[data-linea]').forEach(a => a.onclick = () => irACodigo(+a.dataset.linea));
+}
+document.addEventListener('keydown', e => {
+  if ($('visual').hidden || !vis || /^(SELECT|INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) return;
+  const a = { ArrowRight: 'siguiente', ArrowLeft: 'atras', ArrowDown: 'entrar', ArrowUp: 'salir', Home: 'inicio', End: 'fin' }[e.key];
+  if (a) { e.preventDefault(); mover(a); }
+});
 
 // Vuelve a la pestaña Código, en esa línea del archivo del estudiante.
 function irACodigo(linea) {
