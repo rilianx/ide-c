@@ -81,6 +81,33 @@ export function funcionesDefinidas(texto, nombres) {
   return nombres.filter(n => new RegExp(`\\b${n}\\s*\\([^;{}()]*\\)\\s*\\{`).test(limpio));
 }
 
+// Funciones que el estudiante realmente escribió: definidas y con un cuerpo distinto
+// al de la plantilla (una plantilla sin tocar sigue usando la versión del curso).
+export function funcionesPropias(ej, texto) {
+  const plantillas = Object.assign({}, ...ej.pasos.map(p => p.plantillas ?? {}));
+  const compacto = s => sinComentarios(s).replace(/\s+/g, '');
+  const cuerpos = new Map(funcionesDelArchivo(texto).map(f => [f.nombre, texto.slice(f.cuerpo, f.fin)]));
+  return funcionesDefinidas(texto, ej.funciones).filter(f => {
+    const pl = plantillas[f], cu = cuerpos.get(f);
+    if (!pl || cu == null) return true;
+    const i = pl.indexOf('{'), j = pl.lastIndexOf('}');
+    return compacto(cu) !== compacto(pl.slice(i + 1, j));
+  });
+}
+
+// El archivo del estudiante tal como se compila: las plantillas sin tocar se renombran
+// (__plantilla_f) para que no choquen con la versión del curso. Las líneas no cambian.
+function sinPlantillas(ej, texto) {
+  const propias = new Set(funcionesPropias(ej, texto));
+  const sobran = funcionesDelArchivo(texto).filter(f => ej.funciones.includes(f.nombre) && !propias.has(f.nombre));
+  for (const f of sobran.reverse()) {
+    const antes = texto.slice(0, f.cuerpo);
+    const k = antes.lastIndexOf(f.nombre, antes.lastIndexOf('('));
+    texto = texto.slice(0, k) + '__plantilla_' + texto.slice(k);
+  }
+  return texto;
+}
+
 // Agrega al archivo del estudiante las plantillas de las funciones que aún no están
 // (todas las del paso, o solo `cuales`).
 export function agregarPlantilla(texto, paso, cuales = paso.funciones) {
@@ -94,7 +121,7 @@ const REF = '__ref.c', AYUDAS = '__ayudas.c', TESTS = '__tests.c', PROGRAMA = '_
 
 // Los #define que sacan de la referencia las funciones que el estudiante escribió.
 function defines(ej, archivos) {
-  const propias = funcionesDefinidas(archivos[ej.alumno] ?? '', ej.funciones);
+  const propias = funcionesPropias(ej, archivos[ej.alumno] ?? '');
   return { propias, texto: propias.map(f => `#define ALUMNO_${f} 1\n`).join('') };
 }
 
@@ -110,6 +137,7 @@ function base(ej, archivos, ocultos) {
 export function armarTests(ej, archivos, ocultos, tests) {
   const files = base(ej, archivos, ocultos);
   const d = defines(ej, archivos);
+  if (files[ej.alumno] != null) files[ej.alumno] = sinPlantillas(ej, files[ej.alumno]);
   files[TESTS] = tests.map((t, i) => `void __test_${i}(void) {\n${t.codigo}\n}\n`).join('\n');
   files[PROGRAMA] = `${d.texto}#include "${ej.alumno}"\n#include "${REF}"\n` +
     (ej.ayudas ? `#include "${AYUDAS}"\n` : '') + `#include "${TESTS}"\n`;

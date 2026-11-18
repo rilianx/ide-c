@@ -1,11 +1,11 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181202';
-import { Runner } from './runner.js?v=202611181202';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181202';
-import { agregarPlantilla, funcionesDefinidas } from './proyecto.js?v=202611181202';
-import { Asistente } from './asistente.js?v=202611181202';
-import { activarDivisores } from './divisores.js?v=202611181202';
-import { correrTests, htmlResultados } from './tests.js?v=202611181202';
+import { Editor } from './editor.js?v=202611181219';
+import { Runner } from './runner.js?v=202611181219';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181219';
+import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181219';
+import { Asistente } from './asistente.js?v=202611181219';
+import { activarDivisores } from './divisores.js?v=202611181219';
+import { correrTests, htmlResultados } from './tests.js?v=202611181219';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -30,6 +30,21 @@ const editor = new Editor($('editor'), $('pestanas'), {
 });
 const asistente = new Asistente($('asistente'), editor, () => ({ ej: E.ej, archivos }));
 activarDivisores(document.getElementById('codigo'), () => editor.refrescar());
+
+// Letra y ajuste de líneas (se recuerdan en el navegador). En pantallas angostas, ajuste activado.
+const pref = { letra: 14, ajustar: innerWidth < 1000 };
+try { Object.assign(pref, JSON.parse(localStorage.getItem('ide-c:vista') || '{}')); } catch { /* sin almacenamiento */ }
+function aplicarVista() {
+  pref.letra = Math.min(24, Math.max(10, pref.letra));
+  editor.letra(pref.letra);
+  editor.ajustar(pref.ajustar);
+  $('ajustar').classList.toggle('activo', pref.ajustar);
+  try { localStorage.setItem('ide-c:vista', JSON.stringify(pref)); } catch { /* sin almacenamiento */ }
+}
+$('letra-menos').onclick = () => { pref.letra--; aplicarVista(); };
+$('letra-mas').onclick = () => { pref.letra++; aplicarVista(); };
+$('ajustar').onclick = () => { pref.ajustar = !pref.ajustar; aplicarVista(); };
+aplicarVista();
 
 function estado(texto, error = false) {
   $('estado').textContent = texto;
@@ -87,9 +102,13 @@ function elegirPaso(k, conFoco = true) {
 
 // Qué funciones escribió el estudiante y cuáles usan la versión del curso.
 function dibujarFunciones() {
-  const propias = new Set(funcionesDefinidas(archivos[E.ej.alumno] ?? '', E.ej.funciones));
+  const texto = archivos[E.ej.alumno] ?? '';
+  const propias = new Set(funcionesPropias(E.ej, texto));
+  const plantillas = new Set(funcionesDefinidas(texto, E.ej.funciones).filter(f => !propias.has(f)));
   $('funciones').innerHTML = E.ej.funciones.map(f =>
-    `<li><code>${f}</code><span class="${propias.has(f) ? 'tuya">tuya' : 'curso">del curso'}</span></li>`).join('');
+    `<li><code>${f}</code>${propias.has(f) ? '<span class="tuya">tuya</span>'
+      : plantillas.has(f) ? '<span class="curso" title="La plantilla está sin escribir: mientras tanto se usa la del curso">plantilla · usa la del curso</span>'
+      : '<span class="curso">del curso</span>'}</li>`).join('');
 }
 
 // ---------- Mensajes del compilador ----------

@@ -69,4 +69,11 @@ export class Editor {
   }
 
   refrescar() { this.cm.refresh(); }
+
+  // Tamaño de letra (px) del código; también lo usan el asistente y los tests (variable --letra).
+  letra(px) {
+    document.documentElement.style.setProperty('--letra', px + 'px');
+    this.cm.refresh();
+  }
+  ajustar(si) { this.cm.setOption('lineWrapping', si); }
 }
