@@ -64,8 +64,6 @@ main#codigo.sin-izq .pasos, main#codigo.sin-der .panel { overflow: hidden; paddi
 .enunciado p { margin: 0 0 8px; }
 .enunciado code, .funciones code { background: color-mix(in srgb, var(--texto) 7%, transparent); padding: 0 3px; border-radius: 3px; font-size: 13px; }
 .enunciado button { margin-top: 4px; }
-#ver-solucion { display: block; margin-top: 8px; }
-pre.solucion { margin: 6px 0 0; padding: 8px; background: var(--panel); border: 1px solid var(--borde); border-radius: 6px; font-size: calc(var(--letra, 14px) - 1px); white-space: pre-wrap; overflow-x: auto; }
 .funciones { list-style: none; padding: 0; margin: 0; font-size: 13px; display: flex; flex-direction: column; gap: 2px; }
 .funciones li { display: flex; justify-content: space-between; gap: 6px; }
 .funciones .tuya { color: var(--acento); font-weight: 600; }

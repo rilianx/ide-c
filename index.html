@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IDE C · Estructuras de Datos</title>
 <link rel="stylesheet" href="vendor/codemirror/codemirror.css">
-<link rel="stylesheet" href="css/ide.css?v=202611181259">
+<link rel="stylesheet" href="css/ide.css?v=202611181301">
 <script src="vendor/codemirror/codemirror.js"></script>
 <script src="vendor/codemirror/clike.js"></script>
 <script src="vendor/codemirror/matchbrackets.js"></script>
@@ -20,7 +20,7 @@
   addEventListener('error', e => errorInicio(e.message || 'no se pudo cargar ' + (e.target && (e.target.src || e.target.href) || 'un archivo')), true);
   addEventListener('unhandledrejection', e => errorInicio(String(e.reason && e.reason.message || e.reason)));
 </script>
-<script type="module" src="js/main.js?v=202611181259"></script>
+<script type="module" src="js/main.js?v=202611181301"></script>
 </head>
 <body>
 <header>
@@ -65,6 +65,7 @@
       <div class="acciones">
         <button id="probar-paso" class="principal" title="Correr los tests de la función elegida (Ctrl+Enter)">▶ Probar actual</button>
         <button id="probar-todo" title="Correr los tests de todas las funciones que escribiste (Ctrl+Shift+Enter)">▶▶ Probar todas</button>
+        <button id="verificar-curso" class="secundario" title="Corre todos los tests con el código oculto del curso (sin tus funciones), para comprobar que pasan">✔ Verificar código del curso</button>
         <button id="detener" hidden title="Detener la ejecución">■ Detener</button>
         <button id="copiar-reporte" class="secundario" title="Copia tu código y los resultados, para pedir ayuda" hidden>📋 Copiar reporte</button>
       </div>

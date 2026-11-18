@@ -1,11 +1,11 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181259';
-import { Runner } from './runner.js?v=202611181259';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181259';
-import { agregarPlantilla, funcionesDefinidas, funcionesPropias, codigoReferencia } from './proyecto.js?v=202611181259';
-import { Asistente } from './asistente.js?v=202611181259';
-import { activarDivisores } from './divisores.js?v=202611181259';
-import { correrTests, htmlResultados } from './tests.js?v=202611181259';
+import { Editor } from './editor.js?v=202611181301';
+import { Runner } from './runner.js?v=202611181301';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181301';
+import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181301';
+import { Asistente } from './asistente.js?v=202611181301';
+import { activarDivisores } from './divisores.js?v=202611181301';
+import { correrTests, htmlResultados } from './tests.js?v=202611181301';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -99,17 +99,7 @@ function elegirPaso(k, conFoco = true, fn = null) {
   const faltan = p.funciones.filter(f => !funcionesDefinidas(archivos[E.ej.alumno], [f]).length);
   $('enunciado').innerHTML = md(p.enunciado) + (faltan.length
     ? `<button id="escribir">✎ Escribir ${faltan.map(f => `<code>${f}</code>`).join(' y ')} en ${E.ej.alumno}</button>`
-    : `<p class="descripcion">Ya está en ${E.ej.alumno}: ▶ Probar actual para revisarla.</p>`)
-    + `<button id="ver-solucion" class="secundario" title="Muestra cómo está implementada en el curso">👁 Ver solución del curso</button><div id="solucion" hidden></div>`;
-  $('ver-solucion').onclick = () => {
-    const caja = $('solucion');
-    if (!caja.hidden) { caja.hidden = true; $('ver-solucion').textContent = '👁 Ver solución del curso'; return; }
-    if (estadoPasos[k] !== 'ok' && !confirm('Todavía no pasas los tests de esta función. ¿Ver la solución del curso igual?')) return;
-    const ref = E.ocultos[E.ej.referencia];
-    caja.innerHTML = p.funciones.map(f => `<pre class="solucion">${esc(codigoReferencia(ref, f) ?? '(no disponible)')}</pre>`).join('');
-    caja.hidden = false;
-    $('ver-solucion').textContent = '🙈 Ocultar solución';
-  };
+    : `<p class="descripcion">Ya está en ${E.ej.alumno}: ▶ Probar actual para revisarla.</p>`);
   if (faltan.length) $('escribir').onclick = () => {
     editor.abrir(E.ej.alumno);
     editor.poner(E.ej.alumno, agregarPlantilla(editor.texto(E.ej.alumno), p));
@@ -152,34 +142,38 @@ function traducir(error) {
 
 // ---------- Tests ----------
 
+// todos: false = la función elegida · true = las que escribió el estudiante
+// · 'curso' = todos los tests con el código oculto del curso (sin las funciones del estudiante)
 async function probar(todos) {
   if (ocupado) return;
   ocupar(true);
+  const curso = todos === 'curso';
   // «todos»: los pasos de las funciones que escribió el estudiante (no las plantillas vacías)
   const propias = new Set(funcionesPropias(E.ej, archivos[E.ej.alumno] ?? ''));
-  const pasos = todos ? E.ej.pasos.map((p, k) => k).filter(k => E.ej.pasos[k].funciones.some(f => propias.has(f))) : [paso];
+  const pasos = curso ? E.ej.pasos.map((p, k) => k) : todos ? E.ej.pasos.map((p, k) => k).filter(k => E.ej.pasos[k].funciones.some(f => propias.has(f))) : [paso];
   if (!pasos.length) { estado('Aún no has escrito ninguna función: elige un paso y toca ✎ Escribir.', true); ocupar(false); return; }
   const tests = pasos.flatMap(k => E.ej.pasos[k].tests.map(t => ({ ...t, paso: k })));
   $('compilacion-tests').innerHTML = '';
   estado('Compilando y probando…');
   const dibujar = res => {
-    ultimo = { tests, res, codigo: archivos[E.ej.alumno] };
+    ultimo = { tests, res, codigo: curso ? '(código del curso)' : archivos[E.ej.alumno] };
     $('copiar-reporte').hidden = false;
     $('resultados').innerHTML = htmlResultados(tests, res.map(r => ({ ...r, error: r.error && traducir(r.error) })));
     const ok = res.filter(r => r.estado === 'ok').length;
     $('resumen-tests').textContent = `${ok}/${tests.length}`;
   };
   try {
-    const { compilacion, resultados } = await correrTests(runner, E.ej, archivos, E.ocultos, tests, dibujar);
+    const aProbar = curso ? { ...archivos, [E.ej.alumno]: '' } : archivos;   // list.c vacío: todo usa el código del curso
+    const { compilacion, resultados } = await correrTests(runner, E.ej, aProbar, E.ocultos, tests, dibujar);
     const compilo = !resultados.some(r => r.estado === 'sin-compilar');
     mostrarCompilacion($('compilacion-tests'), compilacion, compilo);
-    for (const k of pasos) {
+    if (!curso) for (const k of pasos) {
       const delPaso = resultados.filter((r, i) => tests[i].paso === k);
       estadoPasos[k] = delPaso.every(r => r.estado === 'ok') ? 'ok' : 'falla';
     }
     dibujarPasos();
     const ok = resultados.filter(r => r.estado === 'ok').length;
-    estado(compilo ? `${ok} de ${tests.length} tests pasan.` : 'No compila.', !compilo || ok < tests.length);
+    estado((curso ? 'Código del curso: ' : '') + (compilo ? `${ok} de ${tests.length} tests pasan.` : 'No compila.'), !compilo || ok < tests.length);
   } catch (e) {
     estado('No se pudo probar: ' + e.message, true);
     $('resultados').innerHTML = htmlResultados(tests, tests.map(() => ({ estado: 'sin-compilar', obtenido: '', error: null })));
@@ -220,6 +214,7 @@ document.querySelectorAll('.vista').forEach(b => b.onclick = () => {
 
 $('probar-paso').onclick = () => probar(false);
 $('probar-todo').onclick = () => probar(true);
+$('verificar-curso').onclick = () => probar('curso');
 $('detener').onclick = () => runner.detener?.();
 $('restaurar').onclick = () => {
   if (!confirm('¿Volver a los archivos originales? Se pierde lo que escribiste en este ejercicio.')) return;
