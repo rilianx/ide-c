@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611182110';
-import { Runner } from './runner.js?v=202611182110';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182110';
-import { traducirMensaje } from './mensajes.js?v=202611182110';
-import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado, estadoDeLista } from './visual.js?v=202611182110';
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182110';
-import { Asistente } from './asistente.js?v=202611182110';
-import { activarDivisores } from './divisores.js?v=202611182110';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182110';
+import { Editor } from './editor.js?v=202611182114';
+import { Runner } from './runner.js?v=202611182114';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182114';
+import { traducirMensaje } from './mensajes.js?v=202611182114';
+import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado, estadoDeLista } from './visual.js?v=202611182114';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182114';
+import { Asistente } from './asistente.js?v=202611182114';
+import { activarDivisores } from './divisores.js?v=202611182114';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182114';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -41,7 +41,7 @@ const asistente = new Asistente($('asistente'), editor, () => ({ ej: E.ej, archi
   // al entrar a una función con el cursor, se elige su paso
   alCambiarFuncion: f => { const k = E.ej.pasos.findIndex(p => p.funciones.includes(f)); if (k >= 0 && k !== paso) elegirPaso(k, false); else dibujarPasos(); },
 });
-activarDivisores(document.getElementById('codigo'), () => editor.refrescar());
+activarDivisores(document.getElementById('codigo'), () => { editor.refrescar(); setTimeout(remarcarEjecucion, 0); });   // (después: vis aún no existe al iniciar)
 
 // Letra y ajuste de líneas (se recuerdan en el navegador). En pantallas angostas, ajuste activado.
 const pref = { letra: 14, ajustar: innerWidth < 1000, teclado: !matchMedia('(pointer: coarse)').matches };   // en pantallas táctiles, sin teclado
@@ -411,7 +411,7 @@ let tLinea = null;
 editor.cm.on('cursorActivity', () => {
   clearTimeout(tLinea);
   tLinea = setTimeout(() => {
-    if (!vis || $('vis-panel').hidden || editor.actual !== E.ej.alumno || ocupado) return;
+    if (!ejecucionVisible() || editor.actual !== E.ej.alumno || ocupado) return;
     const linea = editor.cm.getCursor().line + 1, act = vis.cuadros[vis.i];
     if (act?.dentro && act.linea === linea) return;
     const candidatos = vis.cuadros.map((c, k) => [c, k]).filter(([c]) => c.dentro && !c.error && c.linea === linea && !c.condicion || c.dentro && c.condicion && c.linea === linea);
@@ -430,9 +430,21 @@ function resultadoVivo(html) {
   $('vis-resultado').innerHTML = html;
   $('vivo-res').innerHTML = html + (resumenVivo ? ` <span class="nota">· ${esc(resumenVivo)}</span>` : '');
 }
+// Vuelve a poner (o quitar) la marca amarilla según si la ejecución se ve.
+function remarcarEjecucion() {
+  if (!vis || !E) return;
+  const c = vis.cuadros[vis.i];
+  editor.marcarEjecucion(E.ej.alumno, ejecucionVisible() && c?.dentro ? c.linea : null);
+}
+// ¿Se está viendo la ejecución? (celular: la ventana abierta; computador: la columna de tests visible)
+function ejecucionVisible() {
+  if (!vis || $('vis-panel').hidden) return false;
+  return innerWidth <= 1000 ? !vivoCerrado : !$('codigo').classList.contains('sin-der');
+}
 function mostrarVivo() { $('vivo').hidden = vivoCerrado || !vis || $('vis-panel').hidden; $('vivo-abrir').hidden = !vivoCerrado; }
-$('vivo-cerrar').onclick = () => { vivoCerrado = true; mostrarVivo(); };
-$('vivo-abrir').onclick = () => { vivoCerrado = false; mostrarVivo(); };
+// al cerrar la ventana, el editor deja de marcar la línea de la ejecución (queda el marcado de bloques)
+$('vivo-cerrar').onclick = () => { vivoCerrado = true; mostrarVivo(); editor.marcarEjecucion(null, null); };
+$('vivo-abrir').onclick = () => { vivoCerrado = false; mostrarVivo(); if (vis) mostrarPaso(); };
 // Gestos en el dibujo: dos dedos acercan/alejan, doble toque vuelve al tamaño normal y deslizar
 // hacia el lado cambia de test (y deja el cursor en la definición de la función: la entrada).
 {
@@ -617,7 +629,7 @@ function mostrarPaso() {
     mostrarPaso();
   };
   // en el editor del centro se marca la línea de la función que se está ejecutando
-  editor.marcarEjecucion(E.ej.alumno, dentro ? c.linea : null);
+  editor.marcarEjecucion(E.ej.alumno, dentro && ejecucionVisible() ? c.linea : null);
   // la ventana de ejecución sobre el editor (celular): el resultado, el paso y el dibujo
   const d = describirTest(vis.test);
   $('vivo-info').innerHTML = `${esc(vis.test.nombre)} · ${quePaso}`;
