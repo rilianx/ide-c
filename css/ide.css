@@ -216,7 +216,24 @@ svg.memoria .flecha.current { stroke: var(--c-current); stroke-dasharray: 5 3; }
   .divisor { display: none; }
   main#codigo.sin-izq .pasos, main#codigo.sin-der .panel { overflow: auto; padding: revert; }
   .panel { overflow-y: auto; }
-  .estado { margin-left: 0; width: 100%; }
+  header { display: none; }
+  #titulo-ejercicio { display: none; }
+  #col-pasos > #ejercicio { font: inherit; width: 100%; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--borde); background: var(--panel); color: var(--texto); margin-bottom: 8px; }
+  body > #estado { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 20; margin: 0; padding: 8px 12px; border-radius: 8px;
+    background: var(--panel); border: 1px solid var(--borde); box-shadow: 0 4px 16px rgb(0 0 0 / .18); font-size: 14px;
+    opacity: 0; pointer-events: none; transition: opacity .25s; }
+  body > #estado.visible { opacity: 1; pointer-events: auto; }
+  /* Tests mientras se visualiza: solo los controles, el código y el dibujo */
+  #col-tests.visualizando .titulo-panel { display: none; }
+  #col-tests.visualizando .panel-cuerpo { padding: 6px 8px; }
+  #vis-panel .txt { display: none; }
+  #vis-panel .paso-barra { gap: 4px; padding: 4px 0; }
+  #vis-panel .paso-barra button { padding: 4px 10px; }
+  #vis-panel .paso-info { width: 100%; margin: 2px 0 0; font-size: 12px; }
+  #vis-panel .vis-cabecera b { font-size: 13px; }
+  #vis-panel .paso-cuerpo { margin-top: 4px; gap: 8px; }
+  #vis-panel .paso-codigo, #vis-panel .paso-dibujo { padding: 6px 8px; }
+  #vis-panel .codigo-paso { font-size: 12px; line-height: 1.4; }
 }
 
 .dialogo-clave { border: 1px solid var(--borde); border-radius: 10px; background: var(--panel); color: var(--texto); padding: 18px 20px; width: min(360px, 90vw); }

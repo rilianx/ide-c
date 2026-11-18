@@ -1,12 +1,12 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181541';
-import { Runner } from './runner.js?v=202611181541';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181541';
-import { svgLista } from './visual.js?v=202611181541';
-import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181541';
-import { Asistente } from './asistente.js?v=202611181541';
-import { activarDivisores } from './divisores.js?v=202611181541';
-import { correrTests, htmlResultados } from './tests.js?v=202611181541';
+import { Editor } from './editor.js?v=202611181545';
+import { Runner } from './runner.js?v=202611181545';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181545';
+import { svgLista } from './visual.js?v=202611181545';
+import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181545';
+import { Asistente } from './asistente.js?v=202611181545';
+import { activarDivisores } from './divisores.js?v=202611181545';
+import { correrTests, htmlResultados } from './tests.js?v=202611181545';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -52,10 +52,26 @@ $('letra-mas').onclick = () => { pref.letra++; aplicarVista(); };
 $('ajustar').onclick = () => { pref.ajustar = !pref.ajustar; aplicarVista(); };
 aplicarVista();
 
+let tEstado = null;
 function estado(texto, error = false) {
-  $('estado').textContent = texto;
-  $('estado').style.color = error ? 'var(--mal)' : '';
+  const e = $('estado');
+  e.textContent = texto;
+  e.style.color = error ? 'var(--mal)' : '';
+  // en el celular es un aviso flotante que se esconde solo (los errores duran más)
+  e.classList.add('visible');
+  clearTimeout(tEstado);
+  tEstado = setTimeout(() => e.classList.remove('visible'), error ? 6000 : 2500);
 }
+// En el celular no hay encabezado: el selector de ejercicio va arriba de la pestaña Función
+// y el estado pasa a ser un aviso flotante.
+const angosto = matchMedia('(max-width: 1000px)');
+function acomodar() {
+  if (angosto.matches) { $('col-pasos').prepend($('ejercicio')); document.body.append($('estado')); }
+  else { document.querySelector('header h1').after($('ejercicio')); document.querySelector('header').append($('estado')); }
+}
+angosto.addEventListener('change', acomodar);
+acomodar();
+$('estado').onclick = () => $('estado').classList.remove('visible');
 
 function ocupar(si) {
   ocupado = si;
@@ -243,9 +259,10 @@ function abrirVisual(clave) {
   $('vis-titulo').textContent = E.ej.pasos[k].tests[i].nombre;
   $('vista-tests').hidden = true;
   $('vis-panel').hidden = false;
+  $('col-tests').classList.add('visualizando');
   dibujarVisual(true);
 }
-function cerrarVisual() { $('vis-panel').hidden = true; $('vista-tests').hidden = false; editor.marcarEjecucion(null, null); }
+function cerrarVisual() { $('vis-panel').hidden = true; $('vista-tests').hidden = false; $('col-tests').classList.remove('visualizando'); editor.marcarEjecucion(null, null); }
 $('vis-volver').onclick = cerrarVisual;
 $('vis-dibujar').onclick = () => dibujarVisual();
 $('resultados').addEventListener('click', e => {
@@ -360,13 +377,13 @@ function mostrarPaso() {
   const proxEntra = puede('entrar');
   $('vis-cuadros').innerHTML = vis.aviso + `<div class="paso-barra">
       <button data-a="inicio" title="Al comienzo">⏮</button>
-      <button data-a="atras" title="Paso anterior (←)">◀ Atrás</button>
-      <button data-a="siguiente" class="principal" title="Siguiente línea (→)">Siguiente ▶</button>
-      <button data-a="entrar" title="Ver por dentro la llamada de la siguiente línea (↓)"${proxEntra && !entrarSiempre ? '' : ' hidden'}>⤵ Entrar en ${esc(vis.detalle ?? '')}</button>
-      <button data-a="saltar" title="Ejecutar la siguiente línea sin entrar a ${esc(vis.detalle ?? '')}"${proxEntra && entrarSiempre ? '' : ' hidden'}>⤼ Sin entrar</button>
-      <button data-a="salir" title="Ir al final de esta llamada; otra vez: volver al test (↑)"${dentro ? '' : ' hidden'}>${dentro && finDeLlamada(i) !== i ? '⤴ Terminar la llamada' : '⤴ Volver al test'}</button>
+      <button data-a="atras" title="Paso anterior (←)">◀<span class="txt"> Atrás</span></button>
+      <button data-a="siguiente" class="principal" title="Siguiente línea (→)"><span class="txt">Siguiente </span>▶</button>
+      <button data-a="entrar" title="Ver por dentro la llamada de la siguiente línea (↓)"${proxEntra && !entrarSiempre ? '' : ' hidden'}>⤵<span class="txt"> Entrar en ${esc(vis.detalle ?? '')}</span></button>
+      <button data-a="saltar" title="Ejecutar la siguiente línea sin entrar a ${esc(vis.detalle ?? '')}"${proxEntra && entrarSiempre ? '' : ' hidden'}>⤼<span class="txt"> Sin entrar</span></button>
+      <button data-a="salir" title="Ir al final de esta llamada; otra vez: volver al test (↑)"${dentro ? '' : ' hidden'}>⤴<span class="txt">${dentro && finDeLlamada(i) !== i ? ' Terminar la llamada' : ' Volver al test'}</span></button>
       <button data-a="fin" title="Al final">⏭</button>
-      <label class="entrar-siempre" title="Siguiente ▶ entra a tu función en vez de pasarla de largo"><input type="checkbox" id="entrar-siempre"${entrarSiempre ? ' checked' : ''}> entrar a mi función</label>
+      <label class="entrar-siempre" title="Siguiente ▶ entra a tu función en vez de pasarla de largo"><input type="checkbox" id="entrar-siempre"${entrarSiempre ? ' checked' : ''}> entrar<span class="txt"> a mi función</span></label>
       <span class="paso-info">${quePaso}</span>
     </div>
     <div class="paso-cuerpo${dentro ? ' dentro' : ''}">
