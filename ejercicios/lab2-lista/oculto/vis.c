@@ -11,11 +11,37 @@
 #undef malloc
 #undef calloc
 #undef free
+// Nodos vistos en volcados anteriores: un nodo liberado se sigue dibujando (con su contenido,
+// que puede ser basura) solo si antes fue un nodo de verdad.
+static void * __vistos[128];
+static int __nvis;
+static int __visto(void * p) { for (int i = 0; i < __nvis; i++) if (__vistos[i] == p) return 1; return 0; }
+static void __marcar(void * p) { if (!__visto(p) && __nvis < 128) __vistos[__nvis++] = p; }
+// Al liberar un nodo se guarda lo que tenía en ese momento, para dibujarlo con ese contenido
+// (la memoria liberada puede quedar con basura, pero lo que importa es qué era).
+typedef struct { void * dir; int conDato; int dato; void * next; void * prev; } __Copia;
 #define __MAXL 64
 static void * __lib[__MAXL];
+static __Copia __copia[__MAXL];
 static int __nl;
-static void __olvidar(void * p) { for (int i = 0; i < __nl; i++) if (__lib[i] == p) { __lib[i] = __lib[--__nl]; return; } }
-void __liberar(void * p) { if (p != NULL && __nl < __MAXL) { __olvidar(p); __lib[__nl++] = p; } free(p); }
+static void __olvidar(void * p) { for (int i = 0; i < __nl; i++) if (__lib[i] == p) { __nl--; __lib[i] = __lib[__nl]; __copia[i] = __copia[__nl]; return; } }
+static int __valido(void * p, unsigned long tam);
+void __liberar(void * p) {
+    if (p != NULL && __nl < __MAXL) {
+        __olvidar(p);
+        __Copia c = { p, 0, 0, 0, 0 };
+        if (__visto(p)) {   // era un nodo: se copia su contenido antes de liberarlo
+            Node * x = (Node *)p;
+            c.next = x->next; c.prev = x->prev;
+            if (x->data != NULL && __valido(x->data, sizeof(int))) { c.conDato = 1; c.dato = *(int *)x->data; }
+            else c.conDato = x->data == NULL ? 2 : 0;
+        }
+        __copia[__nl] = c;
+        __lib[__nl++] = p;
+    }
+    free(p);
+}
+static __Copia * __copiaDe(void * p) { for (int i = 0; i < __nl; i++) if (__lib[i] == p) return &__copia[i]; return NULL; }
 void * __reservar(unsigned long n) { void * p = malloc(n); __olvidar(p); return p; }
 void * __reservarc(unsigned long a, unsigned long b) { void * p = calloc(a, b); __olvidar(p); return p; }
 static int __libre(void * p) { for (int i = 0; i < __nl; i++) if (__lib[i] == p) return 1; return 0; }
@@ -38,12 +64,6 @@ static int __indice(Node * p) {   // índice del nodo (lo agrega si es nuevo); -
     return __n++;
 }
 
-// Nodos vistos en volcados anteriores: un nodo liberado se sigue dibujando (con su contenido,
-// que puede ser basura) solo si antes fue un nodo de verdad.
-static void * __vistos[128];
-static int __nvis;
-static int __visto(void * p) { for (int i = 0; i < __nvis; i++) if (__vistos[i] == p) return 1; return 0; }
-static void __marcar(void * p) { if (!__visto(p) && __nvis < 128) __vistos[__nvis++] = p; }
 // Desde un nodo liberado solo se siguen enlaces a nodos conocidos (su memoria puede tener basura).
 static int __indiceConocido(Node * p) {
     if (p == NULL) return -1;
@@ -86,13 +106,19 @@ static void __volcarCon(const char * marca, int linea, List * L, int nv, const c
     for (int i = 0; i < __n; i++) {   // __n crece mientras se recorren los enlaces
         Node * x = __nodos[i];
         int libre = __libre(x);
+        __Copia * cp = libre ? __copiaDe(x) : NULL;   // si se liberó: lo que tenía al liberarse
         if (!libre) __marcar(x);
-        int nx = libre ? __indiceConocido(x->next) : __indice(x->next);
-        int pv = libre ? __indiceConocido(x->prev) : __indice(x->prev);
+        int nx = cp ? __indiceConocido((Node *)cp->next) : __indice(x->next);
+        int pv = cp ? __indiceConocido((Node *)cp->prev) : __indice(x->prev);
         printf(i ? ",{" : "{");
         printf("\"dir\":%lu,", (unsigned long)(uintptr_t)x);
         if (libre) printf("\"libre\":1,");
-        if (x->data == NULL) printf("\"dato\":null,");
+        if (cp) {
+            if (cp->conDato == 1) printf("\"dato\":%d,", cp->dato);
+            else if (cp->conDato == 2) printf("\"dato\":null,");
+            else printf("\"dato\":\"?\",");
+        }
+        else if (x->data == NULL) printf("\"dato\":null,");
         else if (__valido(x->data, sizeof(int))) printf("\"dato\":%d,", *(int *)x->data);
         else printf("\"dato\":\"?\",");
         __ptr("next", nx); printf(","); __ptr("prev", pv);
