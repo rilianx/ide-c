@@ -1,11 +1,11 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181234';
-import { Runner } from './runner.js?v=202611181234';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181234';
-import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181234';
-import { Asistente } from './asistente.js?v=202611181234';
-import { activarDivisores } from './divisores.js?v=202611181234';
-import { correrTests, htmlResultados } from './tests.js?v=202611181234';
+import { Editor } from './editor.js?v=202611181237';
+import { Runner } from './runner.js?v=202611181237';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181237';
+import { agregarPlantilla, funcionesDefinidas } from './proyecto.js?v=202611181237';
+import { Asistente } from './asistente.js?v=202611181237';
+import { activarDivisores } from './divisores.js?v=202611181237';
+import { correrTests, htmlResultados } from './tests.js?v=202611181237';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -25,7 +25,6 @@ const editor = new Editor($('editor'), $('pestanas'), {
   alCambiar: (nombre, texto) => {
     archivos[nombre] = texto;
     guardar(E.ej, archivos);
-    if (nombre === E.ej.alumno) dibujarFunciones();
   },
 });
 const asistente = new Asistente($('asistente'), editor, () => ({ ej: E.ej, archivos }), {
@@ -71,7 +70,6 @@ async function abrirEjercicio(id) {
   editor.cargar(E.ej.archivos.map(a => ({ nombre: a.nombre, texto: archivos[a.nombre], editable: a.editable })));
   elegirPaso(0, false);
   $('resumen-tests').textContent = '';
-  dibujarFunciones();
   asistente.dibujar();
 }
 
@@ -101,17 +99,6 @@ function elegirPaso(k, conFoco = true) {
   };
   dibujarPasos();
   if (conFoco && !faltan.length) asistente.irAFuncion(p.funciones[0]);
-}
-
-// Qué funciones escribió el estudiante y cuáles usan la versión del curso.
-function dibujarFunciones() {
-  const texto = archivos[E.ej.alumno] ?? '';
-  const propias = new Set(funcionesPropias(E.ej, texto));
-  const plantillas = new Set(funcionesDefinidas(texto, E.ej.funciones).filter(f => !propias.has(f)));
-  $('funciones').innerHTML = E.ej.funciones.map(f =>
-    `<li><code>${f}</code>${propias.has(f) ? '<span class="tuya">tuya</span>'
-      : plantillas.has(f) ? '<span class="curso" title="La plantilla está sin escribir: mientras tanto se usa la del curso">plantilla · usa la del curso</span>'
-      : '<span class="curso">del curso</span>'}</li>`).join('');
 }
 
 // ---------- Mensajes del compilador ----------

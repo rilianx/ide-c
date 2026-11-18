@@ -96,6 +96,7 @@ main#codigo.sin-izq .pasos, main#codigo.sin-der .panel { overflow: hidden; paddi
 .asistente { border-top: 1px solid var(--borde); background: var(--panel); padding: 6px 10px 8px; display: flex; flex-direction: column; gap: 6px;
   max-height: 40%; overflow-y: auto; font-size: 13px; }
 .asistente .fila { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.asistente .sel-funcion { font-family: var(--mono); font-size: 13px; }
 .asistente select { font: inherit; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--borde); background: var(--fondo); color: var(--texto); }
 .asistente .vars code { font-family: var(--mono); background: color-mix(in srgb, #f5c400 30%, var(--panel)); color: var(--texto); border-radius: 3px; padding: 1px 5px; margin-right: 2px; }
 .asistente .cats { gap: 2px; border-bottom: 1px solid var(--borde); }
@@ -108,10 +109,6 @@ main#codigo.sin-izq .pasos, main#codigo.sin-der .panel { overflow: hidden; paddi
 .asistente .chip.pieza { border-color: var(--acento); color: var(--acento); }
 .asistente .vista { font-family: var(--mono); font-size: var(--letra, 14px); padding: 3px 8px; border: 1px dashed var(--acento); border-radius: 4px; }
 .asistente .vista b { color: var(--acento); }
-.asistente .funciones-archivo { display: flex; gap: 3px; flex-wrap: wrap; }
-.asistente .fn { font-family: var(--mono); font-size: 13px; padding: 2px 8px; border-radius: 6px; }
-.asistente .fn.activa { background: var(--acento); border-color: var(--acento); color: #fff; }
-.asistente .fn-sola { font-family: var(--mono); }
 .asistente .linea-actual { padding-bottom: 6px; border-bottom: 1px dashed var(--borde); margin-bottom: 4px; }
 .asistente .linea-actual code { font-family: var(--mono); font-size: calc(var(--letra, 14px) - 1px); background: color-mix(in srgb, var(--texto) 6%, transparent); padding: 1px 6px; border-radius: 4px; white-space: pre-wrap; }
 .asistente .linea-actual button { padding: 2px 8px; font-size: 13px; }

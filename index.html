@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IDE C · Estructuras de Datos</title>
 <link rel="stylesheet" href="vendor/codemirror/codemirror.css">
-<link rel="stylesheet" href="css/ide.css?v=202611181234">
+<link rel="stylesheet" href="css/ide.css?v=202611181237">
 <script src="vendor/codemirror/codemirror.js"></script>
 <script src="vendor/codemirror/clike.js"></script>
 <script src="vendor/codemirror/matchbrackets.js"></script>
@@ -20,7 +20,7 @@
   addEventListener('error', e => errorInicio(e.message || 'no se pudo cargar ' + (e.target && (e.target.src || e.target.href) || 'un archivo')), true);
   addEventListener('unhandledrejection', e => errorInicio(String(e.reason && e.reason.message || e.reason)));
 </script>
-<script type="module" src="js/main.js?v=202611181234"></script>
+<script type="module" src="js/main.js?v=202611181237"></script>
 </head>
 <body>
 <header>
@@ -40,8 +40,6 @@
     <p id="descripcion" class="descripcion"></p>
     <ol id="lista-pasos"></ol>
     <section id="enunciado" class="enunciado"></section>
-    <h3>Funciones</h3>
-    <ul id="funciones" class="funciones"></ul>
     <button id="restaurar" class="secundario">⟲ Restaurar archivos</button>
   </aside>
   <div class="divisor" data-col="izq" title="Arrastra para cambiar el ancho (doble clic: ocultar/mostrar)"></div>

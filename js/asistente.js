@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar } from './proyecto.js?v=202611181234';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, funcionesPropias } from './proyecto.js?v=202611181237';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -147,12 +147,16 @@ export class Asistente {
     const { ej, archivos } = this.obtener();
     // Selector de la función que se implementa
     // Las funciones que ya están en el archivo, en orden: se pasa de una a otra con un toque
+    const propias = new Set(funcionesPropias(ej, archivos[ej.alumno] ?? ''));
     const enArchivo = funcionesDelArchivo(archivos[ej.alumno] ?? '').map(f => f.nombre).filter(f => ej.funciones.includes(f));
     const nombreFn = ctx.fn?.nombre ?? null;
     if (nombreFn !== this.fnAnterior) { this.fnAnterior = nombreFn; if (nombreFn) this.alCambiarFuncion?.(nombreFn); }
     let html = '<div class="fila">';
-    if (enArchivo.length > 1) html += `<span class="funciones-archivo">${enArchivo.map(f => `<button class="fn${f === nombreFn ? ' activa' : ''}" data-fn="${f}">${f}</button>`).join('')}</span>`;
-    else if (nombreFn) html += `<b class="fn-sola">${esc(nombreFn)}</b>`;
+    if (enArchivo.length) {
+      const vacias = new Set(enArchivo.filter(f => !propias.has(f)));
+      html += `<select class="sel-funcion" title="Ir a una función de ${esc(ej.alumno)}">${nombreFn ? '' : '<option value="">Función…</option>'}`
+        + enArchivo.map(f => `<option value="${f}"${f === nombreFn ? ' selected' : ''}>${f}${vacias.has(f) ? ' (vacía)' : ''}</option>`).join('') + '</select>';
+    }
     if (ctx.fn) html += `<span class="vars">${ctx.vars.map(v => `<code title="${esc(nombreTipo(v))}">${esc(v.nombre)}</code>`).join(' ')}</span>`;
     html += '</div>';
 
@@ -189,7 +193,8 @@ export class Asistente {
     }
     this.caja.innerHTML = html;
 
-    this.caja.querySelectorAll('[data-fn]').forEach(b => b.onclick = () => this.irAFuncion(b.dataset.fn));
+    const sel = this.caja.querySelector('.sel-funcion');
+    if (sel) sel.onchange = () => this.irAFuncion(sel.value);
     this.caja.querySelectorAll('.cat').forEach(b => b.onclick = () => { this.cat = b.dataset.cat; this.dibujar(); });
     this.caja.querySelectorAll('[data-p]').forEach(b => b.onclick = () => this.empezar(this.plantillasActuales[+b.dataset.p]));
     this.caja.querySelectorAll('.pieza').forEach(b => b.onclick = () => this.elegir(this.piezasActuales[+b.dataset.i]));
