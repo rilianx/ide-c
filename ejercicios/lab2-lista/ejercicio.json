@@ -202,26 +202,22 @@
           }
         },
         {
-          "nombre": "dos llamadas avanzan de a uno",
+          "nombre": "desde el del medio avanza al último",
           "entrada": {
             "lista": [
               1,
               2,
               3
             ],
-            "current": 0
+            "current": 1
           },
           "llamadas": [
-            [
-              "nextList"
-            ],
             [
               "nextList"
             ]
           ],
           "salida": {
             "retornos": [
-              2,
               3
             ],
             "lista": [
@@ -284,51 +280,24 @@
           }
         },
         {
-          "nombre": "recorre la lista con firstList y nextList",
+          "nombre": "en una lista de un solo nodo retorna NULL",
           "entrada": {
             "lista": [
-              4,
-              8,
-              15,
-              16,
-              23
-            ]
+              5
+            ],
+            "current": 0
           },
           "llamadas": [
-            [
-              "firstList"
-            ],
-            [
-              "nextList"
-            ],
-            [
-              "nextList"
-            ],
-            [
-              "nextList"
-            ],
-            [
-              "nextList"
-            ],
             [
               "nextList"
             ]
           ],
           "salida": {
             "retornos": [
-              4,
-              8,
-              15,
-              16,
-              23,
               null
             ],
             "lista": [
-              4,
-              8,
-              15,
-              16,
-              23
+              5
             ]
           }
         }
@@ -455,26 +424,22 @@
           }
         },
         {
-          "nombre": "dos llamadas retroceden de a uno",
+          "nombre": "desde el del medio retrocede al primero",
           "entrada": {
             "lista": [
               1,
               2,
               3
             ],
-            "current": 2
+            "current": 1
           },
           "llamadas": [
-            [
-              "prevList"
-            ],
             [
               "prevList"
             ]
           ],
           "salida": {
             "retornos": [
-              2,
               1
             ],
             "lista": [
@@ -537,51 +502,24 @@
           }
         },
         {
-          "nombre": "recorre al revés con lastList y prevList",
+          "nombre": "en una lista de un solo nodo retorna NULL",
           "entrada": {
             "lista": [
-              4,
-              8,
-              15,
-              16,
-              23
-            ]
+              5
+            ],
+            "current": 0
           },
           "llamadas": [
-            [
-              "lastList"
-            ],
-            [
-              "prevList"
-            ],
-            [
-              "prevList"
-            ],
-            [
-              "prevList"
-            ],
-            [
-              "prevList"
-            ],
             [
               "prevList"
             ]
           ],
           "salida": {
             "retornos": [
-              23,
-              16,
-              15,
-              8,
-              4,
               null
             ],
             "lista": [
-              4,
-              8,
-              15,
-              16,
-              23
+              5
             ]
           }
         }
@@ -639,35 +577,24 @@
           }
         },
         {
-          "nombre": "varios pushFront seguidos",
+          "nombre": "en una lista de un nodo: el nuevo queda antes",
           "entrada": {
-            "lista": []
+            "lista": [
+              1
+            ]
           },
           "llamadas": [
             [
               "pushFront",
-              1
-            ],
-            [
-              "pushFront",
               2
-            ],
-            [
-              "pushFront",
-              3
-            ],
-            [
-              "pushFront",
-              4
             ]
           ],
           "salida": {
             "lista": [
-              4,
-              3,
               2,
               1
-            ]
+            ],
+            "current": null
           }
         }
       ],
@@ -752,17 +679,12 @@
         {
           "nombre": "pushBack (usa tu pushCurrent) agrega al final",
           "entrada": {
-            "lista": []
+            "lista": [
+              5,
+              6
+            ]
           },
           "llamadas": [
-            [
-              "pushBack",
-              5
-            ],
-            [
-              "pushBack",
-              6
-            ],
             [
               "pushBack",
               7
@@ -888,7 +810,7 @@
           }
         },
         {
-          "nombre": "popFront y popBack (usan tu popCurrent)",
+          "nombre": "popFront (usa tu popCurrent) elimina el primero",
           "entrada": {
             "lista": [
               1,
@@ -900,17 +822,40 @@
           "llamadas": [
             [
               "popFront"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              1
             ],
+            "lista": [
+              2,
+              3,
+              4
+            ]
+          }
+        },
+        {
+          "nombre": "popBack (usa tu popCurrent) elimina el último",
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3,
+              4
+            ]
+          },
+          "llamadas": [
             [
               "popBack"
             ]
           ],
           "salida": {
             "retornos": [
-              1,
               4
             ],
             "lista": [
+              1,
               2,
               3
             ]
