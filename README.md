@@ -37,10 +37,10 @@ Son módulos ES nativos, sin paso de compilación: la carpeta se publica tal cua
 ## Agregar un lab
 
 1. Crear `ejercicios/<id>/` con:
-   - los archivos visibles (por ejemplo `list.h`, `list_interno.h` con los structs y `list.c` casi vacío);
+   - los archivos visibles (por ejemplo `list.h` con la interfaz y los structs, y `list.c` casi vacío);
    - `oculto/<ref>.c`: la implementación completa, con cada función de la interfaz entre `#ifndef ALUMNO_<funcion>` … `#endif`;
    - `oculto/ayudas.c` (opcional): funciones para los tests, que usan solo la interfaz;
-   - `ejercicio.json`: archivos (cuáles se pueden editar), funciones de la interfaz, `estructuras` (los campos de cada struct y su tipo, para las piezas del asistente), `constructores` (como `createNode`) y pasos. Cada paso tiene su enunciado, la plantilla de cada función y sus tests (`nombre`, `codigo`, `esperado`).
+   - `ejercicio.json`: archivos (cuáles se pueden editar), funciones de la interfaz, `estructuras` (los campos de cada struct y su tipo, para las piezas del asistente), `constructores` (como `createNode`) y pasos. Cada paso tiene su enunciado, la plantilla de cada función y sus tests (`nombre`, `codigo`, `esperado`). Opcional: `migrar`, pares [antes, después] que se reemplazan en lo que el estudiante tiene guardado (por ejemplo, si cambia el nombre de un .h).
 2. Agregarlo a `ejercicios/index.json`.
 3. Validarlo con gcc: `node herramientas/probar-nativo.mjs ejercicios/<id>` (con la referencia deben pasar todos). Con un archivo de estudiante como segundo argumento se puede ver qué tests fallan.
 

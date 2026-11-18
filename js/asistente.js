@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar } from './proyecto.js?v=202611181230';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar } from './proyecto.js?v=202611181234';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -96,7 +96,9 @@ function reconocer(linea, todas) {
 
 export class Asistente {
   // caja: elemento del panel; editor: Editor; obtener(): {ej, archivos}; alAgregar(): avisa que cambió list.c
-  constructor(caja, editor, obtener) {
+  // alCambiarFuncion(nombre): el cursor entró a otra función (para elegir su paso)
+  constructor(caja, editor, obtener, { alCambiarFuncion } = {}) {
+    this.alCambiarFuncion = alCambiarFuncion;
     this.caja = caja;
     this.editor = editor;
     this.obtener = obtener;
@@ -115,7 +117,7 @@ export class Asistente {
     if (this.editor.actual !== ej.alumno) return { ej, fuera: `Abre ${ej.alumno} para usar los comandos.` };
     const texto = cm.getValue(), c = cm.getCursor(), pos = cm.indexFromPos(c);
     const fn = funcionEn(texto, cm.indexFromPos({ line: c.line, ch: 0 }));   // la línea de la } final también cuenta
-    if (!fn) return { ej, texto, fuera: 'Pon el cursor dentro de una función (o elige una arriba).' };
+    if (!fn) return { ej, texto, fuera: 'Pon el cursor dentro de una función, o elige un paso y toca ✎ Escribir.' };
     const est = ej.estructuras ?? {};
     const vars = variablesEn(texto, fn, pos);
     const finLinea = cm.posFromIndex(fn.fin).line, iniLinea = cm.posFromIndex(fn.cuerpo).line;
@@ -144,10 +146,13 @@ export class Asistente {
     const ctx = this.contexto();
     const { ej, archivos } = this.obtener();
     // Selector de la función que se implementa
-    const propias = new Set(funcionesDefinidas(archivos[ej.alumno] ?? '', ej.funciones));
-    const enPasos = ej.pasos.flatMap(p => p.funciones);
-    const opciones = enPasos.map(f => `<option value="${f}" ${ctx.fn?.nombre === f ? 'selected' : ''}>${propias.has(f) ? '✎' : '+'} ${f}</option>`).join('');
-    let html = `<div class="fila"><label>Función <select class="sel-funcion"><option value="">—</option>${opciones}</select></label>`;
+    // Las funciones que ya están en el archivo, en orden: se pasa de una a otra con un toque
+    const enArchivo = funcionesDelArchivo(archivos[ej.alumno] ?? '').map(f => f.nombre).filter(f => ej.funciones.includes(f));
+    const nombreFn = ctx.fn?.nombre ?? null;
+    if (nombreFn !== this.fnAnterior) { this.fnAnterior = nombreFn; if (nombreFn) this.alCambiarFuncion?.(nombreFn); }
+    let html = '<div class="fila">';
+    if (enArchivo.length > 1) html += `<span class="funciones-archivo">${enArchivo.map(f => `<button class="fn${f === nombreFn ? ' activa' : ''}" data-fn="${f}">${f}</button>`).join('')}</span>`;
+    else if (nombreFn) html += `<b class="fn-sola">${esc(nombreFn)}</b>`;
     if (ctx.fn) html += `<span class="vars">${ctx.vars.map(v => `<code title="${esc(nombreTipo(v))}">${esc(v.nombre)}</code>`).join(' ')}</span>`;
     html += '</div>';
 
@@ -184,7 +189,7 @@ export class Asistente {
     }
     this.caja.innerHTML = html;
 
-    this.caja.querySelector('.sel-funcion').onchange = e => this.irAFuncion(e.target.value);
+    this.caja.querySelectorAll('[data-fn]').forEach(b => b.onclick = () => this.irAFuncion(b.dataset.fn));
     this.caja.querySelectorAll('.cat').forEach(b => b.onclick = () => { this.cat = b.dataset.cat; this.dibujar(); });
     this.caja.querySelectorAll('[data-p]').forEach(b => b.onclick = () => this.empezar(this.plantillasActuales[+b.dataset.p]));
     this.caja.querySelectorAll('.pieza').forEach(b => b.onclick = () => this.elegir(this.piezasActuales[+b.dataset.i]));

@@ -33,6 +33,8 @@ export function archivosGuardados(ej, originales) {
   try { guardados = JSON.parse(localStorage.getItem(clave(ej.id)) || '{}'); } catch { /* sin almacenamiento */ }
   const archivos = {};
   for (const a of ej.archivos) archivos[a.nombre] = a.editable && typeof guardados[a.nombre] === 'string' ? guardados[a.nombre] : originales[a.nombre];
+  // cambios del ejercicio que afectan lo guardado (por ejemplo, un .h que se renombró)
+  for (const a of ej.archivos) if (a.editable) for (const [antes, despues] of ej.migrar ?? []) archivos[a.nombre] = archivos[a.nombre].split(antes).join(despues);
   return archivos;
 }
 

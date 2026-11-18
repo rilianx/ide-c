@@ -1,11 +1,11 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181230';
-import { Runner } from './runner.js?v=202611181230';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181230';
-import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181230';
-import { Asistente } from './asistente.js?v=202611181230';
-import { activarDivisores } from './divisores.js?v=202611181230';
-import { correrTests, htmlResultados } from './tests.js?v=202611181230';
+import { Editor } from './editor.js?v=202611181234';
+import { Runner } from './runner.js?v=202611181234';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181234';
+import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181234';
+import { Asistente } from './asistente.js?v=202611181234';
+import { activarDivisores } from './divisores.js?v=202611181234';
+import { correrTests, htmlResultados } from './tests.js?v=202611181234';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -28,7 +28,10 @@ const editor = new Editor($('editor'), $('pestanas'), {
     if (nombre === E.ej.alumno) dibujarFunciones();
   },
 });
-const asistente = new Asistente($('asistente'), editor, () => ({ ej: E.ej, archivos }));
+const asistente = new Asistente($('asistente'), editor, () => ({ ej: E.ej, archivos }), {
+  // al entrar a una función con el cursor, se elige su paso
+  alCambiarFuncion: f => { const k = E.ej.pasos.findIndex(p => p.funciones.includes(f)); if (k >= 0 && k !== paso) elegirPaso(k, false); },
+});
 activarDivisores(document.getElementById('codigo'), () => editor.refrescar());
 
 // Letra y ajuste de líneas (se recuerdan en el navegador). En pantallas angostas, ajuste activado.

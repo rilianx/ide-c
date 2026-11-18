@@ -10,10 +10,6 @@
     {
       "nombre": "list.h",
       "editable": false
-    },
-    {
-      "nombre": "list_interno.h",
-      "editable": false
     }
   ],
   "ocultos": [
@@ -293,5 +289,11 @@
         "popCurrent": "void * popCurrent(List * list) {\n\n}\n"
       }
     }
+  ],
+  "migrar": [
+    [
+      "#include \"list_interno.h\"",
+      "#include \"list.h\""
+    ]
   ]
 }
