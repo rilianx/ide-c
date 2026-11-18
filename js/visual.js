@@ -12,7 +12,9 @@ const SEP = 58;                         // espacio entre nodos
 const X0 = 64, YL = 16, YN = 128;       // margen, fila de la List, fila de los nodos
 const CL = 70;                          // ancho de cada campo de la List
 
-export function svgLista(estado, nombre = 'L') {
+// porFila: nodos por fila antes de seguir en la de abajo (en el celular, menos).
+export function svgLista(estado, nombre = 'L', porFila = innerWidth <= 600 ? 3 : 5) {
+  const POR_FILA = Math.max(2, porFila);
   const nodos = estado?.nodos ?? [], vars = estado?.vars ?? [];
   let L = estado?.lista;
   if (L === null || L === '?' || !L) {   // sin lista: igual se dibujan los nodos de las variables
@@ -35,11 +37,6 @@ export function svgLista(estado, nombre = 'L') {
       resto = resto.filter(x => x !== r); cambio = true; break;
     }
   }
-  const pos = new Map();
-  fila.forEach((i, k) => pos.set(i, { x: X0 + k * (AN + SEP), y: YN }));
-  const fila2 = fila.length ? 120 : 0;   // si no hay cadena desde head, los demás van en la primera fila
-  resto.forEach((i, k) => pos.set(i, { x: X0 + k * (AN + SEP), y: YN + fila2 }));
-
   // variables (nuevo, aux…): etiquetas amarillas debajo de su nodo
   const porNodo = new Map(), sueltas = [];
   for (const v of vars) {
@@ -47,9 +44,16 @@ export function svgLista(estado, nombre = 'L') {
     else sueltas.push(`${v.nombre} = ${v.ptr === null ? 'NULL' : '? (basura)'}`);
   }
   const conVars = porNodo.size > 0, BAJO = conVars ? 44 : 0;
-  if (conVars && fila2) resto.forEach(i => { pos.get(i).y += BAJO; });
-  const yUltima = resto.length && fila2 ? YN + 120 + BAJO : YN;
-  const ancho = Math.max(X0 + 3 * CL + 120, X0 + Math.max(fila.length, resto.length, 1) * (AN + SEP) + 20, resto.length ? 470 : 0);
+
+  // Posiciones: la lista en filas de POR_FILA nodos (en zigzag: al llenarse una fila, next baja
+  // y vuelve al comienzo de la siguiente); los nodos fuera de la lista, en una fila aparte abajo.
+  const pos = new Map(), ALTO_FILA = AL + 64 + BAJO;
+  fila.forEach((i, k) => pos.set(i, { x: X0 + (k % POR_FILA) * (AN + SEP), y: YN + Math.floor(k / POR_FILA) * ALTO_FILA, k }));
+  const filas = Math.ceil(fila.length / POR_FILA);
+  const yResto = fila.length ? YN + filas * ALTO_FILA : YN;   // si no hay cadena desde head, los demás van en la primera fila
+  resto.forEach((i, k) => pos.set(i, { x: X0 + k * (AN + SEP), y: yResto }));
+  const yUltima = resto.length ? yResto : YN + Math.max(0, filas - 1) * ALTO_FILA;
+  const ancho = Math.max(X0 + 3 * CL + 120, X0 + Math.max(Math.min(fila.length, POR_FILA), resto.length, 1) * (AN + SEP) + 30, resto.length ? 470 : 0);
   const alto = nodos.length ? yUltima + AL + 30 + BAJO + (sueltas.length ? 22 : 0) : YL + AL + 46 + (sueltas.length ? 22 : 0);
   const s = [];
 
@@ -101,7 +105,12 @@ export function svgLista(estado, nombre = 'L') {
     else {
       const t = pos.get(n.next), ox = xn + CN / 2;
       s.push(`<circle cx="${ox}" cy="${yn}" r="3" class="punto"/>`);
+      const pi = pos.get(i);
       if (t.y === y && t.x > x && t.x - x === AN + SEP) flecha(`M${ox},${yn} L${t.x - 1},${yn}`, 'next');   // al vecino de la derecha
+      else if (pi.k != null && t.k === pi.k + 1) {   // fin de fila: baja y vuelve al comienzo de la siguiente
+        const xr = x + AN + 14, ym = t.y - 30;
+        flecha(`M${ox},${yn} L${xr},${yn} L${xr},${ym} L${t.x + 10},${ym} L${t.x + 10},${t.y - 1}`, 'next');
+      }
       else {   // a otro lado: arco por arriba
         const tx = t.x + 8, ty = t.y, alto = 28 + Math.abs(t.x - x) / 8;
         flecha(`M${ox},${yn} C${ox + 10},${y - alto} ${tx},${ty - alto} ${tx},${ty - 1}`, 'next');
@@ -114,7 +123,12 @@ export function svgLista(estado, nombre = 'L') {
     else {
       const t = pos.get(n.prev), ox = xp + CP / 2;
       s.push(`<circle cx="${ox}" cy="${yp}" r="3" class="punto"/>`);
+      const pi = pos.get(i);
       if (t.y === y && x - t.x === AN + SEP) flecha(`M${ox},${yp} C${ox - 14},${yp} ${t.x + AN + 16},${yp} ${t.x + AN + 1},${yp}`, 'prev');   // al vecino de la izquierda
+      else if (pi.k != null && t.k === pi.k - 1) {   // comienzo de fila: sube al último de la fila anterior
+        const xl = x - 14, ym = y - 16, xt = t.x + AN + 26, yt = t.y + AL - 12;
+        flecha(`M${ox},${yp} L${xl},${yp} L${xl},${ym} L${xt},${ym} L${xt},${yt} L${t.x + AN + 1},${yt}`, 'prev');
+      }
       else {   // a otro lado: arco por abajo
         const tx = t.x + AN - 8, ty = t.y + AL, bajo = 30 + Math.abs(t.x - x) / 8;
         flecha(`M${ox},${yp} C${ox - 10},${y + AL + bajo} ${tx},${ty + bajo} ${tx},${ty + 1}`, 'prev');
@@ -130,7 +144,7 @@ export function svgLista(estado, nombre = 'L') {
     s.push(`<text x="${cx}" y="${ty + 10}" class="var">${esc(nombres.join(', '))}</text>`);
   }
   if (sueltas.length) s.push(`<text x="${X0}" y="${alto - 10}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
-  if (resto.length && fila.length) s.push(`<text x="${X0}" y="${YN + 104 + BAJO}" class="nota-svg">fuera de la lista (no se alcanzan desde head siguiendo next):</text>`);
+  if (resto.length && fila.length) s.push(`<text x="${X0}" y="${yResto - 16}" class="nota-svg">fuera de la lista (no se alcanzan desde head siguiendo next):</text>`);
   if (!nodos.length) s.push(`<text x="${X0}" y="${YL + AL + 30}" class="nota-svg">(sin nodos)</text>`);
 
   const marca = c => `<marker id="punta-${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta ${c}"/></marker>`;
