@@ -85,6 +85,7 @@ main#codigo.sin-izq .pasos, main#codigo.sin-der .panel { overflow: hidden; paddi
 .CodeMirror-cursor { border-left-color: var(--texto); }
 .CodeMirror-activeline-background { background: color-mix(in srgb, var(--acento) 6%, transparent); }
 .linea-error { background: var(--mal-bg) !important; }
+.sel-bloque { background: color-mix(in srgb, var(--acento) 13%, transparent); }
 .linea-ejecucion { background: color-mix(in srgb, #f5c400 35%, transparent) !important; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .cm-keyword { color: #ff7b72; } :root:not([data-theme="light"]) .cm-variable-3, :root:not([data-theme="light"]) .cm-type { color: #79c0ff; }
@@ -112,6 +113,8 @@ main#codigo.sin-izq .pasos, main#codigo.sin-der .panel { overflow: hidden; paddi
 .asistente .fn-actual { font-family: var(--mono); }
 .asistente .linea-actual { padding-bottom: 6px; border-bottom: 1px dashed var(--borde); margin-bottom: 4px; }
 .asistente .linea-actual code { font-family: var(--mono); font-size: calc(var(--letra, 14px) - 1px); background: color-mix(in srgb, var(--texto) 6%, transparent); padding: 1px 6px; border-radius: 4px; white-space: pre-wrap; }
+.asistente .linea-actual .grupo { display: inline-flex; gap: 3px; flex-wrap: wrap; }
+.asistente .condicion { margin: 2px 0 4px; }
 .asistente .linea-actual button { padding: 2px 8px; font-size: 13px; }
 .asistente .lleno { cursor: pointer; border-bottom: 2px dotted var(--acento); }
 .asistente .hueco { display: inline-block; min-width: 1.4em; text-align: center; border-bottom: 2px solid var(--borde); color: var(--suave); }

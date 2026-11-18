@@ -58,6 +58,8 @@ Se recorre **paso a paso**, como un depurador: **Siguiente ▶** ejecuta una lí
 
 Cómo funciona: `js/proyecto.js` (`instrumentar`) agrega `__volcar(línea, L);` después de cada instrucción del test; `oculto/vis.c` imprime una línea `@@VIS` con la lista en JSON (revisa cada puntero antes de seguirlo); `js/visual.js` la dibuja en SVG. En `ejercicio.json`, la clave `visual` indica el archivo del volcado, la variable y su tipo.
 
+En el asistente, tocar una línea la **selecciona** (si abre un bloque, el bloque completo con su else); ＋/− agregan o quitan la instrucción siguiente; **↑ ↓** mueven la selección (al chocar con un bloque entran en él, al llegar al borde de su bloque salen, ajustando la sangría) y 🗑 la borra. En un `if`/`while` se puede **agregar a la condición** con `&&` o `||`.
+
 El asistente sugiere nombres de variables sacados del código base (los `.h` y el código del curso: `nuevo`, `aux`, `siguiente`…), y después algunos genéricos.
 
 Dentro de las funciones del estudiante se ven también **sus variables**: los punteros a nodos como etiquetas amarillas en el dibujo, y los enteros, `double` y datos `void *` (con el entero al que apuntan) en una tabla. Antes de cada `return` se guarda lo que retorna y se destaca («↩ retorna el dato 8»).

@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar } from './proyecto.js?v=202611181829';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar } from './proyecto.js?v=202611181844';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -122,6 +122,8 @@ export class Asistente {
     this.armando = null;   // {plantilla, valores}
     let t = null;
     editor.cm.on('cursorActivity', () => {
+      // si el cursor sale de la selección, la selección vuelve a ser la unidad del cursor
+      if (this.sel) { const n = editor.cm.getCursor().line; if (n < this.sel.ini || n > this.sel.fin) this.sel = null; }
       // si se estaba editando una línea y el cursor se fue a otra, se cancela
       if (this.armando?.editando != null && editor.cm.getCursor().line !== this.armando.linea) this.armando = null;
       clearTimeout(t); t = setTimeout(() => this.dibujar(), 120); });
@@ -194,12 +196,27 @@ export class Asistente {
         this.nombresDe = ej.id;
       }
       const todas = plantillas(ctx.est, ej.constructores ?? [], ctx.fn.retorno, this.nombres);
-      if (ctx.linea) {
+      const sel = ctx.linea ? this.seleccion() : null;
+      this.editor.marcarSeleccion(sel ? sel.ini : null, sel?.fin);
+      if (ctx.linea && sel) {
         this.lineaActual = { ...ctx.linea, rec: reconocer(ctx.linea.texto, todas) };
-        html += `<div class="fila linea-actual"><span class="nota">Línea ${ctx.linea.n + 1}:</span><code>${esc(ctx.linea.texto.trim())}</code>`
-          + (this.lineaActual.rec ? '<button class="editar-linea" title="Cambiar una parte de esta línea">✎ Editar</button>' : '')
-          + '<button class="borrar-linea" title="Borrar esta línea (si abre un bloque { }, el bloque completo)">🗑 Borrar</button>'
-          + '<button class="deshacer" title="Deshacer (Ctrl+Z)">↶</button></div>';
+        const n = sel.fin - sel.ini + 1;
+        const que = n === 1 ? `Línea ${sel.ini + 1}` : `Líneas ${sel.ini + 1}–${sel.fin + 1}`;
+        html += `<div class="fila linea-actual"><span class="nota">${que}:</span>`
+          + (n === 1 ? `<code>${esc(ctx.linea.texto.trim())}</code>` : `<code>${esc(this.editor.cm.getLine(sel.ini).trim())} …</code>`)
+          + (this.lineaActual.rec && n === 1 ? '<button class="editar-linea" title="Cambiar una parte de esta línea">✎ Editar</button>' : '')
+          + '<span class="grupo"><button class="mover" data-dir="-1" title="Mover arriba (si choca con un bloque, entra en él; al borde de su bloque, sale)">↑</button>'
+          + '<button class="mover" data-dir="1" title="Mover abajo">↓</button>'
+          + '<button class="ampliar" data-mas="1" title="Agregar a la selección la instrucción (o bloque) siguiente">＋</button>'
+          + (this.finUnidad(sel.m, sel.ini) < sel.fin ? '<button class="ampliar" data-mas="0" title="Quitar la última de la selección">−</button>' : '')
+          + `<button class="borrar-sel" title="Borrar lo seleccionado">🗑</button>`
+          + '<button class="deshacer" title="Deshacer (Ctrl+Z)">↶</button></span></div>';
+        // en un if/while: agregar a la condición con && o ||
+        if (/^(\}\s*else\s+)?(if|while)\s*\(/.test(ctx.linea.texto.trim()) && n === 1 || /^(\}\s*else\s+)?(if|while)\s*\(/.test(this.editor.cm.getLine(sel.ini).trim()) && sel.ini === ctx.linea.n) {
+          this.condiciones = [['&&', '!='], ['&&', '=='], ['||', '!='], ['||', '==']];
+          html += `<div class="fila condicion"><span class="nota">Agregar a la condición:</span>${this.condiciones.map(([o, c], i) =>
+            `<button class="chip" data-cond="${i}">${o} _ ${c} NULL</button>`).join('')}</div>`;
+        }
       } else this.lineaActual = null;
       const cats = [...new Set(todas.map(p => p.cat))];
       if (!cats.includes(this.cat)) this.cat = cats[0];
@@ -216,6 +233,14 @@ export class Asistente {
     const q = s => this.caja.querySelector(s);
     if (q('.editar-linea')) q('.editar-linea').onclick = () => this.editarLinea();
     if (q('.borrar-linea')) q('.borrar-linea').onclick = () => this.borrarLinea();
+    if (q('.borrar-sel')) q('.borrar-sel').onclick = () => this.borrarSeleccion();
+    this.caja.querySelectorAll('.mover').forEach(b => b.onclick = () => this.mover(+b.dataset.dir));
+    this.caja.querySelectorAll('.ampliar').forEach(b => b.onclick = () => this.ampliar(b.dataset.mas === '1'));
+    this.caja.querySelectorAll('[data-cond]').forEach(b => b.onclick = () => {
+      const [op, cmp] = this.condiciones[+b.dataset.cond];
+      this.empezar({ etiqueta: `${op} _ ${cmp} NULL`, huecos: [{ k: 'expr', tipo: () => null, sinNull: true, soloStructs: true }],
+        condicion: { op, cmp, linea: this.editor.cm.getCursor().line }, armar: v => [] });
+    });
     if (q('.deshacer')) q('.deshacer').onclick = () => { this.editor.cm.undo(); this.editor.cm.focus(); };
     const c = this.caja.querySelector('.cancelar'); if (c) c.onclick = () => { this.armando = null; this.dibujar(); };
     // los botones no le quitan el foco al editor
@@ -247,6 +272,17 @@ export class Asistente {
   terminar() {
     const { plantilla, valores } = this.armando;
     this.armando = null;
+    if (plantilla.condicion) {   // «if (a)» → «if (a && b != NULL)»
+      const { op, cmp, linea } = plantilla.condicion, cm = this.editor.cm, L = cm.getLine(linea), m = enmascarar(L);
+      const r = /\b(if|while)\s*\(/.exec(m);
+      if (r) {
+        let p = 0, k = r.index + r[0].length - 1;
+        for (; k < m.length; k++) { if (m[k] === '(') p++; else if (m[k] === ')' && !--p) break; }
+        if (k < m.length) cm.replaceRange(` ${op} ${valores[0].texto} ${cmp} NULL`, { line: linea, ch: k });
+      }
+      cm.setCursor({ line: linea, ch: cm.getLine(linea).length });
+      return this.dibujar();
+    }
     this.insertar(plantilla.armar(valores), plantilla.dentro, plantilla.sinoDe);
     this.dibujar();
   }
@@ -262,6 +298,117 @@ export class Asistente {
     // para editar, la línea no cuenta su propia declaración
     const ctx = this.contexto();
     this.armando = { plantilla, valores, linea: l.n, editando: primero < 0 ? 0 : primero, ctxLinea: { ...ctx, exprs: l.exprs } };
+    this.dibujar();
+  }
+
+  // ---- Selección (una instrucción o un bloque completo) para mover o borrar ----
+
+  // Líneas enmascaradas y límites del cuerpo de la función donde está el cursor (null si no hay).
+  cuerpoActual() {
+    const cm = this.editor.cm, texto = cm.getValue();
+    const fn = funcionEn(texto, cm.indexFromPos({ line: cm.getCursor().line, ch: 0 }));
+    if (!fn) return null;
+    return { m: enmascarar(texto).split('\n'), cab: cm.posFromIndex(fn.cuerpo).line, cierre: cm.posFromIndex(fn.fin).line };
+  }
+  // Línea donde se cierra la última «{» de la línea k.
+  cierreDe(m, k) {
+    let p = 1;
+    for (let j = k + 1; j < m.length; j++) for (const ch of m[j]) { if (ch === '{') p++; else if (ch === '}' && !--p) return j; }
+    return k;
+  }
+  // Fin de la unidad que empieza en n: la misma línea, o la } que cierra su bloque (siguiendo los else).
+  finUnidad(m, n) {
+    if (!/\{$/.test(m[n].trim())) return n;
+    let j = this.cierreDe(m, n);
+    while (/^\}\s*else\b.*\{$/.test(m[j].trim())) j = this.cierreDe(m, j);
+    return j;
+  }
+  // Comienzo de la unidad que contiene la línea n (si n es «}» o «} else {», el if de ese bloque).
+  inicioUnidad(m, n, cab) {
+    let k = n;
+    while (/^\}/.test(m[k].trim())) {
+      let p = 1, abre = -1;
+      for (let j = k - 1; j > cab && abre < 0; j--) {
+        for (let x = m[j].length - 1; x >= 0; x--) {
+          if (m[j][x] === '}') p++;
+          else if (m[j][x] === '{' && !--p) { abre = j; break; }
+        }
+      }
+      if (abre < 0) return n;
+      k = abre;
+    }
+    return k;
+  }
+  // La selección: la unidad del cursor (o la que se armó con ＋/−).
+  seleccion() {
+    const b = this.cuerpoActual();
+    if (!b) return null;
+    const n = this.editor.cm.getCursor().line;
+    if (n <= b.cab || n >= b.cierre) return null;
+    // se mantiene si se armó con ＋ o recién se movió (fija); si no, es la unidad de la línea tocada
+    if (this.sel?.fija && n >= this.sel.ini && n <= this.sel.fin && this.sel.fin < b.cierre) return { ...this.sel, ...b };
+    const ini = this.inicioUnidad(b.m, n, b.cab);
+    this.sel = { ini, fin: this.finUnidad(b.m, ini) };
+    return { ...this.sel, ...b };
+  }
+  ampliar(mas) {
+    const s = this.seleccion();
+    if (!s) return;
+    if (mas) {
+      const sig = s.fin + 1;
+      if (sig >= s.cierre || /^\}/.test(s.m[sig].trim())) return;   // termina el bloque: no hay siguiente
+      this.sel.fin = this.finUnidad(s.m, sig);
+      this.sel.fija = true;
+    } else {
+      const unidades = [];
+      for (let k = s.ini; k <= s.fin; k = this.finUnidad(s.m, k) + 1) unidades.push(k);
+      if (unidades.length > 1) this.sel.fin = unidades.at(-1) - 1;
+    }
+    this.dibujar();
+  }
+  // Mueve la selección: arriba/abajo de la instrucción vecina; si choca con un bloque, entra en él;
+  // si llega al borde de su bloque, sale (la sangría se ajusta).
+  mover(dir) {
+    const s = this.seleccion();
+    if (!s) return;
+    const cm = this.editor.cm, L = cm.getValue().split('\n'), m = s.m;
+    const bloque = L.slice(s.ini, s.fin + 1);
+    let destino, sangria = 0;   // destino: índice (en L sin el bloque) donde se inserta
+    const t = k => m[k].trim();
+    if (dir < 0) {
+      const ant = s.ini - 1;
+      if (ant <= s.cab) return;
+      if (/\{$/.test(t(ant))) { destino = this.inicioUnidad(m, ant, s.cab); sangria = -1; }   // primera del bloque: sale arriba
+      else if (/^\}/.test(t(ant))) { destino = ant; sangria = 1; }   // bloque de arriba: entra, al final
+      else destino = ant;
+    } else {
+      const sig = s.fin + 1;
+      if (sig >= s.cierre) return;
+      if (/^\}\s*else\b.*\{$/.test(t(sig))) destino = sig + 1 - bloque.length;   // pasa al else, al comienzo
+      else if (/^\}/.test(t(sig))) {   // última del bloque: sale abajo, después de la }
+        if (sig >= s.cierre) return;
+        destino = sig + 1 - bloque.length; sangria = -1;
+      }
+      else if (/\{$/.test(t(sig))) { destino = sig + 1 - bloque.length; sangria = 1; }   // bloque de abajo: entra, al comienzo
+      else destino = sig + 1 - bloque.length;
+    }
+    const nuevo = bloque.map(l => sangria > 0 ? (l.trim() ? '    ' + l : l) : sangria < 0 ? l.replace(/^ {1,4}/, '') : l);
+    const resto = [...L.slice(0, s.ini), ...L.slice(s.fin + 1)];
+    resto.splice(destino, 0, ...nuevo);
+    const a = Math.min(s.ini, destino), b = Math.max(s.fin, destino + nuevo.length - 1);
+    cm.replaceRange(resto.slice(a, b + 1).join('\n'), { line: a, ch: 0 }, { line: b, ch: L[b].length });
+    this.sel = { ini: destino, fin: destino + nuevo.length - 1, fija: true };
+    cm.setCursor({ line: destino, ch: cm.getLine(destino).length });
+    this.dibujar();
+  }
+  borrarSeleccion() {
+    const s = this.seleccion();
+    if (!s) return;
+    const cm = this.editor.cm;
+    const desde = s.ini > 0 ? { line: s.ini - 1, ch: cm.getLine(s.ini - 1).length } : { line: 0, ch: 0 };
+    cm.replaceRange('', desde, { line: s.fin, ch: cm.getLine(s.fin).length });
+    this.sel = null;
+    cm.setCursor({ line: Math.max(0, s.ini - 1), ch: cm.getLine(Math.max(0, s.ini - 1)).length });
     this.dibujar();
   }
 

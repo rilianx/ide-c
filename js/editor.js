@@ -72,6 +72,16 @@ export class Editor {
 
   refrescar() { this.cm.refresh(); }
 
+  // Marca las líneas seleccionadas en el asistente (ini..fin, desde 0), o las desmarca con null.
+  marcarSeleccion(ini, fin) {
+    if (this.sel) for (let k = this.sel.ini; k <= this.sel.fin; k++) this.sel.doc.removeLineClass(k, 'background', 'sel-bloque');
+    this.sel = null;
+    if (ini == null) return;
+    const doc = this.cm.getDoc();
+    for (let k = ini; k <= fin; k++) doc.addLineClass(k, 'background', 'sel-bloque');
+    this.sel = { doc, ini, fin };
+  }
+
   // Marca (o desmarca, con linea null) la línea que se está ejecutando en la visualización.
   marcarEjecucion(nombre, linea) {
     if (this.marca) { this.marca.doc.removeLineClass(this.marca.linea, 'background', 'linea-ejecucion'); this.marca = null; }
