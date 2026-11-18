@@ -250,3 +250,5 @@ svg.memoria .flecha.current { stroke: var(--c-current); stroke-dasharray: 5 3; }
 #vis-panel .paso-cuerpo { margin-top: 4px; gap: 8px; }
 #vis-panel .paso-codigo, #vis-panel .paso-dibujo { padding: 6px 8px; }
 #vis-panel .codigo-paso { font-size: 12px; line-height: 1.4; }
+
+.compilacion .original { color: var(--suave); font-size: 12px; font-family: var(--mono); }

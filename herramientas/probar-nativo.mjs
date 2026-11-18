@@ -12,7 +12,7 @@ if (ALUMNO) archivos[ej.alumno] = readFileSync(ALUMNO, 'utf8');
 const { descifrar, CLAVE_INTERNA } = await import(new URL('../js/cifrado.js', import.meta.url));
 const ocultos = {}; for (const o of ej.ocultos ?? []) { const t = readFileSync(EJ + '/' + o, 'utf8'); ocultos[o] = o.endsWith('.enc') ? await descifrar(t, CLAVE_INTERNA) : t; }
 const tests = ej.pasos.flatMap((p, k) => p.tests.map(t => ({ ...t, paso: k + 1 })));
-const prog = P.armarTests(ej, archivos, ocultos, tests);
+const prog = P.armarTests(ej, archivos, ocultos, tests, true);   // con la revisión de punteros, como la app
 rmSync(OUT, { recursive: true, force: true }); mkdirSync(OUT, { recursive: true });
 for (const [n, c] of Object.entries(prog.files)) writeFileSync(OUT + '/' + n, c);
 writeFileSync(OUT + '/nativo.c', `#include "__programa.c"\n#include <string.h>\nint main(int c, char **v) {\n  switch (atoi(v[1])) {\n${tests.map((t, i) => `  case ${i}: __test_${i}(); break;`).join('\n')}\n  }\n  return 0;\n}\n`);
@@ -23,7 +23,9 @@ console.log('propias del estudiante:', prog.propias.join(', ') || '(ninguna)');
 let ok = 0;
 tests.forEach((t, i) => {
   const r = spawnSync(OUT + '/nativo', [String(i)], { encoding: 'utf8', timeout: 3000 });
-  const bien = r.status === 0 && P.mismaSalida(t.esperado, r.stdout);
+  const fa = /@@FALLA (\d+) (\w+)/.exec(r.stdout);
+  if (fa) r.stdout = r.stdout.slice(0, fa.index) + `[revisión: ${fa[2]} en ${ej.alumno}:${fa[1]}]`;
+  const bien = !fa && r.status === 0 && P.mismaSalida(t.esperado, r.stdout);
   if (bien) ok++;
   else console.log(`✗ paso ${t.paso} · ${t.nombre}\n   esperado: ${JSON.stringify(t.esperado)}\n   obtenido: ${JSON.stringify(r.stdout)} ${r.signal || (r.status ? 'status ' + r.status : '')}`);
 });

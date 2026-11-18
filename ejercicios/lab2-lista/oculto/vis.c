@@ -137,6 +137,18 @@ static void __volcarCon(const char * marca, int linea, List * L, int nv, const c
 int __voy(int n) { fflush(stdout); printf("@@L %d\n", n); fflush(stdout); return 0; }
 int __voyf(int n) { fflush(stdout); printf("@@LF %d\n", n); fflush(stdout); return 0; }
 
+// Antes de cada «p->campo» en las funciones del estudiante: si p es NULL, basura o un nodo
+// liberado, se avisa y se detiene el programa (el intérprete no siempre lo detecta solo).
+void * __ck(void * p, int linea) {
+    const char * tipo = p == NULL ? "NULL" : !__valido(p, 1) ? "BASURA" : __libre(p) ? "LIBERADO" : 0;
+    if (!tipo) return p;
+    fflush(stdout);
+    printf("@@FALLA %d %s\n", linea, tipo);
+    fflush(stdout);
+    exit(1);
+    return p;
+}
+
 // Después de cada línea del test.
 int __volcar(int linea, List * L) { __volcarCon("VIS", linea, L, 0, 0, 0); return 0; }
 

@@ -128,6 +128,30 @@ export function agregarPlantilla(texto, paso, cuales = paso.funciones) {
   return `${texto}${sep}// ${paso.titulo}\n${faltan.map(f => paso.plantillas[f]).join('\n')}`;
 }
 
+// Revisión de punteros para los tests: __ck avisa (con una marca en la salida) y detiene el
+// programa si se sigue un puntero NULL o con basura. En la visualización la define __vis.c.
+const CK = `#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <unistd.h>
+void * __ck(void * p, int linea) {
+    uintptr_t a = (uintptr_t)p;
+    const char * tipo = p == NULL ? "NULL" : (a % sizeof(void *) || a < 4096 || a >= (uintptr_t)sbrk(0)) ? "BASURA" : 0;
+    if (!tipo) return p;
+    fflush(stdout);
+    printf("@@FALLA %d %s\\n", linea, tipo);
+    fflush(stdout);
+    exit(1);
+    return p;
+}
+`;
+
+// Agrega la revisión de punteros a las funciones que escribió el estudiante.
+export function conRevisionDePunteros(ej, texto) {
+  for (const f of funcionesPropias(ej, texto)) texto = instrumentarFuncion(texto, f, ej, true, true);
+  return texto;
+}
+
 const REF = '__ref.c', AYUDAS = '__ayudas.c', TESTS = '__tests.c', PROGRAMA = '__programa.c';
 
 // Los #define que sacan de la referencia las funciones que el estudiante escribió.
@@ -145,12 +169,17 @@ function base(ej, archivos, ocultos) {
 }
 
 // Programa para los tests: cada test es una función __test_N; se llaman una por una.
-export function armarTests(ej, archivos, ocultos, tests) {
+// revision: con la revisión de punteros en las funciones del estudiante (si se puede compilar así).
+export function armarTests(ej, archivos, ocultos, tests, revision = false) {
   const files = base(ej, archivos, ocultos);
+  if (revision && ej.estructuras) {
+    files[ej.alumno] = conRevisionDePunteros(ej, files[ej.alumno] ?? '');
+    files['__ck.c'] = CK;
+  }
   const d = defines(ej, archivos);
   if (files[ej.alumno] != null) files[ej.alumno] = sinPlantillas(ej, files[ej.alumno]);
   files[TESTS] = tests.map((t, i) => `void __test_${i}(void) {\n${t.codigo}\n}\n`).join('\n');
-  files[PROGRAMA] = `${d.texto}#include "${ej.alumno}"\n#include "${REF}"\n` +
+  files[PROGRAMA] = (files['__ck.c'] ? 'void * __ck(void *, int);\n' : '') + `${d.texto}#include "${ej.alumno}"\n#include "${REF}"\n` + (files['__ck.c'] ? '#include "__ck.c"\n' : '') +
     (ej.ayudas ? `#include "${AYUDAS}"\n` : '') + `#include "${TESTS}"\n`;
   return { files, propias: d.propias, prelude: `#include "${PROGRAMA}"`,
     calls: tests.map((t, i) => ({ id: i, code: `__test_${i}();` })) };
@@ -246,6 +275,28 @@ function condicionConVolcado(L, m, ex, soloIf = null) {
   return `${L.slice(0, s1 + 1)} (${ex}, ${L.slice(s1 + 1, s2).trim()})${L.slice(s2)}`;
 }
 
+// Revisión de punteros: en la línea, cada «a->campo» (con «a» de un tipo conocido: List *, Node *…)
+// pasa a «((Tipo *)__ck((void *)(a), n))->campo», que detiene el programa si «a» es NULL, basura o
+// un nodo liberado (el intérprete no siempre lo detecta). tipos: Map variable → tipo; est: los structs.
+export function conRevision(L, n, tipos, est) {
+  const m = enmascarar(L);
+  const cambios = [];
+  for (const r of m.matchAll(/\b([A-Za-z_]\w*)((?:\s*->\s*[A-Za-z_]\w*)+)/g)) {
+    if (/(->|\.)\s*$/.test(m.slice(0, r.index))) continue;   // es parte de otra expresión
+    let tipo = tipos.get(r[1]);
+    if (!tipo || !est[tipo]) continue;
+    let expr = r[1];
+    for (const campo of r[2].split('->').slice(1).map(s => s.trim())) {
+      if (!tipo || !est[tipo]) { expr += `->${campo}`; tipo = null; continue; }
+      expr = `((${tipo} *)__ck((void *)(${expr}), ${n}))->${campo}`;
+      tipo = est[tipo][campo];
+    }
+    cambios.push([r.index, r.index + r[0].length, expr]);
+  }
+  for (const [a, b, e] of cambios.reverse()) L = L.slice(0, a) + e + L.slice(b);
+  return L;
+}
+
 // Test: agrega «__volcar(n, L)» después de cada instrucción (desde que L existe) y en la condición
 // de cada for/while (con -n). n es el número de línea del test (desde 1).
 export function instrumentar(codigo, variable) {
@@ -266,7 +317,8 @@ export function instrumentar(codigo, variable) {
 // Agrega volcados dentro de la función `nombre` del estudiante: al entrar, después de cada
 // instrucción (antes de cada return) y en la condición de cada for/while, con la lista y las
 // variables Node * visibles. No agrega líneas: los números de línea de list.c siguen valiendo.
-export function instrumentarFuncion(texto, nombre, ej) {
+// soloRevision: no agrega volcados ni marcas, solo la revisión de punteros (para los tests).
+export function instrumentarFuncion(texto, nombre, ej, revisar = true, soloRevision = false) {
   const fn = funcionesDelArchivo(texto).find(f => f.nombre === nombre);
   if (!fn) return texto;
   const v = ej.visual, nodo = Object.keys(ej.estructuras ?? {}).find(t => t !== v.tipo);
@@ -281,24 +333,39 @@ export function instrumentarFuncion(texto, nombre, ej) {
     return `__volcarv(${n}, ${lista}, ${ns.length}${ns.map(x => `, "${x.nombre}", (void *)${x.nombre}`).join('')})`;
   };
   const decl = new RegExp(`\\b(${v.tipo}|${nodo})\\s*\\*\\s*([A-Za-z_]\\w*)\\s*(?=[=;,])`, 'g');
+  if (l0 === l1) {   // toda la función en una línea: solo se revisan sus punteros
+    if (!revisar) return texto;
+    const ini = fn.cuerpo - (texto.lastIndexOf('\n', fn.cuerpo - 1) + 1), fin = ini + (fn.fin - fn.cuerpo);
+    const L = lineas[l0];
+    lineas[l0] = L.slice(0, ini) + conRevision(L.slice(ini, fin), l0 + 1, new Map(vars.map(x => [x.nombre, x.tipo])), ej.estructuras ?? {}) + L.slice(fin);
+    return lineas.join('\n');
+  }
   let prof = 1;
   for (let i = l0; i < l1; i++) {
     let linea = m[i];
     if (i === l0) {   // la línea de la cabecera: el volcado «al entrar» va justo después de la {
       const c = fn.cuerpo - (texto.lastIndexOf('\n', fn.cuerpo - 1) + 1);
-      lineas[i] = lineas[i].slice(0, c) + ' ' + volcado(i + 1) + ';' + lineas[i].slice(c);
+      if (!soloRevision) lineas[i] = lineas[i].slice(0, c) + ' ' + volcado(i + 1) + ';' + lineas[i].slice(c);
       linea = m[i].slice(c);
     }
     const antes = prof;
     const sinParentesis = linea.replace(/\([^()]*\)/g, x => ' '.repeat(x.length)).replace(/\([^()]*\)/g, x => ' '.repeat(x.length));
     const nuevas = [...sinParentesis.matchAll(decl)].map(r => ({ nombre: r[2], tipo: r[1], prof: antes }));   // no las de un for (...)
-    if (i === l0 || !linea.trim()) { vars.push(...nuevas); continue; }
+    if (i === l0 || !linea.trim()) {
+      vars.push(...nuevas);
+      if (i === l0 && revisar && linea.trim()) {   // función en una sola línea: igual se revisan sus punteros
+        const c = lineas[i].length - linea.length;
+        lineas[i] = lineas[i].slice(0, c) + conRevision(lineas[i].slice(c), i + 1, new Map(vars.map(x => [x.nombre, x.tipo])), ej.estructuras ?? {});
+      }
+      continue;
+    }
     let L = lineas[i], M = m[i];
-    const c = condicionConVolcado(L, M, `__voyf(${i + 1}), ${volcado(-(i + 1))}`, `__voyf(${i + 1})`);
+    const c = soloRevision ? null : condicionConVolcado(L, M, `__voyf(${i + 1}), ${volcado(-(i + 1))}`, `__voyf(${i + 1})`);
     if (c) { L = c; M = enmascarar(c); }
     for (const ch of linea) { if (ch === '{') prof++; else if (ch === '}') { prof--; vars = vars.filter(x => x.prof <= prof); } }
     vars.push(...nuevas);   // después de la línea que las declara
-    lineas[i] = conVolcado(L, M, volcado(i + 1) + ';', `__voyf(${i + 1});`) ?? L;
+    lineas[i] = soloRevision ? L : conVolcado(L, M, volcado(i + 1) + ';', `__voyf(${i + 1});`) ?? L;
+    if (revisar) lineas[i] = conRevision(lineas[i], i + 1, new Map(vars.map(x => [x.nombre, x.tipo])), ej.estructuras ?? {});
   }
   return lineas.join('\n');
 }
@@ -316,7 +383,7 @@ export function armarVisual(ej, archivos, ocultos, test, detalle = null) {
   const h = ej.archivos.find(a => a.nombre.endsWith('.h'))?.nombre;
   // malloc/calloc/free pasan por __vis.c, para saber qué nodos se liberaron
   prog.files['__programa.c'] = (h ? `#include "${h}"\n` : '') + `int __volcarv(int, ${v.tipo} *, int, ...);\n`
-    + 'int __voy(int);\nint __voyf(int);\n'
+    + 'int __voy(int);\nint __voyf(int);\nvoid * __ck(void *, int);\n'
     + 'void __liberar(void *);\nvoid * __reservar(unsigned long);\nvoid * __reservarc(unsigned long, unsigned long);\n'
     + '#define free(p) __liberar(p)\n#define malloc(n) __reservar(n)\n#define calloc(a, b) __reservarc(a, b)\n'
     + prog.files['__programa.c'] + '#include "__vis.c"\n';
@@ -328,8 +395,10 @@ export function armarVisual(ej, archivos, ocultos, test, detalle = null) {
 // salida: lo que el programa había impreso hasta ese momento).
 export function leerVolcados(stdout) {
   const cuadros = [], lineas = (stdout ?? '').split('\n');
-  let out = '', ultima = null;
+  let out = '', ultima = null, falla = null;
   lineas.forEach((l, k) => {
+    const fa = /@@FALLA (\d+) (\w+)$/.exec(l);   // __ck detuvo el programa
+    if (fa) { out += l.slice(0, fa.index); falla = { dentro: true, linea: +fa[1], tipo: fa[2] }; return; }
     const mk = /@@(LF?) (\d+)$/.exec(l);   // marca «ahora se ejecuta la línea n»
     if (mk) { out += l.slice(0, mk.index); ultima = { dentro: mk[1] === 'LF', linea: +mk[2] }; return; }
     const i = l.search(/@@VISF? -?\d+ \{/);   // puede venir después de un printf sin \n
@@ -338,5 +407,5 @@ export function leerVolcados(stdout) {
     const m = /^@@(VISF?) (-?\d+) (.*)$/.exec(l.slice(i));
     try { cuadros.push({ dentro: m[1] === 'VISF', linea: Math.abs(+m[2]), condicion: +m[2] < 0, estado: JSON.parse(m[3]), salida: out }); } catch { /* volcado cortado */ }
   });
-  return { salida: out, cuadros, ultima };   // ultima: la última línea que empezó a ejecutarse
+  return { salida: out, cuadros, ultima: falla ?? ultima, falla };   // ultima: la última línea que empezó a ejecutarse
 }

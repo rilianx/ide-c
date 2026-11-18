@@ -60,6 +60,11 @@ Cómo funciona: `js/proyecto.js` (`instrumentar`) agrega `__volcar(línea, L);` 
 
 El asistente sugiere nombres de variables sacados del código base (los `.h` y el código del curso: `nuevo`, `aux`, `siguiente`…), y después algunos genéricos.
 
+## Errores
+
+- **Revisión de punteros:** el intérprete (xcc-wasm) no detiene el programa al seguir un puntero NULL (escribe en una dirección inválida y sigue). Por eso, en las funciones del estudiante, cada `a->campo` pasa por `__ck`, que detiene el programa y avisa la línea si `a` es NULL, basura o (en la visualización) un nodo liberado. Los tests muestran «Error de ejecución en list.c:N: se siguió un puntero NULL», y la visualización marca esa línea y explica qué parte era NULL. Si el código del estudiante no compila con la revisión, se prueba sin ella.
+- **Mensajes del compilador en castellano** (`js/mensajes.js`): los textos de xcc se traducen con una pista para el estudiante, y el original queda al lado en chico.
+
 ## Modo profesor
 
 Con `?profesor` en la URL (https://rilianx.github.io/ide-c/?profesor), `list.c` parte con todas las funciones de los pasos ya hechas (las de la referencia) y aparece la marca **Profesor** arriba. Sirve para mostrar en clase los tests y la visualización paso a paso con las funciones completas. Lo que se cambie en este modo se guarda aparte: no toca lo del modo normal. «⟲ Restaurar archivos» vuelve a las funciones del curso.

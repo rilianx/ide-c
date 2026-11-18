@@ -1,7 +1,7 @@
 // Tests: cada uno es un trozo de C que usa solo la interfaz (.h) e imprime algo;
 // se compara su salida con la esperada. Si un test se cuelga (ciclo infinito),
 // se detiene y se siguen corriendo los que faltan.
-import { armarTests, mismaSalida, mensajes } from './proyecto.js?v=202611181629';
+import { armarTests, mismaSalida, mensajes } from './proyecto.js?v=202611181644';
 
 // tests: [{nombre, codigo, esperado, paso}]; alActualizar(resultados) se llama a medida que avanzan.
 // Devuelve {compilacion, resultados} con resultados[i] = {estado, obtenido, error}.
@@ -10,18 +10,26 @@ export async function correrTests(runner, ej, archivos, ocultos, tests, alActual
   alActualizar(resultados);
   let compilacion = null;
   let faltan = tests.map((t, i) => i);
+  let revision = true;   // con la revisión de punteros (si no compila así, se intenta sin ella)
   while (faltan.length) {
-    const prog = armarTests(ej, archivos, ocultos, faltan.map(i => tests[i]));
+    const prog = armarTests(ej, archivos, ocultos, faltan.map(i => tests[i]), revision);
     const r = await runner.ejecutar(prog, {
       llamada: d => {
         const i = faltan[d.id], t = tests[i];
-        resultados[i] = {
-          estado: d.error ? 'error' : !d.ok ? 'error' : mismaSalida(t.esperado, d.stdout) ? 'ok' : 'falla',
-          obtenido: d.stdout, error: d.error ?? (d.ok ? null : d.stderr.trim() || 'No se pudo ejecutar'),
-        };
+        // la revisión de punteros deja «@@FALLA línea tipo» en la salida y detiene el test
+        const fa = /@@FALLA (\d+) (\w+)\n?/.exec(d.stdout ?? '');
+        const stdout = fa ? d.stdout.slice(0, fa.index) : d.stdout;
+        const motivo = fa && { NULL: 'se siguió un puntero NULL (->)', BASURA: 'se siguió un puntero con basura (->)' }[fa[2]];
+        resultados[i] = fa
+          ? { estado: 'error', obtenido: stdout, error: `Error de ejecución en ${ej.alumno}:${fa[1]}: ${motivo}. Usa 👁 Ver para ver la memoria en ese momento.` }
+          : {
+            estado: d.error ? 'error' : !d.ok ? 'error' : mismaSalida(t.esperado, stdout) ? 'ok' : 'falla',
+            obtenido: stdout, error: d.error ?? (d.ok ? null : d.stderr.trim() || 'No se pudo ejecutar'),
+          };
         alActualizar(resultados);
       },
     });
+    if (revision && r.compilado && !r.compilado.ok) { revision = false; continue; }   // se reintenta sin la revisión
     if (!r.compilado || !r.compilado.ok) {   // no compila: ningún test corre
       compilacion = r.compilado ? mensajes(r.compilado.mensajes) : [{ archivo: null, linea: null, texto: 'El compilador no respondió.' }];
       for (const i of faltan) if (resultados[i].estado === 'pendiente') resultados[i] = { estado: 'sin-compilar', obtenido: '', error: null };

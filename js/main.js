@@ -1,12 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181629';
-import { Runner } from './runner.js?v=202611181629';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181629';
-import { svgLista, lugaresDe, diagnosticar } from './visual.js?v=202611181629';
-import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181629';
-import { Asistente } from './asistente.js?v=202611181629';
-import { activarDivisores } from './divisores.js?v=202611181629';
-import { correrTests, htmlResultados } from './tests.js?v=202611181629';
+import { Editor } from './editor.js?v=202611181644';
+import { Runner } from './runner.js?v=202611181644';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181644';
+import { traducirMensaje } from './mensajes.js?v=202611181644';
+import { svgLista, lugaresDe, diagnosticar } from './visual.js?v=202611181644';
+import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181644';
+import { Asistente } from './asistente.js?v=202611181644';
+import { activarDivisores } from './divisores.js?v=202611181644';
+import { correrTests, htmlResultados } from './tests.js?v=202611181644';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -140,7 +141,9 @@ function htmlCompilacion(lista, titulo, avisos = false) {
   const lineas = lista.map(m => {
     const donde = m.archivo && visibles.has(m.archivo)
       ? `<a data-archivo="${esc(m.archivo)}" data-linea="${m.linea}">${esc(m.archivo)}:${m.linea}</a>: ` : '';
-    return `<div>${donde}${esc(m.texto)}</div>`;
+    const t = traducirMensaje(m.texto);   // en castellano, con el original en chico
+    return t.texto ? `<div>${donde}${esc(t.texto)} <span class="original" title="Mensaje original del compilador">(${esc(m.texto)})</span></div>`
+      : `<div>${donde}${esc(m.texto)}</div>`;
   }).join('');
   return `<div class="compilacion${avisos ? ' avisos' : ''}"><h4>${titulo}</h4>${lineas}</div>`;
 }
@@ -306,9 +309,12 @@ async function dibujarVisual(soloSiCambio = false, mantenerPaso = false) {
       estado('No compila.', true);
     } else {
       const d = r.llamadas.get(0) ?? {};
-      const { salida, cuadros, ultima } = leerVolcados(d.stdout);
-      // si se cayó: un último paso en la línea que falló, con la memoria de justo antes
-      if ((d.error || !d.ok) && ultima) cuadros.push({ ...ultima, error: true, estado: cuadros.at(-1)?.estado ?? null, salida });
+      const { salida, cuadros, ultima, falla } = leerVolcados(d.stdout);
+      // si se cayó (o la revisión de punteros lo detuvo): un último paso en la línea que falló,
+      // con la memoria de justo antes
+      const seCayo = !!(d.error || !d.ok || falla);
+      if (seCayo && ultima) cuadros.push({ ...ultima, error: true, estado: cuadros.at(-1)?.estado ?? null, salida });
+      const textoFalla = falla && { NULL: 'Error de ejecución: se siguió un puntero NULL (->)', BASURA: 'Error de ejecución: se siguió un puntero con basura (->)', LIBERADO: 'Error de ejecución: se usó un nodo ya liberado (->)' }[falla.tipo];
       const aviso = sinDetalle ? `<p class="nota">No se pudo preparar la vista por dentro de tus funciones (hay una línea que no supe instrumentar); se muestra solo el test.</p>${typeof sinDetalle === 'string' ? `<details class="nota"><summary>Detalle (para el profesor)</summary><pre>${esc(sinDetalle)}</pre></details>` : ''}`
         : !delPaso.length ? `<p class="nota">Tu <code>${esc(E.ej.pasos[k].funciones.join(', '))}</code> aún no está escrita: el test usa la del curso y no se puede entrar a ella.</p>` : '';
       // a qué función pertenece cada volcado de adentro (por su línea) y qué llamada es
@@ -322,12 +328,12 @@ async function dibujarVisual(soloSiCambio = false, mantenerPaso = false) {
       for (const c of cuadros) if (c.dentro) c.llamadas = cuenta.get(c.fn.nombre) ?? 1;
       const antes = mantenerPaso && vis ? vis.i : -1;
       vis = { cuadros, i: Math.min(antes, cuadros.length - 1), test, lineasTest, lineasAlumno, aviso, fns,
-        error: d.error || !d.ok ? traducir(d.error ?? d.stderr ?? 'No se pudo ejecutar') : null };
+        error: textoFalla ?? (seCayo ? traducir(d.error ?? d.stderr ?? 'No se pudo ejecutar') : null) };
       vis.salidaFinal = salida;
       vis.lugares = lugaresDe(cuadros.map(c => c.estado));   // cada nodo en un lugar fijo durante toda la ejecución
       mostrarPaso();
       visDibujado = { test: visElegido, codigo: codigoAlumno };
-      estado(d.error || !d.ok ? 'El test se detuvo con un error (avanza hasta el final para verlo).' : 'Listo: avanza con Siguiente ▶ o con las flechas del teclado.', !!(d.error || !d.ok));
+      estado(seCayo ? 'El test se detuvo con un error (avanza hasta el final para verlo).' : 'Listo: avanza con Siguiente ▶ o con las flechas del teclado.', seCayo);
     }
   } catch (e) {
     estado('No se pudo dibujar: ' + e.message, true);
