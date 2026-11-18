@@ -337,3 +337,6 @@ svg.memoria text.var { font-size: 14px; font-weight: 500; }
 
 /* celular con el teclado abierto: sin el asistente de abajo (más espacio para el código) */
 @media (max-width: 1000px) { body.escribiendo .asistente { display: none; } }
+
+.vivo-error { font-size: 13px; color: var(--mal); padding: 4px 26px 4px 2px; }
+.vivo .desactualizado { opacity: .4; }

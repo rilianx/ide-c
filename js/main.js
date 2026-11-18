@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611182119';
-import { Runner } from './runner.js?v=202611182119';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182119';
-import { traducirMensaje } from './mensajes.js?v=202611182119';
-import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado, estadoDeLista } from './visual.js?v=202611182119';
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182119';
-import { Asistente } from './asistente.js?v=202611182119';
-import { activarDivisores } from './divisores.js?v=202611182119';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182119';
+import { Editor } from './editor.js?v=202611182128';
+import { Runner } from './runner.js?v=202611182128';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182128';
+import { traducirMensaje } from './mensajes.js?v=202611182128';
+import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado, estadoDeLista } from './visual.js?v=202611182128';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182128';
+import { Asistente } from './asistente.js?v=202611182128';
+import { activarDivisores } from './divisores.js?v=202611182128';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182128';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -355,11 +355,19 @@ async function dibujarVisual(soloSiCambio = false, posicion = 'auto') {
     if (!r.compilado?.ok) {   // no compila (por ejemplo, a medio escribir): se deja el último dibujo, atenuado
       mostrarCompilacion($('vis-compilacion'), mensajesDe(r), false);
       caja.classList.add('desactualizado');
+      // en la ventana del celular: el primer error (en castellano) y, si había, el último dibujo atenuado
+      const m1 = mensajesDe(r).find(x => x.archivo === E.ej.alumno) ?? mensajesDe(r)[0];
+      const t1 = m1 ? (traducirMensaje(m1.texto).texto ?? m1.texto) : '';
+      const previo = $('vivo-zoom').querySelector('.vivo-fila');
+      $('vivo-zoom').innerHTML = `<div class="vivo-error">⚠ No compila${m1?.linea ? ` (línea ${m1.linea})` : ''}: ${esc(t1)}</div>` + (previo ? `<div class="desactualizado">${previo.outerHTML}</div>` : '');
+      $('vivo').classList.remove('pasa'); $('vivo').classList.add('falla');
+      vivoMensaje = true; mostrarVivo();
       resultadoVivo('<span class="res-mal">⚠ No compila: revisa el mensaje.</span>');
       visDibujado = { test: visElegido, codigo: codigoAlumno };
     } else {
       $('vis-compilacion').innerHTML = '';
       caja.classList.remove('desactualizado');
+      vivoMensaje = false;
       const d = r.llamadas.get(0) ?? {};
       const { salida, cuadros, ultima, falla } = leerVolcados(d.stdout);
       // si se cayó (o la revisión de punteros lo detuvo): un último paso en la línea que falló,
@@ -452,7 +460,8 @@ function ejecucionVisible() {
   if (!vis || $('vis-panel').hidden) return false;
   return innerWidth <= 1000 ? !vivoCerrado : !$('codigo').classList.contains('sin-der');
 }
-function mostrarVivo() { $('vivo').hidden = vivoCerrado || !vis || $('vis-panel').hidden; $('vivo-abrir').hidden = !vivoCerrado; }
+function mostrarVivo() { $('vivo').hidden = vivoCerrado || (!vis && !vivoMensaje) || $('vis-panel').hidden; $('vivo-abrir').hidden = !vivoCerrado; }
+let vivoMensaje = false;   // la ventana tiene algo que decir aunque no haya ejecución (no compila)
 // al cerrar la ventana, el editor deja de marcar la línea de la ejecución (queda el marcado de bloques)
 $('vivo-cerrar').onclick = () => { vivoCerrado = true; mostrarVivo(); editor.marcarEjecucion(null, null); };
 $('vivo-abrir').onclick = () => { vivoCerrado = false; mostrarVivo(); if (vis) mostrarPaso(); };
