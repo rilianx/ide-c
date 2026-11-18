@@ -1,12 +1,12 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181618';
-import { Runner } from './runner.js?v=202611181618';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181618';
-import { svgLista, lugaresDe } from './visual.js?v=202611181618';
-import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181618';
-import { Asistente } from './asistente.js?v=202611181618';
-import { activarDivisores } from './divisores.js?v=202611181618';
-import { correrTests, htmlResultados } from './tests.js?v=202611181618';
+import { Editor } from './editor.js?v=202611181626';
+import { Runner } from './runner.js?v=202611181626';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181626';
+import { svgLista, lugaresDe, diagnosticar } from './visual.js?v=202611181626';
+import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181626';
+import { Asistente } from './asistente.js?v=202611181626';
+import { activarDivisores } from './divisores.js?v=202611181626';
+import { correrTests, htmlResultados } from './tests.js?v=202611181626';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -306,7 +306,9 @@ async function dibujarVisual(soloSiCambio = false, mantenerPaso = false) {
       estado('No compila.', true);
     } else {
       const d = r.llamadas.get(0) ?? {};
-      const { salida, cuadros } = leerVolcados(d.stdout);
+      const { salida, cuadros, ultima } = leerVolcados(d.stdout);
+      // si se cayó: un último paso en la línea que falló, con la memoria de justo antes
+      if ((d.error || !d.ok) && ultima) cuadros.push({ ...ultima, error: true, estado: cuadros.at(-1)?.estado ?? null, salida });
       const aviso = sinDetalle ? '<p class="nota">No se pudo preparar la vista por dentro de tus funciones (hay una línea que no supe instrumentar); se muestra solo el test.</p>'
         : !delPaso.length ? `<p class="nota">Tu <code>${esc(E.ej.pasos[k].funciones.join(', '))}</code> aún no está escrita: el test usa la del curso y no se puede entrar a ella.</p>` : '';
       // a qué función pertenece cada volcado de adentro (por su línea) y qué llamada es
@@ -314,12 +316,12 @@ async function dibujarVisual(soloSiCambio = false, mantenerPaso = false) {
       for (const c of cuadros) if (c.dentro) {
         const f = fns.find(f => c.linea >= f.cabecera && c.linea <= f.fin) ?? fns[0];
         c.fn = f;
-        if (c.linea === f.cabecera && !c.condicion) cuenta.set(f.nombre, (cuenta.get(f.nombre) ?? 0) + 1);
+        if (c.linea === f.cabecera && !c.condicion && !c.error) cuenta.set(f.nombre, (cuenta.get(f.nombre) ?? 0) + 1);
         c.llamada = Math.max(cuenta.get(f.nombre) ?? 0, 1);
       }
       for (const c of cuadros) if (c.dentro) c.llamadas = cuenta.get(c.fn.nombre) ?? 1;
       const antes = mantenerPaso && vis ? vis.i : -1;
-      vis = { cuadros, i: Math.min(antes, cuadros.length - 1), test, lineasTest, lineasAlumno, aviso,
+      vis = { cuadros, i: Math.min(antes, cuadros.length - 1), test, lineasTest, lineasAlumno, aviso, fns,
         error: d.error || !d.ok ? traducir(d.error ?? d.stderr ?? 'No se pudo ejecutar') : null };
       vis.salidaFinal = salida;
       vis.lugares = lugaresDe(cuadros.map(c => c.estado));   // cada nodo en un lugar fijo durante toda la ejecución
@@ -370,7 +372,7 @@ function mover(accion) {
 function mostrarPaso() {
   const { cuadros, i } = vis, c = cuadros[i], dentro = c && c.dentro;
   const numerar = (lineas, desde, actual, archivo) => lineas.map((l, k) =>
-    `<div class="lc${desde + k === actual ? ' actual' : ''}"><span class="n">${archivo && desde + k === actual ? '▶' : ''}${desde + k}</span><code>${esc(l) || ' '}</code></div>`).join('');
+    `<div class="lc${desde + k === actual ? (c?.error ? ' actual falla' : ' actual') : ''}"><span class="n">${archivo && desde + k === actual ? '▶' : ''}${desde + k}</span><code>${esc(l) || ' '}</code></div>`).join('');
   let codigo;
   if (dentro) {
     const ini = c.fn.cabecera, fin = c.fn.fin, llamadas = c.llamadas;
@@ -379,7 +381,7 @@ function mostrarPaso() {
   } else {
     codigo = `<h4>Test: ${esc(vis.test.nombre)}</h4><div class="codigo-paso">${numerar(vis.lineasTest, 1, c ? c.linea : 0, false)}</div>`;
   }
-  const quePaso = i < 0 ? 'Antes de empezar.' : dentro
+  const quePaso = i < 0 ? 'Antes de empezar.' : c.error ? `💥 Falló la línea ${c.linea} ${dentro ? 'de ' + esc(E.ej.alumno) : 'del test'}.` : dentro
     ? (c.condicion ? `Al evaluar la condición de la línea ${c.linea} de ${esc(E.ej.alumno)}.`
       : c.linea === c.fn.cabecera ? `Al entrar a ${esc(c.fn.nombre)}.` : `Después de la línea ${c.linea} de ${esc(E.ej.alumno)}.`)
       + (finDeLlamada(i) === i ? (cuadros[i + 1]?.dentro ? ' La llamada terminó; Siguiente ▶ entra a la próxima.' : ' La llamada terminó.') : '')
@@ -406,6 +408,15 @@ function mostrarPaso() {
       <div class="paso-codigo">${codigo}</div>
       <div class="paso-dibujo">${dibujo}
         ${ultimo && vis.error ? `<p class="error-ej">${esc(vis.error)}</p>` : ''}
+        ${c?.error ? (() => {
+          const codigoLinea = dentro ? vis.lineasAlumno[c.linea - 1] : vis.lineasTest[c.linea - 1];
+          let diag = diagnosticar(codigoLinea ?? '', c.estado, dentro ? c.fn.lista : E.ej.visual.variable);
+          if (!diag && !dentro) {   // ¿la línea del test llama a una función tuya? el error pudo ser adentro
+            const llamada = vis.fns.find(f => new RegExp(`\\b${f.nombre}\\s*\\(`).test(codigoLinea ?? ''));
+            if (llamada) diag = `el error ocurrió dentro de tu <code>${esc(llamada.nombre)}</code>, llamada desde esta línea (revisa los punteros que sigue con <code>-></code>).`;
+          }
+          return `<p class="diagnostico">💥 En <code>${esc((codigoLinea ?? '').trim().replace(/;$/, ''))}</code>${diag ? ': ' + diag : '.'}</p>`;
+        })() : ''}
         <div class="salidas vis-salidas">
           <div><h4>Esperado</h4><pre class="vis-salida">${esc(vis.test.esperado)}</pre></div>
           <div><h4>${ultimo ? 'Obtenido' : 'Impreso hasta aquí'}${ultimo ? (mismaSalida(vis.test.esperado, salida) ? ' ✅' : ' ❌') : ''}</h4><pre class="vis-salida${ultimo && !mismaSalida(vis.test.esperado, salida) ? ' distinta' : ''}">${esc(salida) || '<span class="vacio">(nada)</span>'}</pre></div>

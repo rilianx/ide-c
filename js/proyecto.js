@@ -183,7 +183,8 @@ export function mensajes(texto) {
 // La instrucción se envuelve en llaves junto al volcado, para que quede dentro de un if/else o de
 // un ciclo sin llaves: «else x = 1;» → «else { x = 1; volcado }». Las declaraciones no se envuelven
 // (cambiaría su alcance) y antes de un return el volcado va primero.
-function conVolcado(L, m, dv) {
+function conVolcado(L, m, dv, pre = '') {
+  const p_ = pre ? pre + ' ' : '';
   const t = m.trim();
   const ini = m.length - m.trimStart().length, fin = m.trimEnd().length;
   if (t.endsWith('}') && !t.endsWith(';')) {   // termina un bloque: el volcado va después
@@ -203,23 +204,31 @@ function conVolcado(L, m, dv) {
       a = k; while (m[a] === ' ' || m[a] === '\t') a++;
     } else a += r[0].length;
   }
-  const pre = m.slice(ini, a), cuerpo = m.slice(a, fin);
+  const prefijo = m.slice(ini, a), cuerpo = m.slice(a, fin);
   if (!cuerpo) return null;
   // varias instrucciones o llaves en medio: no se toca (sería fácil romperla)
   const fuera = cuerpo.replace(/\([^()]*\)/g, '').replace(/\([^()]*\)/g, '');
   if ((fuera.match(/;/g) || []).length > 1 || /[{}]/.test(fuera.slice(1)) || /\belse\b/.test(fuera)) return null;
   if (/^\}\s*while\b/.test(cuerpo)) return `${L.slice(0, fin)} ${dv}${L.slice(fin)}`;   // fin de un do-while
   const esDecl = /^((const|struct|unsigned|signed)\s+)*[A-Za-z_]\w*(\s+|\s*\*+\s*)[A-Za-z_]\w*\s*(=|;|,|\[)/.test(cuerpo) && !/^(return|else|do|goto)\b/.test(cuerpo);
-  if (/^return\b/.test(cuerpo)) return `${L.slice(0, a)}{ ${dv} ${L.slice(a, fin)} }${L.slice(fin)}`;
-  if (pre) return `${L.slice(0, a)}{ ${L.slice(a, fin)} ${dv} }${L.slice(fin)}`;
-  if (esDecl || cuerpo.startsWith('}')) return `${L.slice(0, fin)} ${dv}${L.slice(fin)}`;
-  return `${L.slice(0, a)}{ ${L.slice(a, fin)} ${dv} }${L.slice(fin)}`;
+  if (/^return\b/.test(cuerpo)) return `${L.slice(0, a)}{ ${dv} ${p_}${L.slice(a, fin)} }${L.slice(fin)}`;
+  if (prefijo) return `${L.slice(0, a)}{ ${p_}${L.slice(a, fin)} ${dv} }${L.slice(fin)}`;
+  if (cuerpo.startsWith('}')) return `${L.slice(0, fin)} ${dv}${L.slice(fin)}`;
+  if (esDecl) return `${L.slice(0, a)}${p_}${L.slice(a, fin)} ${dv}${L.slice(fin)}`;
+  return `${L.slice(0, a)}{ ${p_}${L.slice(a, fin)} ${dv} }${L.slice(fin)}`;
 }
 
 // Pone la expresión de volcado `ex` en la condición de un for/while de la línea, para que se
 // ejecute cada vez que se evalúa: «for (a; c; i)» → «for (a; (ex, c); i)», «while (c)» → «while ((ex, c))».
-function condicionConVolcado(L, m, ex) {
-  const r = /\b(for|while)\s*\(/.exec(m);
+function condicionConVolcado(L, m, ex, soloIf = null) {
+  const r = /\b(for|while|if)\s*\(/.exec(m);
+  if (r && r[1] === 'if') {   // en un if solo va la marca de línea (no un dibujo)
+    if (!soloIf) return null;
+    const p0 = r.index + r[0].length - 1;
+    let p = 0, pc = -1;
+    for (let k = p0; k < m.length; k++) { if (m[k] === '(') p++; else if (m[k] === ')' && !--p) { pc = k; break; } }
+    return pc < 0 ? null : `${L.slice(0, p0 + 1)}(${soloIf}, ${L.slice(p0 + 1, pc)})${L.slice(pc)}`;
+  }
   if (!r || (r[1] === 'while' && /^\s*\}/.test(m) && m.trimEnd().endsWith(';'))) return null;   // no el while de un do-while
   const p0 = r.index + r[0].length - 1;
   let p = 0, pc = -1;
@@ -244,12 +253,13 @@ export function instrumentar(codigo, variable) {
   const decl = new RegExp(`\\b[A-Za-z_]\\w*\\s*\\*\\s*${variable}\\b`);
   let existe = false;
   return lineas.map((l, i) => {
-    if (!existe && decl.test(m[i])) { existe = true; return conVolcado(l, m[i], `__volcar(${i + 1}, ${variable});`) ?? l; }
+    // __voy(n): «ahora se ejecuta la línea n» (si el programa se cae, la última marca dice dónde)
+    if (!existe && decl.test(m[i])) { existe = true; return conVolcado(l, m[i], `__volcar(${i + 1}, ${variable});`, `__voy(${i + 1});`) ?? l; }
     if (!existe) return l;
     let L = l, M = m[i];
-    const c = condicionConVolcado(L, M, `__volcar(-${i + 1}, ${variable})`);
+    const c = condicionConVolcado(L, M, `__voy(${i + 1}), __volcar(-${i + 1}, ${variable})`, `__voy(${i + 1})`);
     if (c) { L = c; M = enmascarar(c); }
-    return conVolcado(L, M, `__volcar(${i + 1}, ${variable});`) ?? L;
+    return conVolcado(L, M, `__volcar(${i + 1}, ${variable});`, `__voy(${i + 1});`) ?? L;
   }).join('\n');
 }
 
@@ -284,11 +294,11 @@ export function instrumentarFuncion(texto, nombre, ej) {
     const nuevas = [...sinParentesis.matchAll(decl)].map(r => ({ nombre: r[2], tipo: r[1], prof: antes }));   // no las de un for (...)
     if (i === l0 || !linea.trim()) { vars.push(...nuevas); continue; }
     let L = lineas[i], M = m[i];
-    const c = condicionConVolcado(L, M, volcado(-(i + 1)));
+    const c = condicionConVolcado(L, M, `__voyf(${i + 1}), ${volcado(-(i + 1))}`, `__voyf(${i + 1})`);
     if (c) { L = c; M = enmascarar(c); }
     for (const ch of linea) { if (ch === '{') prof++; else if (ch === '}') { prof--; vars = vars.filter(x => x.prof <= prof); } }
     vars.push(...nuevas);   // después de la línea que las declara
-    lineas[i] = conVolcado(L, M, volcado(i + 1) + ';') ?? L;
+    lineas[i] = conVolcado(L, M, volcado(i + 1) + ';', `__voyf(${i + 1});`) ?? L;
   }
   return lineas.join('\n');
 }
@@ -297,7 +307,7 @@ export function instrumentarFuncion(texto, nombre, ej) {
 // detalle: funciones del estudiante para dibujar también por dentro (lista de nombres, o null).
 export function armarVisual(ej, archivos, ocultos, test, detalle = null) {
   const v = ej.visual;
-  const t = { ...test, codigo: `void __volcar(int, ${v.tipo} *);\n${instrumentar(test.codigo, v.variable)}` };
+  const t = { ...test, codigo: `void __volcar(int, ${v.tipo} *);\n${instrumentar(test.codigo, v.variable)}` };   // (los prototipos de __voy van en __programa.c)
   let alumno = archivos[ej.alumno] ?? '';
   for (const f of [].concat(detalle ?? [])) alumno = instrumentarFuncion(alumno, f, ej);
   const conDetalle = detalle ? { ...archivos, [ej.alumno]: alumno } : archivos;
@@ -306,24 +316,27 @@ export function armarVisual(ej, archivos, ocultos, test, detalle = null) {
   const h = ej.archivos.find(a => a.nombre.endsWith('.h'))?.nombre;
   // malloc/calloc/free pasan por __vis.c, para saber qué nodos se liberaron
   prog.files['__programa.c'] = (h ? `#include "${h}"\n` : '') + `void __volcarv(int, ${v.tipo} *, int, ...);\n`
+    + 'void __voy(int);\nvoid __voyf(int);\n'
     + 'void __liberar(void *);\nvoid * __reservar(unsigned long);\nvoid * __reservarc(unsigned long, unsigned long);\n'
     + '#define free(p) __liberar(p)\n#define malloc(n) __reservar(n)\n#define calloc(a, b) __reservarc(a, b)\n'
     + prog.files['__programa.c'] + '#include "__vis.c"\n';
   return prog;
 }
 
-// Separa la salida del programa de los volcados: {salida, cuadros: [{dentro, linea, estado, salida}]}
+// Separa la salida del programa de los volcados y las marcas: {salida, ultima, cuadros: [{dentro, linea, estado, salida}]}
 // (dentro: el volcado es de adentro de la función del estudiante, y linea es de list.c;
 // salida: lo que el programa había impreso hasta ese momento).
 export function leerVolcados(stdout) {
   const cuadros = [], lineas = (stdout ?? '').split('\n');
-  let out = '';
+  let out = '', ultima = null;
   lineas.forEach((l, k) => {
+    const mk = /@@(LF?) (\d+)$/.exec(l);   // marca «ahora se ejecuta la línea n»
+    if (mk) { out += l.slice(0, mk.index); ultima = { dentro: mk[1] === 'LF', linea: +mk[2] }; return; }
     const i = l.search(/@@VISF? -?\d+ \{/);   // puede venir después de un printf sin \n
     if (i < 0) { out += l + (k < lineas.length - 1 ? '\n' : ''); return; }
     out += l.slice(0, i);
     const m = /^@@(VISF?) (-?\d+) (.*)$/.exec(l.slice(i));
     try { cuadros.push({ dentro: m[1] === 'VISF', linea: Math.abs(+m[2]), condicion: +m[2] < 0, estado: JSON.parse(m[3]), salida: out }); } catch { /* volcado cortado */ }
   });
-  return { salida: out, cuadros };
+  return { salida: out, cuadros, ultima };   // ultima: la última línea que empezó a ejecutarse
 }

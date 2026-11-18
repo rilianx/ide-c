@@ -192,3 +192,37 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   return `<svg class="memoria" viewBox="0 0 ${ancho} ${alto}" style="max-width:${Math.round(ancho * 0.8)}px" role="img" aria-label="Memoria de la lista">
 <defs>${['head', 'tail', 'current', 'next', 'prev', 'var'].map(marca).join('')}</defs>${s.join('')}</svg>`;
 }
+
+// Diagnóstico de un error en una línea: busca en ella expresiones como «a->b->c» y las sigue en
+// el estado de la memoria; si alguna parte vale NULL (o basura) antes de un «->», lo explica.
+// nombreLista: la variable que es la List; las variables Node * vienen en estado.vars.
+export function diagnosticar(linea, estado, nombreLista) {
+  if (!estado) return null;
+  const nodos = estado.nodos ?? [], L = estado.lista;
+  const valorVar = n => {
+    if (n === nombreLista) return L === null ? null : L === '?' ? '?' : { lista: true };
+    const v = (estado.vars ?? []).find(x => x.nombre === n);
+    return v ? (Number.isInteger(v.ptr) ? { nodo: v.ptr } : v.ptr) : undefined;
+  };
+  const sinTextos = linea.replace(/"(?:\\.|[^"\\])*"/g, '""').replace(/\/\/.*$/, '');
+  for (const m of sinTextos.matchAll(/\b([A-Za-z_]\w*)((?:\s*->\s*[A-Za-z_]\w*)+)/g)) {
+    let val = valorVar(m[1]), texto = m[1];
+    if (val === undefined) continue;   // una variable que no se dibuja (int, void *…)
+    for (const campo of m[2].split('->').map(s => s.trim()).filter(Boolean)) {
+      if (val === null) return `<code>${texto}</code> es NULL, y la línea hace <code>${texto}->${campo}</code> (no se puede seguir un puntero NULL).`;
+      if (val === '?') return `<code>${texto}</code> tiene basura (no se inicializó o apunta a memoria inválida), y la línea hace <code>${texto}->${campo}</code>.`;
+      if (val.lista) {
+        const i = L[campo];
+        val = i === undefined ? undefined : Number.isInteger(i) ? { nodo: i } : i;
+      } else if (val.nodo != null) {
+        const n = nodos[val.nodo];
+        if (n?.libre) return `<code>${texto}</code> apunta a un nodo ya liberado (free), y la línea hace <code>${texto}->${campo}</code>.`;
+        const i = n?.[campo];
+        val = campo === 'data' || i === undefined ? undefined : Number.isInteger(i) ? { nodo: i } : i;
+      }
+      texto += '->' + campo;
+      if (val === undefined) break;
+    }
+  }
+  return null;
+}

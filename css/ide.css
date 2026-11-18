@@ -171,6 +171,10 @@ main#visual { flex: 1; overflow: auto; padding: 12px 16px 40px; }
 .codigo-paso .lc code { font-family: inherit; }
 .codigo-paso .lc.actual { background: color-mix(in srgb, var(--acento) 18%, transparent); font-weight: 600; }
 .codigo-paso .lc.actual .n { color: var(--acento); }
+.codigo-paso .lc.actual.falla { background: var(--mal-bg); color: var(--mal); }
+.codigo-paso .lc.actual.falla .n { color: var(--mal); }
+.diagnostico { margin: 8px 0 0; padding: 6px 8px; border-left: 3px solid var(--mal); background: var(--mal-bg); font-size: 14px; }
+.diagnostico code { font-family: var(--mono); }
 .ver-dentro { margin: 6px 0 4px; }
 .ver-dentro > summary { cursor: pointer; color: var(--acento); font-size: 14px; }
 .ver-dentro > summary code { font-family: var(--mono); }

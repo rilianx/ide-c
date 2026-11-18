@@ -131,6 +131,11 @@ static void __volcarCon(const char * marca, int linea, List * L, int nv, const c
     (void)ok;
 }
 
+// Marcas «ahora se ejecuta la línea n» (del test o de list.c): si el programa se cae,
+// la última dice en qué línea fue.
+void __voy(int n) { fflush(stdout); printf("@@L %d\n", n); fflush(stdout); }
+void __voyf(int n) { fflush(stdout); printf("@@LF %d\n", n); fflush(stdout); }
+
 // Después de cada línea del test.
 void __volcar(int linea, List * L) { __volcarCon("VIS", linea, L, 0, 0, 0); }
 
