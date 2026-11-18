@@ -334,3 +334,6 @@ svg.memoria text.var { font-size: 14px; font-weight: 500; }
 .esperado-mini .rot { font-size: 10px; color: var(--suave); text-transform: uppercase; }
 .esperado-mini svg.memoria { max-height: 12vh; }
 .esperado-mini .ret { font-size: 12px; }
+
+/* celular con el teclado abierto: sin el asistente de abajo (más espacio para el código) */
+@media (max-width: 1000px) { body.escribiendo .asistente { display: none; } }

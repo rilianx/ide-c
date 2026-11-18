@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611182114';
-import { Runner } from './runner.js?v=202611182114';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182114';
-import { traducirMensaje } from './mensajes.js?v=202611182114';
-import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado, estadoDeLista } from './visual.js?v=202611182114';
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182114';
-import { Asistente } from './asistente.js?v=202611182114';
-import { activarDivisores } from './divisores.js?v=202611182114';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182114';
+import { Editor } from './editor.js?v=202611182119';
+import { Runner } from './runner.js?v=202611182119';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182119';
+import { traducirMensaje } from './mensajes.js?v=202611182119';
+import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado, estadoDeLista } from './visual.js?v=202611182119';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182119';
+import { Asistente } from './asistente.js?v=202611182119';
+import { activarDivisores } from './divisores.js?v=202611182119';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182119';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -58,7 +58,18 @@ function aplicarVista() {
 $('letra-menos').onclick = () => { pref.letra--; aplicarVista(); };
 $('letra-mas').onclick = () => { pref.letra++; aplicarVista(); };
 $('ajustar').onclick = () => { pref.ajustar = !pref.ajustar; aplicarVista(); };
-$('teclado').onclick = () => { pref.teclado = !pref.teclado; aplicarVista(); if (pref.teclado) editor.cm.focus(); };
+// Celular: con el teclado abierto (escribiendo en el editor) se esconde el asistente de abajo.
+// El teclado se detecta por el foco del editor (con teclado activado) o porque la pantalla visible se achica.
+function tecladoAbierto() {
+  const vv = window.visualViewport;
+  const achica = vv ? vv.height < innerHeight * 0.75 : false;
+  document.body.classList.toggle('escribiendo', innerWidth <= 1000 && pref.teclado && (editor.cm.hasFocus() || achica));
+  editor.refrescar();
+}
+editor.cm.on('focus', () => setTimeout(tecladoAbierto, 50));
+editor.cm.on('blur', () => setTimeout(tecladoAbierto, 150));
+window.visualViewport?.addEventListener('resize', tecladoAbierto);
+$('teclado').onclick = () => { pref.teclado = !pref.teclado; aplicarVista(); if (pref.teclado) editor.cm.focus(); tecladoAbierto(); };
 aplicarVista();
 
 let tEstado = null;
