@@ -10,6 +10,8 @@ export class Editor {
     this.alCambiar = alCambiar;
     this.cm = CodeMirror(contenedor, {
       mode: 'text/x-csrc', lineNumbers: true, indentUnit: 4, tabSize: 4,
+      // textarea también en el celular: así «sin teclado» (solo lectura) no abre el teclado al tocar
+      inputStyle: 'textarea',
       matchBrackets: true, autoCloseBrackets: true, styleActiveLine: true,
       extraKeys: { Tab: cm => cm.execCommand(cm.somethingSelected() ? 'indentMore' : 'insertSoftTab') },
     });
@@ -44,7 +46,7 @@ export class Editor {
     if (!d) return false;
     this.actual = nombre;
     this.cm.swapDoc(d.doc);
-    this.cm.setOption('readOnly', d.editable ? false : 'nocursor');
+    this.cm.setOption('readOnly', !d.editable ? 'nocursor' : this.sinTeclado ? true : false);
     this.dibujarPestanas();
     if (linea) {
       this.cm.setCursor({ line: linea - 1, ch: 0 });
@@ -88,4 +90,12 @@ export class Editor {
     this.cm.refresh();
   }
   ajustar(si) { this.cm.setOption('lineWrapping', si); }
+
+  // Sin teclado: el archivo editable queda de solo lectura para el usuario (tocar solo mueve el
+  // cursor y no abre el teclado del celular); los comandos del asistente igual lo modifican.
+  teclado(si) {
+    this.sinTeclado = !si;
+    const d = this.docs.get(this.actual);
+    if (d) this.cm.setOption('readOnly', !d.editable ? 'nocursor' : this.sinTeclado ? true : false);
+  }
 }

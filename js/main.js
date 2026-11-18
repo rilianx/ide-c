@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181820';
-import { Runner } from './runner.js?v=202611181820';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181820';
-import { traducirMensaje } from './mensajes.js?v=202611181820';
-import { svgLista, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611181820';
-import { armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181820';
-import { Asistente } from './asistente.js?v=202611181820';
-import { activarDivisores } from './divisores.js?v=202611181820';
-import { correrTests, htmlResultados } from './tests.js?v=202611181820';
+import { Editor } from './editor.js?v=202611181829';
+import { Runner } from './runner.js?v=202611181829';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181829';
+import { traducirMensaje } from './mensajes.js?v=202611181829';
+import { svgLista, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611181829';
+import { armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181829';
+import { Asistente } from './asistente.js?v=202611181829';
+import { activarDivisores } from './divisores.js?v=202611181829';
+import { correrTests, htmlResultados } from './tests.js?v=202611181829';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -44,18 +44,21 @@ const asistente = new Asistente($('asistente'), editor, () => ({ ej: E.ej, archi
 activarDivisores(document.getElementById('codigo'), () => editor.refrescar());
 
 // Letra y ajuste de líneas (se recuerdan en el navegador). En pantallas angostas, ajuste activado.
-const pref = { letra: 14, ajustar: innerWidth < 1000 };
+const pref = { letra: 14, ajustar: innerWidth < 1000, teclado: !matchMedia('(pointer: coarse)').matches };   // en pantallas táctiles, sin teclado
 try { Object.assign(pref, JSON.parse(localStorage.getItem('ide-c:vista') || '{}')); } catch { /* sin almacenamiento */ }
 function aplicarVista() {
   pref.letra = Math.min(24, Math.max(10, pref.letra));
   editor.letra(pref.letra);
   editor.ajustar(pref.ajustar);
   $('ajustar').classList.toggle('activo', pref.ajustar);
+  editor.teclado(pref.teclado);
+  $('teclado').classList.toggle('activo', pref.teclado);
   try { localStorage.setItem('ide-c:vista', JSON.stringify(pref)); } catch { /* sin almacenamiento */ }
 }
 $('letra-menos').onclick = () => { pref.letra--; aplicarVista(); };
 $('letra-mas').onclick = () => { pref.letra++; aplicarVista(); };
 $('ajustar').onclick = () => { pref.ajustar = !pref.ajustar; aplicarVista(); };
+$('teclado').onclick = () => { pref.teclado = !pref.teclado; aplicarVista(); if (pref.teclado) editor.cm.focus(); };
 aplicarVista();
 
 let tEstado = null;
@@ -278,6 +281,11 @@ function abrirVisual(clave, posicion = avanceAuto ? 'auto' : 'inicio') {
   dibujarVisual(true, posicion);
 }
 $('vis-test-sel').onchange = () => abrirVisual($('vis-test-sel').value);
+$('vis-siguiente-test').onclick = () => {   // al siguiente test de la función (después del último, vuelve al primero)
+  const s = $('vis-test-sel');
+  s.selectedIndex = (s.selectedIndex + 1) % s.options.length;
+  abrirVisual(s.value);
+};
 $('vis-auto').checked = avanceAuto;
 $('vis-auto').onchange = e => {
   avanceAuto = e.target.checked;

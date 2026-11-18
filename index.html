@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IDE C · Estructuras de Datos</title>
 <link rel="stylesheet" href="vendor/codemirror/codemirror.css">
-<link rel="stylesheet" href="css/ide.css?v=202611181820">
+<link rel="stylesheet" href="css/ide.css?v=202611181829">
 <script src="vendor/codemirror/codemirror.js"></script>
 <script src="vendor/codemirror/clike.js"></script>
 <script src="vendor/codemirror/matchbrackets.js"></script>
@@ -20,7 +20,7 @@
   addEventListener('error', e => errorInicio(e.message || 'no se pudo cargar ' + (e.target && (e.target.src || e.target.href) || 'un archivo')), true);
   addEventListener('unhandledrejection', e => errorInicio(String(e.reason && e.reason.message || e.reason)));
 </script>
-<script type="module" src="js/main.js?v=202611181820"></script>
+<script type="module" src="js/main.js?v=202611181829"></script>
 </head>
 <body>
 <header>
@@ -54,6 +54,7 @@
         <button id="letra-menos" title="Letra más chica">A−</button>
         <button id="letra-mas" title="Letra más grande">A+</button>
         <button id="ajustar" title="Ajustar líneas largas al ancho (wrap)">↩</button>
+        <button id="teclado" title="Teclado: si está apagado, tocar el editor solo mueve el cursor (para usar los comandos)">⌨</button>
       </div>
     </div>
     <div id="editor" class="editor"></div>
@@ -76,6 +77,7 @@
       <div id="vis-panel" hidden>
         <div class="vis-cabecera">
           <select id="vis-test-sel" title="Test que se ejecuta"></select>
+          <button id="vis-siguiente-test" title="Siguiente test">»</button>
           <label class="auto" title="Avance automático: al escribir se vuelve a ejecutar y avanza solo hasta donde llega tu función"><input type="checkbox" id="vis-auto" checked> auto</label>
           <button id="vis-dibujar" title="Volver a ejecutar">↻</button>
           <button id="vis-volver" title="Lista de tests (probar todos, ver resultados)">📋 Tests</button>
