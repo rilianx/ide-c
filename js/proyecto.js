@@ -109,6 +109,12 @@ function sinPlantillas(ej, texto) {
   return texto;
 }
 
+// El código de la referencia (oculta) para una función: lo que está entre #ifndef ALUMNO_f y #endif.
+export function codigoReferencia(ref, nombre) {
+  const m = new RegExp(`#ifndef ALUMNO_${nombre}\\b[^\\n]*\\n([\\s\\S]*?)#endif`).exec(ref ?? '');
+  return m ? m[1].trimEnd() : null;
+}
+
 // Agrega al archivo del estudiante las plantillas de las funciones que aún no están
 // (todas las del paso, o solo `cuales`).
 export function agregarPlantilla(texto, paso, cuales = paso.funciones) {

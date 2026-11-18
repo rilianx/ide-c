@@ -1,11 +1,11 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181257';
-import { Runner } from './runner.js?v=202611181257';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181257';
-import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181257';
-import { Asistente } from './asistente.js?v=202611181257';
-import { activarDivisores } from './divisores.js?v=202611181257';
-import { correrTests, htmlResultados } from './tests.js?v=202611181257';
+import { Editor } from './editor.js?v=202611181259';
+import { Runner } from './runner.js?v=202611181259';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181259';
+import { agregarPlantilla, funcionesDefinidas, funcionesPropias, codigoReferencia } from './proyecto.js?v=202611181259';
+import { Asistente } from './asistente.js?v=202611181259';
+import { activarDivisores } from './divisores.js?v=202611181259';
+import { correrTests, htmlResultados } from './tests.js?v=202611181259';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -99,7 +99,17 @@ function elegirPaso(k, conFoco = true, fn = null) {
   const faltan = p.funciones.filter(f => !funcionesDefinidas(archivos[E.ej.alumno], [f]).length);
   $('enunciado').innerHTML = md(p.enunciado) + (faltan.length
     ? `<button id="escribir">✎ Escribir ${faltan.map(f => `<code>${f}</code>`).join(' y ')} en ${E.ej.alumno}</button>`
-    : `<p class="descripcion">Ya está en ${E.ej.alumno}: ▶ Probar actual para revisarla.</p>`);
+    : `<p class="descripcion">Ya está en ${E.ej.alumno}: ▶ Probar actual para revisarla.</p>`)
+    + `<button id="ver-solucion" class="secundario" title="Muestra cómo está implementada en el curso">👁 Ver solución del curso</button><div id="solucion" hidden></div>`;
+  $('ver-solucion').onclick = () => {
+    const caja = $('solucion');
+    if (!caja.hidden) { caja.hidden = true; $('ver-solucion').textContent = '👁 Ver solución del curso'; return; }
+    if (estadoPasos[k] !== 'ok' && !confirm('Todavía no pasas los tests de esta función. ¿Ver la solución del curso igual?')) return;
+    const ref = E.ocultos[E.ej.referencia];
+    caja.innerHTML = p.funciones.map(f => `<pre class="solucion">${esc(codigoReferencia(ref, f) ?? '(no disponible)')}</pre>`).join('');
+    caja.hidden = false;
+    $('ver-solucion').textContent = '🙈 Ocultar solución';
+  };
   if (faltan.length) $('escribir').onclick = () => {
     editor.abrir(E.ej.alumno);
     editor.poner(E.ej.alumno, agregarPlantilla(editor.texto(E.ej.alumno), p));
