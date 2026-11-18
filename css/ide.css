@@ -223,17 +223,6 @@ svg.memoria .flecha.current { stroke: var(--c-current); stroke-dasharray: 5 3; }
     background: var(--panel); border: 1px solid var(--borde); box-shadow: 0 4px 16px rgb(0 0 0 / .18); font-size: 14px;
     opacity: 0; pointer-events: none; transition: opacity .25s; }
   body > #estado.visible { opacity: 1; pointer-events: auto; }
-  /* Tests mientras se visualiza: solo los controles, el código y el dibujo */
-  #col-tests.visualizando .titulo-panel { display: none; }
-  #col-tests.visualizando .panel-cuerpo { padding: 6px 8px; }
-  #vis-panel .txt { display: none; }
-  #vis-panel .paso-barra { gap: 4px; padding: 4px 0; }
-  #vis-panel .paso-barra button { padding: 4px 10px; }
-  #vis-panel .paso-info { width: 100%; margin: 2px 0 0; font-size: 12px; }
-  #vis-panel .vis-cabecera b { font-size: 13px; }
-  #vis-panel .paso-cuerpo { margin-top: 4px; gap: 8px; }
-  #vis-panel .paso-codigo, #vis-panel .paso-dibujo { padding: 6px 8px; }
-  #vis-panel .codigo-paso { font-size: 12px; line-height: 1.4; }
 }
 
 .dialogo-clave { border: 1px solid var(--borde); border-radius: 10px; background: var(--panel); color: var(--texto); padding: 18px 20px; width: min(360px, 90vw); }
@@ -241,3 +230,15 @@ svg.memoria .flecha.current { stroke: var(--c-current); stroke-dasharray: 5 3; }
 .dialogo-clave h3 { margin: 0 0 6px; }
 .dialogo-clave input { width: 100%; box-sizing: border-box; font: inherit; padding: 8px 10px; margin: 10px 0 6px; border: 1px solid var(--borde); border-radius: 6px; background: var(--fondo); color: var(--texto); }
 .dialogo-clave .acciones { margin-top: 10px; }
+
+/* Tests mientras se visualiza (computador y celular): solo los controles, el código y el dibujo */
+#col-tests.visualizando .titulo-panel { display: none; }
+#col-tests.visualizando .panel-cuerpo { padding: 6px 8px; }
+#vis-panel .txt { display: none; }
+#vis-panel .paso-barra { gap: 4px; padding: 4px 0; }
+#vis-panel .paso-barra button { padding: 4px 10px; }
+#vis-panel .paso-info { width: 100%; margin: 2px 0 0; font-size: 12px; }
+#vis-panel .vis-cabecera b { font-size: 13px; }
+#vis-panel .paso-cuerpo { margin-top: 4px; gap: 8px; }
+#vis-panel .paso-codigo, #vis-panel .paso-dibujo { padding: 6px 8px; }
+#vis-panel .codigo-paso { font-size: 12px; line-height: 1.4; }
