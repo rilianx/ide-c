@@ -58,6 +58,10 @@ Se recorre **paso a paso**, como un depurador: **Siguiente ▶** ejecuta una lí
 
 Cómo funciona: `js/proyecto.js` (`instrumentar`) agrega `__volcar(línea, L);` después de cada instrucción del test; `oculto/vis.c` imprime una línea `@@VIS` con la lista en JSON (revisa cada puntero antes de seguirlo); `js/visual.js` la dibuja en SVG. En `ejercicio.json`, la clave `visual` indica el archivo del volcado, la variable y su tipo.
 
+## Modo profesor
+
+Con `?profesor` en la URL (https://rilianx.github.io/ide-c/?profesor), `list.c` parte con todas las funciones de los pasos ya hechas (las de la referencia) y aparece la marca **Profesor** arriba. Sirve para mostrar en clase los tests y la visualización paso a paso con las funciones completas. Lo que se cambie en este modo se guarda aparte: no toca lo del modo normal. «⟲ Restaurar archivos» vuelve a las funciones del curso.
+
 ## Pendiente
 
 - Visualización: elegir qué variables dibujar, otras estructuras (pilas, colas, árboles) y marcar nodos liberados.

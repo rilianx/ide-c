@@ -1,12 +1,12 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181335';
-import { Runner } from './runner.js?v=202611181335';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181335';
-import { svgLista } from './visual.js?v=202611181335';
-import { agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181335';
-import { Asistente } from './asistente.js?v=202611181335';
-import { activarDivisores } from './divisores.js?v=202611181335';
-import { correrTests, htmlResultados } from './tests.js?v=202611181335';
+import { Editor } from './editor.js?v=202611181518';
+import { Runner } from './runner.js?v=202611181518';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR } from './ejercicios.js?v=202611181518';
+import { svgLista } from './visual.js?v=202611181518';
+import { solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181518';
+import { Asistente } from './asistente.js?v=202611181518';
+import { activarDivisores } from './divisores.js?v=202611181518';
+import { correrTests, htmlResultados } from './tests.js?v=202611181518';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -66,6 +66,7 @@ function ocupar(si) {
 
 async function abrirEjercicio(id) {
   E = await cargarEjercicio(id);
+  if (MODO_PROFESOR) E.originales[E.ej.alumno] = solucionCompleta(E.ej, E.originales[E.ej.alumno], E.ocultos[E.ej.referencia]);
   archivos = archivosGuardados(E.ej, E.originales);
   estadoPasos = E.ej.pasos.map(() => null);
   $('titulo-ejercicio').textContent = E.ej.titulo;
@@ -386,6 +387,9 @@ document.addEventListener('keydown', e => {
 });
 
 // ---------- Inicio ----------
+
+$('modo-profesor').hidden = !MODO_PROFESOR;
+if (MODO_PROFESOR) document.title += ' · Profesor';
 
 const lista = await listaEjercicios();
 $('ejercicio').innerHTML = lista.map(e => `<option value="${esc(e.id)}">${esc(e.titulo)}</option>`).join('');

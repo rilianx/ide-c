@@ -109,6 +109,16 @@ function sinPlantillas(ej, texto) {
   return texto;
 }
 
+// El archivo del estudiante con todas las funciones de los pasos ya hechas (las de la referencia,
+// lo que está entre #ifndef ALUMNO_f y #endif). Para el modo profesor.
+export function solucionCompleta(ej, base, ref) {
+  const partes = ej.pasos.map(p => `// ${p.titulo}\n` + p.funciones.map(f => {
+    const m = new RegExp(`#ifndef ALUMNO_${f}\\b[^\\n]*\\n([\\s\\S]*?)#endif`).exec(ref ?? '');
+    return m ? m[1].trimEnd() + '\n' : p.plantillas[f];
+  }).join('\n'));
+  return base.trimEnd() + '\n\n' + partes.join('\n');
+}
+
 // Agrega al archivo del estudiante las plantillas de las funciones que aún no están
 // (todas las del paso, o solo `cuales`).
 export function agregarPlantilla(texto, paso, cuales = paso.funciones) {

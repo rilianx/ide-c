@@ -25,7 +25,10 @@ export async function cargarEjercicio(id) {
   return { ej, originales, ocultos };
 }
 
-const clave = id => `ide-c:${id}`;
+// Modo profesor (?profesor en la URL): list.c parte con todas las funciones hechas (las del curso),
+// y se guarda aparte, sin tocar lo del modo normal.
+export const MODO_PROFESOR = new URLSearchParams(location.search).has('profesor');
+const clave = id => `ide-c:${id}` + (MODO_PROFESOR ? ':profesor' : '');
 
 // Archivos editables guardados; si no hay, los originales.
 export function archivosGuardados(ej, originales) {

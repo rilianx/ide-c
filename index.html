@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IDE C · Estructuras de Datos</title>
 <link rel="stylesheet" href="vendor/codemirror/codemirror.css">
-<link rel="stylesheet" href="css/ide.css?v=202611181335">
+<link rel="stylesheet" href="css/ide.css?v=202611181518">
 <script src="vendor/codemirror/codemirror.js"></script>
 <script src="vendor/codemirror/clike.js"></script>
 <script src="vendor/codemirror/matchbrackets.js"></script>
@@ -20,11 +20,11 @@
   addEventListener('error', e => errorInicio(e.message || 'no se pudo cargar ' + (e.target && (e.target.src || e.target.href) || 'un archivo')), true);
   addEventListener('unhandledrejection', e => errorInicio(String(e.reason && e.reason.message || e.reason)));
 </script>
-<script type="module" src="js/main.js?v=202611181335"></script>
+<script type="module" src="js/main.js?v=202611181518"></script>
 </head>
 <body>
 <header>
-  <h1>IDE C <span>· Estructuras de Datos</span></h1>
+  <h1>IDE C <span>· Estructuras de Datos</span> <b id="modo-profesor" class="modo-profesor" hidden title="list.c tiene todas las funciones hechas (las del curso). Lo que cambies aquí se guarda aparte del modo normal.">Profesor</b></h1>
   <select id="ejercicio" aria-label="Ejercicio"></select>
   <span id="estado" class="estado">Cargando el compilador…</span>
 </header>
