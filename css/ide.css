@@ -289,3 +289,27 @@ svg.memoria .etiqueta.retorno { fill: #d9f2dd; stroke: #1a7f37; }
 .test-decl th { text-align: left; color: var(--suave); font-weight: 600; padding: 2px 10px 2px 0; vertical-align: top; white-space: nowrap; }
 .test-decl td { padding: 2px 0; }
 .test-decl code { font-family: var(--mono); }
+
+/* test como dibujo y comparación con lo esperado */
+.test-dibujo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 6px; }
+.test-dibujo .lado { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; flex: 1 1 140px; }
+.test-dibujo .rot { font-size: 11px; color: var(--suave); text-transform: uppercase; letter-spacing: .04em; }
+.test-dibujo .llamada { display: flex; flex-direction: column; align-items: center; font-size: 13px; color: var(--suave); }
+.test-dibujo .llamada code { font-family: var(--mono); color: var(--texto); }
+.ret { font-family: var(--mono); font-size: 14px; padding: 1px 7px; border-radius: 10px; background: color-mix(in srgb, var(--texto) 7%, transparent); }
+.ret.ok { background: color-mix(in srgb, #1a7f37 18%, var(--panel)); color: #1a7f37; }
+.ret.mal { background: var(--mal-bg); color: var(--mal); }
+.comparacion { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 6px 0; font-size: 14px; }
+.salida-texto summary { cursor: pointer; color: var(--suave); font-size: 12px; margin-top: 6px; }
+svg.memoria .celda.ok { fill: color-mix(in srgb, #1a7f37 22%, transparent); stroke: none; }
+svg.memoria .celda.mal { fill: color-mix(in srgb, #cf222e 22%, transparent); stroke: none; }
+svg.memoria .nodo.ok { stroke: #1a7f37; stroke-width: 2.5; }
+svg.memoria .nodo.mal { stroke: #cf222e; stroke-width: 2.5; }
+svg.memoria path.flecha.ok { stroke: #1a7f37; stroke-width: 2.2; } svg.memoria .punta.ok { fill: #1a7f37; }
+svg.memoria path.flecha.mal { stroke: #cf222e; stroke-width: 2.2; } svg.memoria .punta.mal { fill: #cf222e; }
+svg.memoria line.nulo.ok { stroke: #1a7f37; stroke-width: 2; } svg.memoria line.nulo.mal { stroke: #cf222e; stroke-width: 2; }
+/* letra más grande y delgada en los dibujos */
+svg.memoria .dato { font-size: 21px; font-weight: 400; }
+svg.memoria .campo { font-size: 13px; }
+svg.memoria .nombre { font-size: 17px; font-weight: 500; }
+svg.memoria text.var { font-size: 14px; font-weight: 500; }

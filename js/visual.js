@@ -42,6 +42,34 @@ export function lugaresDe(estados) {
   }
   return new Map(orden.map((d, k) => [d, k]));
 }
+// Estado (como el del volcado) de una lista dada por sus datos: para dibujar la entrada y la salida
+// esperada de un test. current: posición (entrada) o dato (salida); undefined = no se revisa.
+export function estadoDeLista(datos, current, porDato = false) {
+  const nodos = (datos ?? []).map((d, i, a) => ({ dir: i + 1, dato: d, next: i + 1 < a.length ? i + 1 : null, prev: i ? i - 1 : null }));
+  const cur = current === undefined ? undefined : current === null ? null
+    : porDato ? (datos.indexOf(current) >= 0 ? datos.indexOf(current) : null) : current;
+  return { lista: { dir: 0, head: nodos.length ? 0 : null, tail: nodos.length ? nodos.length - 1 : null, current: cur }, nodos, vars: [] };
+}
+
+// Compara el estado final con la salida esperada de un test: marcas para el dibujo y qué falló.
+export function compararConEsperado(estado, salida) {
+  const L = estado?.lista, ns = estado?.nodos ?? [], esp = salida.lista ?? [];
+  const marcas = { nodos: new Map(), prev: new Set() }, fallas = [];
+  if (!L || typeof L !== 'object') return { marcas, fallas: ['lista'] };
+  const cadena = [], visto = new Set();
+  for (let i = L.head; Number.isInteger(i) && !visto.has(i) && cadena.length < 60; i = ns[i]?.next) { visto.add(i); cadena.push(i); }
+  cadena.forEach((i, k) => marcas.nodos.set(i, k < esp.length && ns[i].dato === esp[k] ? 'ok' : 'mal'));
+  if (cadena.length !== esp.length || [...marcas.nodos.values()].includes('mal')) fallas.push('datos');
+  const bien = (i, dato) => dato === undefined ? i === null : Number.isInteger(i) && ns[i]?.dato === dato;
+  marcas.head = (esp.length ? L.head === cadena[0] && bien(L.head, esp[0]) : L.head === null) ? 'ok' : 'mal';
+  marcas.tail = (esp.length ? L.tail === cadena.at(-1) && bien(L.tail, esp.at(-1)) : L.tail === null) ? 'ok' : 'mal';
+  if ('current' in salida) marcas.current = (salida.current === null ? L.current === null : bien(L.current, salida.current)) ? 'ok' : 'mal';
+  for (const c of ['head', 'tail', 'current']) if (marcas[c] === 'mal') fallas.push(c);
+  cadena.forEach((i, k) => { if (ns[i].prev !== (k ? cadena[k - 1] : null)) marcas.prev.add(i); });
+  if (marcas.prev.size) fallas.push('prev');
+  return { marcas, fallas };
+}
+
 export function svgLista(estado, nombre = 'L', opciones = {}) {
   const POR_FILA = Math.max(2, opciones.porFila ?? (innerWidth <= 600 ? 3 : 5));
   const lugares = opciones.lugares ?? lugaresDe([estado]);
@@ -86,8 +114,10 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   const tgtBase = s;
   let tgt = s;   // los elementos de un nodo liberado van aparte (semitransparentes, en rojo)
   const sLib = [];
-  const flecha = (d, clase) => tgt.push(`<path d="${d}" class="flecha ${clase}" marker-end="url(#punta-${clase})"/>`);
-  const nulo = (x, y, w, h) => tgt.push(`<line x1="${x + 4}" y1="${y + h - 4}" x2="${x + w - 4}" y2="${y + 4}" class="nulo"/>`);
+  // marcas (comparación con lo esperado): 'ok' en verde, 'mal' en rojo
+  const marcas = opciones.marcas ?? {};
+  const flecha = (d, clase, marca = '') => tgt.push(`<path d="${d}" class="flecha ${clase} ${marca}" marker-end="url(#punta-${marca || clase})"/>`);
+  const nulo = (x, y, w, h, marca = '') => tgt.push(`<line x1="${x + 4}" y1="${y + h - 4}" x2="${x + w - 4}" y2="${y + 4}" class="nulo ${marca}"/>`);
   const basura = (x, y, w, h) => tgt.push(`<text x="${x + w / 2}" y="${y + h / 2 + 5}" class="basura">?</text>`);
 
   // La List
@@ -99,31 +129,33 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
     const x = X0 + k * CL;
     if (k) s.push(`<line x1="${x}" y1="${YL}" x2="${x}" y2="${YL + AL + 6}" class="div"/>`);
     s.push(`<text x="${x + CL / 2}" y="${YL + 14}" class="campo">${campo}</text>`);
-    const v = L[campo];
-    if (v === null) nulo(x + 10, YL + 18, CL - 20, AL - 16);
+    const v = L[campo], mk = marcas[campo] ?? '';
+    if (mk) s.push(`<rect x="${x + 2}" y="${YL + 2}" width="${CL - 4}" height="${AL + 2}" class="celda ${mk}"/>`);
+    if (v === undefined) s.push(`<text x="${x + CL / 2}" y="${YL + 34}" class="campo">—</text>`);   // no se revisa
+    else if (v === null) nulo(x + 10, YL + 18, CL - 20, AL - 16, mk);
     else if (v === '?') basura(x, YL + 14, CL, AL - 10);
     else {
       const p = pos.get(v);
       const ox = x + CL / 2, oy = YL + 32;
       const dx = p.x + CP + CD / 2 + (k - 1) * 12, dy = p.y - 2;   // cada campo llega a un punto distinto
       s.push(`<circle cx="${ox}" cy="${oy}" r="3" class="punto ${campo}"/>`);
-      flecha(`M${ox},${oy} C${ox},${oy + 50} ${dx},${dy - 50} ${dx},${dy}`, campo);
+      flecha(`M${ox},${oy} C${ox},${oy + 50} ${dx},${dy - 50} ${dx},${dy}`, campo, mk);
     }
   });
-  s.push(`<text x="${X0 + 3 * CL + 6}" y="${YL + AL + 4}" class="dir">${hex(L.dir)}</text>`);
+  if (!opciones.sinDirecciones) s.push(`<text x="${X0 + 3 * CL + 6}" y="${YL + AL + 4}" class="dir">${hex(L.dir)}</text>`);
   }
 
   // Los nodos
   nodos.forEach((n, i) => {
     const { x, y } = pos.get(i);
     const s = n.libre ? sLib : tgtBase;
-    s.push(`<rect x="${x}" y="${y}" width="${AN}" height="${AL}" class="nodo${n.libre ? ' liberado' : fuera.has(i) ? ' fuera' : ''}"/>`);
+    s.push(`<rect x="${x}" y="${y}" width="${AN}" height="${AL}" class="nodo${n.libre ? ' liberado' : fuera.has(i) ? ' fuera' : ''} ${marcas.nodos?.get(i) ?? ''}"/>`);
     if (n.libre) s.push(`<text x="${x + AN / 2}" y="${y - 5}" class="liberado">liberado</text>`);
     s.push(`<line x1="${x + CP}" y1="${y}" x2="${x + CP}" y2="${y + AL}" class="div"/>`);
     s.push(`<line x1="${x + CP + CD}" y1="${y}" x2="${x + CP + CD}" y2="${y + AL}" class="div"/>`);
     s.push(n.dato === '?' ? `<text x="${x + CP + CD / 2}" y="${y + AL / 2 + 5}" class="basura">?</text>`
       : `<text x="${x + CP + CD / 2}" y="${y + AL / 2 + 6}" class="dato">${n.dato === null ? 'NULL' : esc(n.dato)}</text>`);
-    s.push(`<text x="${x + AN / 2}" y="${y + AL + 15}" class="dir">${hex(n.dir)}</text>`);
+    if (!opciones.sinDirecciones) s.push(`<text x="${x + AN / 2}" y="${y + AL + 15}" class="dir">${hex(n.dir)}</text>`);
   });
   // Nodos ya liberados que nadie apunta: queda su lugar marcado (la memoria no se mueve)
   const enDibujo = new Set(nodos.map(n => n.dir));
@@ -160,20 +192,20 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
     }
     // prev
     const xp = x, yp = y + AL - 12;
-    if (n.prev === null) nulo(xp, y, CP, AL);
+    if (n.prev === null) nulo(xp, y, CP, AL, marcas.prev?.has(i) ? 'mal' : '');
     else if (n.prev === '?') basura(xp, y, CP, AL);
     else {
       const t = pos.get(n.prev), ox = xp + CP / 2;
       s.push(`<circle cx="${ox}" cy="${yp}" r="3" class="punto"/>`);
       const pi = pos.get(i);
-      if (t.y === y && x - t.x === AN + SEP) flecha(`M${ox},${yp} C${ox - 14},${yp} ${t.x + AN + 16},${yp} ${t.x + AN + 1},${yp}`, 'prev');   // al vecino de la izquierda
+      if (t.y === y && x - t.x === AN + SEP) flecha(`M${ox},${yp} C${ox - 14},${yp} ${t.x + AN + 16},${yp} ${t.x + AN + 1},${yp}`, 'prev', marcas.prev?.has(i) ? 'mal' : '');   // al vecino de la izquierda
       else if (pi.k != null && t.k === pi.k - 1) {   // comienzo de fila: sube al último de la fila anterior
         const xl = x - 14, ym = y - 16, xt = t.x + AN + 26, yt = t.y + AL - 12;
-        flecha(`M${ox},${yp} L${xl},${yp} L${xl},${ym} L${xt},${ym} L${xt},${yt} L${t.x + AN + 1},${yt}`, 'prev');
+        flecha(`M${ox},${yp} L${xl},${yp} L${xl},${ym} L${xt},${ym} L${xt},${yt} L${t.x + AN + 1},${yt}`, 'prev', marcas.prev?.has(i) ? 'mal' : '');
       }
       else {   // a otro lado: arco por abajo
         const tx = t.x + AN - 8, ty = t.y + AL, bajo = Math.min(48, 30 + Math.abs(t.x - x) / 8);
-        flecha(`M${ox},${yp} C${ox - 10},${y + AL + bajo} ${tx},${ty + bajo} ${tx},${ty + 1}`, 'prev');
+        flecha(`M${ox},${yp} C${ox - 10},${y + AL + bajo} ${tx},${ty + bajo} ${tx},${ty + 1}`, 'prev', marcas.prev?.has(i) ? 'mal' : '');
       }
     }
   });
@@ -191,8 +223,8 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   if (!nodos.length) s.push(`<text x="${X0}" y="${YL + AL + 30}" class="nota-svg">(sin nodos)</text>`);
 
   const marca = c => `<marker id="punta-${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta ${c}"/></marker>`;
-  return `<svg class="memoria" viewBox="0 0 ${ancho} ${alto}" style="max-width:${Math.round(ancho * 0.8)}px" role="img" aria-label="Memoria de la lista">
-<defs>${['head', 'tail', 'current', 'next', 'prev', 'var'].map(marca).join('')}</defs>${s.join('')}</svg>`;
+  return `<svg class="memoria" viewBox="0 0 ${ancho} ${alto}" style="max-width:${Math.round(ancho * (opciones.escala ?? 0.62))}px" role="img" aria-label="Memoria de la lista">
+<defs>${['head', 'tail', 'current', 'next', 'prev', 'var', 'ok', 'mal'].map(marca).join('')}</defs>${s.join('')}</svg>`;
 }
 
 // Diagnóstico de un error en una línea: busca en ella expresiones como «a->b->c» y las sigue en

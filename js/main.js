@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611182023';
-import { Runner } from './runner.js?v=202611182023';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182023';
-import { traducirMensaje } from './mensajes.js?v=202611182023';
-import { svgLista, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611182023';
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182023';
-import { Asistente } from './asistente.js?v=202611182023';
-import { activarDivisores } from './divisores.js?v=202611182023';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182023';
+import { Editor } from './editor.js?v=202611182045';
+import { Runner } from './runner.js?v=202611182045';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182045';
+import { traducirMensaje } from './mensajes.js?v=202611182045';
+import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado } from './visual.js?v=202611182045';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182045';
+import { Asistente } from './asistente.js?v=202611182045';
+import { activarDivisores } from './divisores.js?v=202611182045';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182045';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -377,7 +377,7 @@ async function dibujarVisual(soloSiCambio = false, posicion = 'auto') {
       visDibujado = { test: visElegido, codigo: codigoAlumno };
       const pasa = !seCayo && mismaSalida(test.esperado, salida);
       resultadoVivo(seCayo ? '<span class="res-mal">💥 El test se cae (ver la línea marcada)</span>'
-        : pasa ? '<span class="res-bien">✅ Este test pasa</span>' : '<span class="res-mal">❌ Todavía no: compara Esperado y Obtenido</span>');
+        : pasa ? '<span class="res-bien">✅ Este test pasa</span>' : (test.salida ? '<span class="res-mal">❌ Todavía no: mira lo marcado en rojo al final</span>' : '<span class="res-mal">❌ Todavía no: compara Esperado y Obtenido</span>'));
     }
   } catch (e) {
     estado('No se pudo ejecutar: ' + e.message, true);
@@ -448,6 +448,16 @@ async function ejecutarEnVivo() {
   dibujarVisual(false, 'auto');
 }
 
+// Resultado de la comparación con lo esperado: lo que retornó (verde/rojo) y qué no coincide.
+function htmlComparacion(cmp) {
+  const rets = cmp.retornos.map(r => r.obtenido === r.esperado ? `<span class="ret ok">↩ ${esc(r.obtenido)}</span>`
+    : `<span class="ret mal">↩ ${esc(r.obtenido)} <small>(se espera ${esc(r.esperado)})</small></span>`).join(' ');
+  const nombres = { datos: 'los datos de la lista', head: 'head', tail: 'tail', current: 'current', prev: 'los prev', lista: 'la lista' };
+  const todoBien = !cmp.fallas.length && cmp.retornos.every(r => r.obtenido === r.esperado);
+  return `<div class="comparacion">${rets}${todoBien ? '<span class="res-bien">✓ como se espera</span>'
+    : cmp.fallas.length ? `<span class="res-mal">✗ revisa: ${cmp.fallas.map(f => nombres[f]).join(', ')}</span>` : ''}</div>`;
+}
+
 // Explicación de un paso con error (la línea y qué puntero no se podía seguir).
 function htmlDiagnostico(c, dentro) {
   const codigoLinea = dentro ? vis.lineasAlumno[c.linea - 1] : vis.lineasTest[c.linea - 1];
@@ -513,8 +523,16 @@ function mostrarPaso() {
       + (finDeLlamada(i) === i ? (cuadros[i + 1]?.dentro ? ' La llamada terminó; Siguiente ▶ entra a la próxima.' : ' La llamada terminó.') : '')
     : c.condicion ? `Al evaluar la condición de la línea ${c.linea} del test.` : `Después de la línea ${c.linea} del test.`;
   const dibujo = i < 0 ? '<p class="nota">Toca Siguiente ▶ para ejecutar la primera línea' + (cuadros[0]?.dentro ? ', o ⤵ Entrar para verla por dentro' : '') + '.</p>'
-    : svgLista(c.estado, dentro ? c.fn.lista : E.ej.visual.variable, { lugares: vis.lugares });
+    : null;
   const ultimo = i === cuadros.length - 1;
+  // al final de un test declarativo: el estado obtenido marcado (verde = como se espera, rojo = no)
+  let comparacion = null;
+  if (ultimo && c && !c.error && !dentro && vis.test.salida) {
+    comparacion = compararConEsperado(c.estado, vis.test.salida);
+    const obtenidos = [...(vis.salidaFinal ?? '').matchAll(/^retorna: (.*)$/gm)].map(m => m[1].trim());
+    comparacion.retornos = (vis.test.salida.retornos ?? []).map((r, k) => ({ esperado: r === null ? 'NULL' : String(r), obtenido: obtenidos[k] ?? '—' }));
+  }
+  const dibujoFinal = dibujo ?? svgLista(c.estado, dentro ? c.fn.lista : E.ej.visual.variable, { lugares: vis.lugares, marcas: comparacion?.marcas });
   const proxFn = cuadros[i + 1]?.dentro ? cuadros[i + 1].fn.nombre : '';
   const salida = (i < 0 ? '' : ultimo ? vis.salidaFinal : c.salida).trim();
   const puede = a => { const j = acciones[a](i); return j !== null && j !== undefined && j !== i; };
@@ -532,13 +550,13 @@ function mostrarPaso() {
     </div>
     <div class="paso-cuerpo${dentro ? ' dentro' : ''}">
       <div class="paso-codigo">${codigo}</div>
-      <div class="paso-dibujo">${dibujo}${c && !c.error ? htmlVariables(c.estado) : ''}
+      <div class="paso-dibujo">${dibujoFinal}${comparacion ? htmlComparacion(comparacion) : ''}${c && !c.error ? htmlVariables(c.estado) : ''}
         ${ultimo && vis.error ? `<p class="error-ej">${esc(vis.error)}</p>` : ''}
         ${c?.error ? htmlDiagnostico(c, dentro) : ''}
-        <div class="salidas vis-salidas">
+        ${vis.test.salida ? '<details class="salida-texto"><summary>salida en texto</summary>' : ''}<div class="salidas vis-salidas">
           <div><h4>Esperado</h4><pre class="vis-salida">${esc(vis.test.esperado)}</pre></div>
           <div><h4>${ultimo ? 'Obtenido' : 'Impreso hasta aquí'}${ultimo ? (mismaSalida(vis.test.esperado, salida) ? ' ✅' : ' ❌') : ''}</h4><pre class="vis-salida${ultimo && !mismaSalida(vis.test.esperado, salida) ? ' distinta' : ''}">${esc(salida) || '<span class="vacio">(nada)</span>'}</pre></div>
-        </div>
+        </div>${vis.test.salida ? '</details>' : ''}
       </div>
     </div>`;
   const caja = $('vis-cuadros');
@@ -555,7 +573,7 @@ function mostrarPaso() {
   const d = describirTest(vis.test);
   $('vivo-info').innerHTML = `${esc(vis.test.nombre)}${d ? ` <span class="decl">(${esc(d.entrada)} → ${esc(d.llamadas)})</span>` : ''} · ${quePaso}`;
   $('vis-test-desc').innerHTML = htmlTest(vis.test);
-  $('vivo-cuerpo').innerHTML = dibujo + (c?.error ? htmlDiagnostico(c, dentro) : '') + (c && !c.error ? htmlVariables(c.estado) : '');
+  $('vivo-cuerpo').innerHTML = dibujoFinal + (comparacion ? htmlComparacion(comparacion) : '') + (c?.error ? htmlDiagnostico(c, dentro) : '') + (c && !c.error ? htmlVariables(c.estado) : '');
   mostrarVivo();
 }
 document.addEventListener('keydown', e => {
