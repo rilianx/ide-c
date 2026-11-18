@@ -154,8 +154,8 @@ export class Asistente {
     let html = '<div class="fila">';
     if (enArchivo.length) {
       const vacias = new Set(enArchivo.filter(f => !propias.has(f)));
-      html += `<select class="sel-funcion" title="Ir a una función de ${esc(ej.alumno)}">${nombreFn ? '' : '<option value="">Función…</option>'}`
-        + enArchivo.map(f => `<option value="${f}"${f === nombreFn ? ' selected' : ''}>${f}${vacias.has(f) ? ' (vacía)' : ''}</option>`).join('') + '</select>';
+      html += `<label class="rotulo">Función <select class="sel-funcion" title="Ir a una función de ${esc(ej.alumno)}">${nombreFn ? '' : '<option value="">elige…</option>'}`
+        + enArchivo.map(f => `<option value="${f}"${f === nombreFn ? ' selected' : ''}>${f}${vacias.has(f) ? ' (vacía)' : ''}</option>`).join('') + '</select></label>';
     }
     if (ctx.fn) html += `<span class="vars">${ctx.vars.map(v => `<code title="${esc(nombreTipo(v))}">${esc(v.nombre)}</code>`).join(' ')}</span>`;
     html += '</div>';
