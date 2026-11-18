@@ -1,0 +1,47 @@
+// Carga de ejercicios: ejercicios/index.json lista las carpetas; cada una tiene
+// ejercicio.json, sus archivos visibles y los ocultos (referencia y ayudas).
+// Lo que escribe el estudiante se guarda en el navegador (localStorage), por ejercicio.
+
+const BASE = new URL('../ejercicios/', import.meta.url);
+
+async function texto(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`No se pudo cargar ${url} (${r.status})`);
+  return r.text();
+}
+
+export async function listaEjercicios() {
+  return JSON.parse(await texto(new URL('index.json', BASE)));
+}
+
+export async function cargarEjercicio(id) {
+  const dir = new URL(id + '/', BASE);
+  const ej = JSON.parse(await texto(new URL('ejercicio.json', dir)));
+  const originales = {}, ocultos = {};
+  await Promise.all([
+    ...ej.archivos.map(async a => { originales[a.nombre] = await texto(new URL(a.nombre, dir)); }),
+    ...ej.ocultos.map(async o => { ocultos[o] = await texto(new URL(o, dir)); }),
+  ]);
+  return { ej, originales, ocultos };
+}
+
+const clave = id => `ide-c:${id}`;
+
+// Archivos editables guardados; si no hay, los originales.
+export function archivosGuardados(ej, originales) {
+  let guardados = {};
+  try { guardados = JSON.parse(localStorage.getItem(clave(ej.id)) || '{}'); } catch { /* sin almacenamiento */ }
+  const archivos = {};
+  for (const a of ej.archivos) archivos[a.nombre] = a.editable && typeof guardados[a.nombre] === 'string' ? guardados[a.nombre] : originales[a.nombre];
+  return archivos;
+}
+
+export function guardar(ej, archivos) {
+  const editables = {};
+  for (const a of ej.archivos) if (a.editable) editables[a.nombre] = archivos[a.nombre];
+  try { localStorage.setItem(clave(ej.id), JSON.stringify(editables)); } catch { /* sin almacenamiento */ }
+}
+
+export function borrarGuardado(ej) {
+  try { localStorage.removeItem(clave(ej.id)); } catch { /* sin almacenamiento */ }
+}

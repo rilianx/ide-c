@@ -1,0 +1,48 @@
+{
+  "name": "@basthon/xcc-wasm",
+  "version": "0.2.0",
+  "description": "Persistent C REPL in WebAssembly (xcc compiler and libc), for Basthon",
+  "homepage": "https://basthon.fr",
+  "repository": {
+    "type": "git",
+    "url": "https://forge.apps.education.fr/romain.casati/xcc-wasm.git",
+    "directory": "repl"
+  },
+  "license": "MIT",
+  "author": "Romain Casati",
+  "keywords": [
+    "c",
+    "repl",
+    "webassembly",
+    "wasm",
+    "basthon"
+  ],
+  "type": "module",
+  "main": "js/index.mjs",
+  "types": "js/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./js/index.d.ts",
+      "default": "./js/index.mjs"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "js/index.mjs",
+    "js/index.d.ts",
+    "js/repl.mjs",
+    "js/wasi.mjs",
+    "build/cc.wasm",
+    "build/runtime.wasm",
+    "build/runtime-map.mjs",
+    "build/headers.mjs"
+  ],
+  "scripts": {
+    "build": "make",
+    "test": "make test",
+    "prepack": "make check-up-to-date || (echo 'Not up to date: run make -C .. wcc-gen2 && make' >&2; exit 1)"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

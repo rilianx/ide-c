@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IDE C · Estructuras de Datos</title>
+<link rel="stylesheet" href="vendor/codemirror/codemirror.css">
+<link rel="stylesheet" href="css/ide.css">
+<script src="vendor/codemirror/codemirror.js"></script>
+<script src="vendor/codemirror/clike.js"></script>
+<script src="vendor/codemirror/matchbrackets.js"></script>
+<script src="vendor/codemirror/closebrackets.js"></script>
+<script src="vendor/codemirror/active-line.js"></script>
+<script type="module" src="js/main.js"></script>
+</head>
+<body>
+<header>
+  <h1>IDE C <span>· Estructuras de Datos</span></h1>
+  <select id="ejercicio" aria-label="Ejercicio"></select>
+  <div class="acciones">
+    <button id="play" class="principal" title="Compilar y ejecutar main.c">▶ Play</button>
+    <button id="probar-paso" title="Correr los tests del paso elegido">✓ Probar paso</button>
+    <button id="probar-todo" title="Correr todos los tests">✓✓ Todo</button>
+    <button id="detener" hidden title="Detener la ejecución">■ Detener</button>
+  </div>
+  <span id="estado" class="estado">Cargando el compilador…</span>
+</header>
+
+<nav class="vistas" role="tablist">
+  <button class="vista activa" data-vista="codigo" role="tab">Código</button>
+  <button class="vista" data-vista="visual" role="tab" disabled title="Próximamente">Visualización (pronto)</button>
+</nav>
+
+<main id="codigo">
+  <aside class="pasos">
+    <h2 id="titulo-ejercicio"></h2>
+    <p id="descripcion" class="descripcion"></p>
+    <ol id="lista-pasos"></ol>
+    <section id="enunciado" class="enunciado"></section>
+    <h3>Funciones</h3>
+    <ul id="funciones" class="funciones"></ul>
+    <button id="restaurar" class="secundario">⟲ Restaurar archivos</button>
+  </aside>
+
+  <section class="centro">
+    <div id="pestanas" class="pestanas"></div>
+    <div id="editor" class="editor"></div>
+  </section>
+
+  <section class="panel">
+    <div class="pestanas-panel">
+      <button class="panel-tab activa" data-panel="consola">Consola</button>
+      <button class="panel-tab" data-panel="tests">Tests <span id="resumen-tests"></span></button>
+    </div>
+    <div id="panel-consola" class="panel-cuerpo">
+      <label for="stdin">Entrada (stdin)</label>
+      <textarea id="stdin" rows="3" spellcheck="false" placeholder="Lo que el programa leerá con scanf…"></textarea>
+      <div id="compilacion"></div>
+      <pre id="salida" class="salida"></pre>
+    </div>
+    <div id="panel-tests" class="panel-cuerpo" hidden>
+      <div id="compilacion-tests"></div>
+      <div id="resultados"></div>
+    </div>
+  </section>
+</main>
+
+<main id="visual" hidden>
+  <p class="pronto">La visualización de la memoria llegará pronto.</p>
+</main>
+</body>
+</html>
