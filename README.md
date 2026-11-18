@@ -63,7 +63,7 @@ El asistente sugiere nombres de variables sacados del código base (los `.h` y e
 ## Errores
 
 - **Revisión de punteros:** el intérprete (xcc-wasm) no detiene el programa al seguir un puntero NULL (escribe en una dirección inválida y sigue). Por eso, en las funciones del estudiante, cada `a->campo` pasa por `__ck`, que detiene el programa y avisa la línea si `a` es NULL, basura o (en la visualización) un nodo liberado. Los tests muestran «Error de ejecución en list.c:N: se siguió un puntero NULL», y la visualización marca esa línea y explica qué parte era NULL. Si el código del estudiante no compila con la revisión, se prueba sin ella.
-- **Mensajes del compilador en castellano** (`js/mensajes.js`): los textos de xcc se traducen con una pista para el estudiante, y el original queda al lado en chico.
+- **Mensajes del compilador en castellano** (`js/mensajes.js`): los más comunes tienen traducción y pista escritas a mano; **todos** los demás (277 textos sacados de `cc.wasm` y `runtime.wasm`) se tradujeron con un modelo (Claude Haiku) a `herramientas/mensajes-xcc.jsonl`, y `node herramientas/generar-mensajes.mjs` los convierte en `js/mensajes-xcc.js` (cada `%s`, `%d`… pasa a ser un grupo de captura). El original queda al lado en chico. La página no llama a ningún modelo: todo está en los archivos.
 
 ## Modo profesor
 

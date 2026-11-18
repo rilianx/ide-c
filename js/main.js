@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181644';
-import { Runner } from './runner.js?v=202611181644';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181644';
-import { traducirMensaje } from './mensajes.js?v=202611181644';
-import { svgLista, lugaresDe, diagnosticar } from './visual.js?v=202611181644';
-import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181644';
-import { Asistente } from './asistente.js?v=202611181644';
-import { activarDivisores } from './divisores.js?v=202611181644';
-import { correrTests, htmlResultados } from './tests.js?v=202611181644';
+import { Editor } from './editor.js?v=202611181700';
+import { Runner } from './runner.js?v=202611181700';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181700';
+import { traducirMensaje } from './mensajes.js?v=202611181700';
+import { svgLista, lugaresDe, diagnosticar } from './visual.js?v=202611181700';
+import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181700';
+import { Asistente } from './asistente.js?v=202611181700';
+import { activarDivisores } from './divisores.js?v=202611181700';
+import { correrTests, htmlResultados } from './tests.js?v=202611181700';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

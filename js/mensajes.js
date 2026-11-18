@@ -2,20 +2,22 @@
 // La lista sale de los textos que trae el compilador (cc.wasm); se traduce aquí, sin conexión.
 // Cada entrada: [expresión regular sobre el mensaje en inglés, función que arma el texto].
 
+import TODOS from './mensajes-xcc.js?v=202611181700';
+
 const q = s => `«${s}»`;
 const REGLAS = [
   // nombres
-  [/`(.+?)' undeclared/, m => `${q(m[1])} no está declarada. ¿Falta declararla (por ejemplo, Node * ${m[1]} = …;) o está mal escrita?`],
-  [/`(.+?)' undefined/, m => `${q(m[1])} no está definida. ¿Está bien escrito el nombre?`],
-  [/`(.+?)' not found/, m => `No se encontró ${q(m[1])}. ¿Está bien escrito el nombre?`],
+  [/^`(.+?)' undeclared$/, m => `${q(m[1])} no está declarada. ¿Falta declararla (por ejemplo, Node * ${m[1]} = …;) o está mal escrita?`],
+  [/^`(.+?)' undefined$/, m => `${q(m[1])} no está definida. ¿Está bien escrito el nombre?`],
+  [/^`(.+?)' not found$/, m => `No se encontró ${q(m[1])}. ¿Está bien escrito el nombre?`],
   [/`(.+?)' is not member of struct|`(.+?)' doesn't exist in the struct/, m => `${q(m[1] ?? m[2])} no es un campo de ese struct. Revisa los campos en list.h (por ejemplo: head, tail, current, data, next, prev).`],
   [/`\.' for non struct value/, () => 'Se usó «.» con un puntero: para llegar a un campo a través de un puntero se usa «->» (por ejemplo, list->head).'],
-  [/`(.+?)' function already defined/, m => `La función ${q(m[1])} está definida dos veces. Deja solo una.`],
-  [/`(.+?)' (?:is )?already defined/, m => `${q(m[1])} ya está declarada antes. Usa otro nombre, o quita el tipo si solo quieres cambiar su valor (${m[1]} = …;).`],
+  [/^`(.+?)' function already defined$/, m => `La función ${q(m[1])} está definida dos veces. Deja solo una.`],
+  [/^`(.+?)' (?:is )?already defined$/, m => `${q(m[1])} ya está declarada antes. Usa otro nombre, o quita el tipo si solo quieres cambiar su valor (${m[1]} = …;).`],
   [/definition conflict: `(.+?)'/, m => `${q(m[1])} se declaró de dos formas distintas.`],
-  [/`(.+?)' type conflict/, m => `${q(m[1])} tiene un tipo distinto al que se declaró antes (revisa el prototipo en list.h).`],
+  [/^`(.+?)' type conflict$/, m => `${q(m[1])} tiene un tipo distinto al que se declaró antes (revisa el prototipo en list.h).`],
   [/unused variable:? `(.+?)'/, m => `La variable ${q(m[1])} se declara pero no se usa.`],
-  [/`(.+?)' not used/, m => `${q(m[1])} no se usa.`],
+  [/^`(.+?)' not used$/, m => `${q(m[1])} no se usa.`],
   // puntuación
   [/`;' or `,' expected/, () => 'Falta un «;» (o una «,»). Revisa el final de esta línea o de la anterior.'],
   [/`;' expected/, () => 'Falta un «;». Revisa el final de esta línea o de la anterior.'],
@@ -77,12 +79,26 @@ const REGLAS = [
   [/array size must be greater than 0/, () => 'El tamaño de un arreglo debe ser mayor que 0.'],
 ];
 
-// {texto, ayuda}: el mensaje en castellano (o null si no se conoce) y el original.
+// Todos los demás mensajes del compilador y su librería (traducidos con un modelo y generados
+// por herramientas/generar-mensajes.mjs): [expresión, traducción con %s…, pista].
+const XCC = TODOS.map(([re, es, pista]) => [new RegExp(re), es, pista]);
+const PH = /%(?:\.\*s|[-0-9]*l{0,2}[sdcuxzi]|zd|zu|zx)/g;
+
+// {texto, original}: el mensaje en castellano (o null si no se conoce) y el original.
 export function traducirMensaje(original) {
   const sinPrefijo = original.replace(/^\s*(error|warning|Warning):\s*/i, '');
-  for (const [re, f] of REGLAS) {
+  const aviso = /^\s*warning/i.test(original) ? 'Aviso: ' : '';
+  for (const [re, f] of REGLAS) {   // primero las escritas a mano (con pistas más detalladas)
     const m = re.exec(sinPrefijo);
-    if (m) return { texto: (/^\s*warning/i.test(original) ? 'Aviso: ' : '') + f(m), original };
+    if (m) return { texto: aviso + f(m), original };
+  }
+  for (const [re, es, pista] of XCC) {
+    const m = re.exec(sinPrefijo);
+    if (!m) continue;
+    let k = 1;
+    const texto = es.replace(PH, () => m[k++] ?? '');
+    const punto = /[.?!:)»]$/.test(texto) ? '' : '.';
+    return { texto: aviso + texto + (pista ? punto + ' ' + pista : ''), original };
   }
   return { texto: null, original };
 }

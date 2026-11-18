@@ -1,0 +1,277 @@
+{"original": "%s:%d: %s: Assertion `%s` failed", "es": "%s:%d: %s: Aserción «%s» fallida", "pista": "Una condición de assert no se cumplió; revisa la condición indicada en esa línea."}
+{"original": "\"Cast not handled\"", "es": "\"Conversión (cast) no soportada\"", "pista": ""}
+{"original": "Too %s arguments for macro `%.*s'", "es": "Demasiados o muy pocos argumentos (%s) para la macro «%.*s»", "pista": "Compara la cantidad de argumentos que pasas a la macro con su definición en #define."}
+{"original": "Warning: missing argument for -W", "es": "Advertencia: falta el argumento para -W", "pista": ""}
+{"original": "Warning: missing argument for -f", "es": "Advertencia: falta el argumento para -f", "pista": ""}
+{"original": "array or pointer required for `['", "es": "Se requiere un arreglo o un puntero para «[»", "pista": "El operador [] solo se puede aplicar a arreglos o punteros."}
+{"original": "case value `%lld' already defined", "es": "El valor de case «%lld» ya está definido", "pista": "Cada case de un switch debe tener un valor distinto."}
+{"original": "illegal function type index: %.*s", "es": "índice de tipo de función ilegal: %.*s", "pista": ""}
+{"original": "indirect function not found: %.*s", "es": "función indirecta no encontrada: %.*s", "pista": ""}
+{"original": "overwrite `defined' is prohibited", "es": "No se permite sobrescribir «defined»", "pista": "«defined» es un operador del preprocesador y no puede definirse ni redefinirse."}
+{"original": "cannot assign to incompatible struct", "es": "No se puede asignar a un struct incompatible", "pista": "Solo puedes asignar un struct a otro del mismo tipo."}
+{"original": "excess elements in array initializer", "es": "Hay elementos excedentes en el inicializador del arreglo", "pista": "Estás poniendo más valores entre { } de los que caben en el arreglo."}
+{"original": "%s(%d): error", "es": "%s(%d): error", "pista": ""}
+{"original": "%s, line %d", "es": "%s, línea %d", "pista": ""}
+{"original": "%s: library not found", "es": "%s: biblioteca no encontrada", "pista": ""}
+{"original": "%s: option '--%s' doesn't allow an argument", "es": "%s: la opción '--%s' no admite argumento", "pista": ""}
+{"original": "%s: option '--%s' requires an argument", "es": "%s: la opción '--%s' requiere un argumento", "pista": ""}
+{"original": "(missing `&'?)", "es": "(¿falta «&»?)", "pista": "Probablemente te falta el operador & para pasar la dirección de una variable."}
+{"original": "Argument list too long", "es": "Lista de argumentos demasiado larga", "pista": ""}
+{"original": "Bad address", "es": "Dirección incorrecta", "pista": "Se intentó acceder a una dirección de memoria inválida; suele deberse a un puntero no inicializado o NULL."}
+{"original": "Bad file number", "es": "Número de archivo incorrecto", "pista": "El descriptor de archivo no es válido o el archivo ya fue cerrado."}
+{"original": "Block comment not closed", "es": "Comentario de bloque no cerrado", "pista": "Falta el cierre */ del comentario."}
+{"original": "Block device required", "es": "Se requiere un dispositivo de bloques", "pista": ""}
+{"original": "Broken pipe", "es": "Tubería rota", "pista": ""}
+{"original": "Cannot assign", "es": "No se puede asignar", "pista": ""}
+{"original": "Cannot open file: %.*s", "es": "No se puede abrir el archivo: %.*s", "pista": "Revisa que el archivo exista y que la ruta esté bien escrita."}
+{"original": "Cannot open file: %s", "es": "No se puede abrir el archivo: %s", "pista": "Revisa que el archivo exista y que la ruta esté bien escrita."}
+{"original": "Cannot open output file", "es": "No se puede abrir el archivo de salida", "pista": ""}
+{"original": "Cannot take reference", "es": "No se puede tomar una referencia (dirección)", "pista": "Solo puedes usar & sobre variables u objetos que tengan una dirección en memoria."}
+{"original": "Character not closed", "es": "Carácter no cerrado", "pista": "Falta la comilla simple de cierre '."}
+{"original": "Cross-device link", "es": "Enlace entre dispositivos distintos", "pista": ""}
+{"original": "Device or resource busy", "es": "Dispositivo o recurso ocupado", "pista": ""}
+{"original": "Empty character", "es": "Carácter vacío", "pista": "Una constante de carácter debe tener exactamente un carácter entre comillas simples."}
+{"original": "Exec format error", "es": "Error de formato de ejecutable", "pista": ""}
+{"original": "Expect ')' after expression.", "es": "Se esperaba ')' después de la expresión.", "pista": "Revisa que los paréntesis estén balanceados."}
+{"original": "Expect expression.", "es": "Se esperaba una expresión.", "pista": ""}
+{"original": "Failed to extract .o: %.*s", "es": "No se pudo extraer el .o: %.*s", "pista": ""}
+{"original": "Failed to open output file", "es": "No se pudo abrir el archivo de salida", "pista": ""}
+{"original": "File exists", "es": "El archivo ya existe", "pista": ""}
+{"original": "File too large", "es": "Archivo demasiado grande", "pista": ""}
+{"original": "Hex float literal must have exponent part", "es": "El literal de punto flotante hexadecimal debe tener la parte del exponente", "pista": "Un flotante hexadecimal necesita el exponente con p, por ejemplo 0x1.8p3."}
+{"original": "I/O error", "es": "Error de E/S", "pista": ""}
+{"original": "Illegal #elif", "es": "#elif ilegal", "pista": "#elif debe usarse dentro de un bloque #if."}
+{"original": "Illegal #else", "es": "#else ilegal", "pista": "#else debe usarse dentro de un bloque #if."}
+{"original": "Illegal byte sequence", "es": "Secuencia de bytes ilegal", "pista": ""}
+{"original": "Illegal escape", "es": "Secuencia de escape ilegal", "pista": "Revisa las secuencias de escape como \\n, \\t, \\\\ o \\\"."}
+{"original": "Illegal import kind: %d", "es": "Tipo de importación ilegal: %d", "pista": ""}
+{"original": "Illegal initializer", "es": "Inicializador ilegal", "pista": ""}
+{"original": "Illegal initializer: constant number expected", "es": "Inicializador ilegal: se esperaba un número constante", "pista": "Los valores iniciales de variables globales o static deben ser constantes."}
+{"original": "Illegal literal", "es": "Literal ilegal", "pista": ""}
+{"original": "Illegal long literal", "es": "Literal long ilegal", "pista": ""}
+{"original": "Illegal seek", "es": "Desplazamiento (seek) ilegal", "pista": ""}
+{"original": "Illegal token after include: %s", "es": "Token ilegal después de include: %s", "pista": "Después de #include debes escribir <archivo.h> o \"archivo.h\"."}
+{"original": "Illegal unsigned literal", "es": "Literal unsigned ilegal", "pista": ""}
+{"original": "Interrupted system call", "es": "Llamada al sistema interrumpida", "pista": ""}
+{"original": "Invalid argument", "es": "Argumento inválido", "pista": ""}
+{"original": "Is a directory", "es": "Es un directorio", "pista": ""}
+{"original": "Malformed archive", "es": "Archivo (archive) mal formado", "pista": ""}
+{"original": "Malformed varuint32: at 0x%x", "es": "varuint32 mal formado en 0x%x", "pista": ""}
+{"original": "Math argument out of domain of func", "es": "Argumento matemático fuera del dominio de la función", "pista": "Por ejemplo, raíz cuadrada de un número negativo o logaritmo de cero o de un negativo."}
+{"original": "format `%.*s' expects argument of type `%s', but argument %d has type `%s'%s", "es": "El formato «%.*s» espera un argumento de tipo «%s», pero el argumento %d tiene tipo «%s»%s", "pista": "El especificador de formato no coincide con el tipo de la variable que pasas."}
+{"original": "NULL pointer dereference (%s)", "es": "Desreferencia de puntero NULL (%s)", "pista": "Estás usando un puntero que vale NULL; verifica que esté inicializado antes de usarlo."}
+{"original": "No child processes", "es": "No hay procesos hijos", "pista": ""}
+{"original": "No close paren", "es": "Falta el paréntesis de cierre", "pista": "Revisa que cada '(' tenga su ')'."}
+{"original": "No input files", "es": "No hay archivos de entrada", "pista": "Indica al menos un archivo fuente para compilar."}
+{"original": "No space left on device", "es": "No queda espacio en el dispositivo", "pista": ""}
+{"original": "No such device", "es": "No existe tal dispositivo", "pista": ""}
+{"original": "No such device or address", "es": "No existe tal dispositivo o dirección", "pista": ""}
+{"original": "No such file or directory", "es": "No existe el archivo o directorio", "pista": "Revisa el nombre y la ruta del archivo."}
+{"original": "No such process", "es": "No existe tal proceso", "pista": ""}
+{"original": "Not a directory", "es": "No es un directorio", "pista": ""}
+{"original": "Not a typewriter", "es": "No es una terminal (tty)", "pista": ""}
+{"original": "Operation not permitted", "es": "Operación no permitida", "pista": ""}
+{"original": "Out of memory", "es": "Sin memoria", "pista": "El programa pidió más memoria de la disponible; revisa asignaciones muy grandes o ciclos que reserven memoria sin liberarla."}
+{"original": "Permission denied", "es": "Permiso denegado", "pista": ""}
+{"original": "Quote not closed", "es": "Comilla no cerrada", "pista": "Falta cerrar la cadena con comilla doble (\")."}
+{"original": "Read-only file system", "es": "Sistema de archivos de solo lectura", "pista": ""}
+{"original": "String not closed", "es": "Cadena no cerrada", "pista": "Falta la comilla doble de cierre de la cadena."}
+{"original": "Tag type mismatch: %.*s", "es": "Tipo de etiqueta no coincide: %.*s", "pista": ""}
+{"original": "Target: %s", "es": "Destino: %s", "pista": ""}
+{"original": "Text file busy", "es": "Archivo de texto en uso", "pista": ""}
+{"original": "Too many links", "es": "Demasiados enlaces", "pista": ""}
+{"original": "Too many open files", "es": "Demasiados archivos abiertos", "pista": ""}
+{"original": "Try again", "es": "Inténtalo de nuevo", "pista": ""}
+{"original": "Unexpected character `%c'(%d)", "es": "Carácter inesperado «%c» (%d)", "pista": "El compilador encontró un carácter que no reconoce en el código."}
+{"original": "Unknown error", "es": "Error desconocido", "pista": ""}
+{"original": "Unknown source type: %s", "es": "Tipo de fuente desconocido: %s", "pista": ""}
+{"original": "Unresolved: %.*s", "es": "Sin resolver: %.*s", "pista": "El enlazador no encuentra la definición de este símbolo; ¿te falta implementar la función o enlazar su archivo?"}
+{"original": "Unresolved: %.*s.%.*s", "es": "Sin resolver: %.*s.%.*s", "pista": "El enlazador no encuentra la definición de este símbolo; ¿te falta implementar la función o enlazar su archivo?"}
+{"original": "Unsupported file: %s", "es": "Archivo no soportado: %s", "pista": ""}
+{"original": "Usage: wcc [options] file...", "es": "Uso: wcc [opciones] archivo...", "pista": ""}
+{"original": "VLA not allowed in struct/union", "es": "VLA no permitido en struct/union", "pista": "Un arreglo de longitud variable no puede ser miembro de un struct o union."}
+{"original": "Warning: unhandled #pragma: %s", "es": "Advertencia: #pragma no manejado: %s", "pista": ""}
+{"original": "Warning: unknown option: %s", "es": "Advertencia: opción desconocida: %s", "pista": ""}
+{"original": "`\"' expected", "es": "Se esperaba «\"»", "pista": ""}
+{"original": "`#elif' used without `#if'", "es": "«#elif» usado sin «#if»", "pista": "#elif solo puede aparecer después de un #if."}
+{"original": "`#else' used without `#if'", "es": "«#else» usado sin «#if»", "pista": "#else solo puede aparecer después de un #if."}
+{"original": "`#endif' used without `#if'", "es": "«#endif» usado sin «#if»", "pista": "Sobra un #endif: cada #endif debe cerrar un #if."}
+{"original": "`%.*s' already defined", "es": "«%.*s» ya está definido", "pista": ""}
+{"original": "`%.*s' cannot be used outside of loop", "es": "«%.*s» no puede usarse fuera de un bucle", "pista": "break y continue solo sirven dentro de bucles (break también dentro de switch)."}
+{"original": "`%.*s' doesn't exist in the struct", "es": "«%.*s» no existe en el struct", "pista": "Revisa el nombre del campo; puede haber una errata."}
+{"original": "`%.*s' function already defined", "es": "La función «%.*s» ya está definida", "pista": ""}
+{"original": "`%.*s' is already defined", "es": "«%.*s» ya está definido", "pista": ""}
+{"original": "`%.*s' is not member of struct", "es": "«%.*s» no es miembro del struct", "pista": ""}
+{"original": "`%.*s' not found", "es": "«%.*s» no encontrado", "pista": ""}
+{"original": "`%.*s' not used", "es": "«%.*s» no se usa", "pista": "Es una advertencia: la variable o función está declarada pero nunca se utiliza."}
+{"original": "`%.*s' type conflict", "es": "Conflicto de tipos en «%.*s»", "pista": ""}
+{"original": "`%.*s' undeclared", "es": "«%.*s» no está declarada", "pista": "Debes declarar la variable o función antes de usarla; revisa también si hay erratas en el nombre."}
+{"original": "`%.*s' undefined", "es": "«%.*s» no está definido", "pista": ""}
+{"original": "`%s' cannot use outside of `switch`", "es": "«%s» no puede usarse fuera de «switch»", "pista": ""}
+{"original": "`(' expected", "es": "Se esperaba «(»", "pista": ""}
+{"original": "`)' expected", "es": "Se esperaba «)»", "pista": ""}
+{"original": "`,' expected", "es": "Se esperaba «,»", "pista": ""}
+{"original": "`,' or `)' expected", "es": "Se esperaba «,» o «)»", "pista": ""}
+{"original": "`,' or `)` expected", "es": "Se esperaba «,» o «)»", "pista": ""}
+{"original": "`.' for non struct value", "es": "Se usó «.» con un valor que no es struct", "pista": "Si tienes un puntero a struct, usa «->» en lugar de «.»."}
+{"original": "`:' expected", "es": "Se esperaba «:»", "pista": ""}
+{"original": "`;' expected", "es": "Se esperaba «;»", "pista": "Suele faltar el punto y coma al final de la línea anterior."}
+{"original": "`;' or `,' expected", "es": "Se esperaba «;» o «,»", "pista": ""}
+{"original": "`]' expected", "es": "Se esperaba «]»", "pista": ""}
+{"original": "`default' already defined in `switch'", "es": "«default» ya está definido en «switch»", "pista": "Un switch solo puede tener un default."}
+{"original": "`extern' for function parameter", "es": "«extern» no se permite en un parámetro de función", "pista": ""}
+{"original": "`noreturn' function should not return", "es": "La función «noreturn» no debe retornar", "pista": ""}
+{"original": "`noreturn' function should not return value", "es": "La función «noreturn» no debe retornar un valor", "pista": ""}
+{"original": "`return' required", "es": "Falta «return»", "pista": "La función debe terminar con un return."}
+{"original": "`return' required a value", "es": "«return» requiere un valor", "pista": ""}
+{"original": "`return' with void value", "es": "«return» con valor en una función void", "pista": "Una función void no puede devolver un valor."}
+{"original": "`static' for function parameter", "es": "«static» no se permite en un parámetro de función", "pista": ""}
+{"original": "`typedef' for function parameter", "es": "«typedef» no se permite en un parámetro de función", "pista": ""}
+{"original": "`va_start' can only be used in a variadic function", "es": "«va_start» solo puede usarse en una función con número variable de argumentos", "pista": ""}
+{"original": "`void' not allowed", "es": "«void» no está permitido aquí", "pista": "void solo puede usarse como tipo de retorno o como lista de parámetros (void)."}
+{"original": "`while' expected", "es": "Se esperaba «while»", "pista": "Un do debe terminar con while(condición);."}
+{"original": "`}' expected", "es": "Se esperaba «}»", "pista": ""}
+{"original": "`}' or `,' expected", "es": "Se esperaba «}» o «,»", "pista": ""}
+{"original": "alloca failed", "es": "alloca falló", "pista": ""}
+{"original": "allowed global reference only", "es": "Solo se permite una referencia global", "pista": ""}
+{"original": "array index out of bounds: index %lld, size %lld (%s)", "es": "Índice de arreglo fuera de rango: índice %lld, tamaño %lld (%s)", "pista": "Estás accediendo fuera del arreglo; los índices válidos van de 0 a tamaño-1."}
+{"original": "array initializer requires `{'", "es": "El inicializador de arreglo requiere «{»", "pista": ""}
+{"original": "array length different", "es": "La longitud del arreglo es distinta", "pista": ""}
+{"original": "array size must be greater than 0, but %zd", "es": "El tamaño del arreglo debe ser mayor que 0, pero es %zd", "pista": ""}
+{"original": "array size shorter than initializer", "es": "El tamaño del arreglo es menor que el del inicializador", "pista": "Hay más valores en el inicializador que casillas en el arreglo."}
+{"original": "array size undetermined, assume as one", "es": "El tamaño del arreglo no está determinado; se asume uno", "pista": ""}
+{"original": "attribute name expected", "es": "Se esperaba un nombre de atributo", "pista": ""}
+{"original": "auto type must have initializer", "es": "El tipo auto debe tener un inicializador", "pista": "auto necesita un valor inicial para saber qué tipo tiene la variable."}
+{"original": "`=' expected for dotted initializer", "es": "Se esperaba «=» para el inicializador con punto", "pista": "En un inicializador designado como .campo = valor, falta el signo «=»."}
+{"original": "auto type must have single initializer", "es": "el tipo auto debe tener un único inicializador", "pista": "Una variable declarada con auto debe inicializarse con exactamente una expresión."}
+{"original": "auto type not allowed", "es": "el tipo auto no está permitido", "pista": "Este compilador solo acepta auto en declaraciones de variables con inicializador."}
+{"original": "auto type not allowed in function parameter", "es": "el tipo auto no está permitido en parámetros de función", "pista": "Los parámetros de una función deben tener un tipo explícito."}
+{"original": "auto type not allowed in function return type", "es": "el tipo auto no está permitido como tipo de retorno de una función", "pista": "Debes escribir el tipo de retorno de la función de forma explícita."}
+{"original": "auto type not allowed in struct/union", "es": "el tipo auto no está permitido en struct/union", "pista": "Los campos de una struct o union deben tener un tipo explícito."}
+{"original": "bit width exceeds", "es": "el ancho de bits excede el máximo permitido", "pista": "El campo de bits pide más bits de los que puede almacenar su tipo."}
+{"original": "bit width zero with name", "es": "ancho de bits cero con nombre", "pista": "Un campo de bits de ancho 0 no puede tener nombre; solo sirve para forzar alineación."}
+{"original": "block comment not closed: %s", "es": "el comentario de bloque no está cerrado: %s", "pista": "Falta el «*/» que cierra el comentario que empieza con «/*»."}
+{"original": "buffer is shorter than string: %d for \"%s\"", "es": "el buffer es más corto que la cadena: %d para «%s»", "pista": "El arreglo de caracteres no tiene espacio suficiente; recuerda que también debe caber el carácter '\\0' final."}
+{"original": "cannot apply `!' except number or pointer types", "es": "no se puede aplicar «!» salvo a tipos numéricos o punteros", "pista": "El operador «!» solo funciona con números o punteros."}
+{"original": "cannot apply `%.*s'", "es": "no se puede aplicar «%.*s»", "pista": ""}
+{"original": "cannot apply `%c' except number types", "es": "no se puede aplicar «%c» salvo a tipos numéricos", "pista": "El operador solo es válido para números."}
+{"original": "cannot apply `~' except integer", "es": "no se puede aplicar «~» salvo a enteros", "pista": "El operador «~» (complemento a nivel de bits) solo funciona con enteros."}
+{"original": "cannot assign to %s", "es": "no se puede asignar a %s", "pista": "Solo puedes asignar valores a variables modificables, no a constantes ni a expresiones."}
+{"original": "cannot call except function", "es": "no se puede llamar a algo que no es una función", "pista": "Los paréntesis de llamada solo se pueden usar sobre funciones o punteros a función."}
+{"original": "cannot compare except numbers", "es": "no se puede comparar salvo números", "pista": "Esta comparación solo es válida entre valores numéricos."}
+{"original": "cannot dereference raw type", "es": "no se puede desreferenciar un tipo que no es puntero", "pista": "El operador «*» solo se aplica a punteros."}
+{"original": "cannot get size for bitfield", "es": "no se puede obtener el tamaño de un campo de bits", "pista": "sizeof no funciona con campos de bits de una struct."}
+{"original": "cannot modify `const'", "es": "no se puede modificar un «const»", "pista": "Una variable declarada con const no puede cambiar de valor después de inicializarse."}
+{"original": "cannot open temporary file", "es": "no se puede abrir el archivo temporal", "pista": ""}
+{"original": "cannot open: %s", "es": "no se puede abrir: %s", "pista": "Revisa que el archivo exista, que el nombre esté bien escrito y que tengas permiso de lectura."}
+{"original": "cannot take reference for bitfield", "es": "no se puede tomar la dirección de un campo de bits", "pista": "Los campos de bits no tienen dirección propia en memoria, así que «&» no se les puede aplicar."}
+{"original": "cannot use `%.*s' except integers.", "es": "no se puede usar «%.*s» salvo con enteros.", "pista": ""}
+{"original": "case/default inside branch not supported", "es": "case/default dentro de una rama no está soportado", "pista": "Un case o default debe estar directamente dentro de un switch, no dentro de un if u otra rama."}
+{"original": "compare pointer to other types", "es": "no se puede comparar un puntero con otros tipos", "pista": "Un puntero solo se compara con otro puntero compatible (o con NULL)."}
+{"original": "conflict typedef", "es": "conflicto de typedef", "pista": ""}
+{"original": "conflict typedef with variable", "es": "conflicto de typedef con una variable", "pista": "Un mismo nombre no puede ser a la vez un typedef y una variable en el mismo ámbito."}
+{"original": "conflict with typedef", "es": "conflicto con un typedef", "pista": "El nombre ya fue usado por un typedef en el mismo ámbito; elige otro nombre."}
+{"original": "constant expression expected", "es": "se esperaba una expresión constante", "pista": "En este lugar (por ejemplo en un case o en el tamaño de un arreglo) el valor debe conocerse al compilar."}
+{"original": "constant integer expected", "es": "se esperaba un entero constante", "pista": ""}
+{"original": "constructor must have no parameters and return void", "es": "el constructor no debe tener parámetros y debe devolver void", "pista": ""}
+{"original": "definition conflict: `%.*s'", "es": "conflicto de definición: «%.*s»", "pista": "Ese nombre ya está definido; revisa si lo declaraste dos veces."}
+{"original": "destructor must have no parameters and return void", "es": "el destructor no debe tener parámetros y debe devolver void", "pista": ""}
+{"original": "different pointer diff", "es": "diferencia entre punteros de tipos distintos", "pista": "Solo puedes restar punteros que apunten al mismo tipo."}
+{"original": "different type tag", "es": "etiqueta de tipo distinta", "pista": "Dos declaraciones de la misma struct, union o enum usan tipos diferentes."}
+{"original": "divide by 0", "es": "división por 0", "pista": "Dividir por cero no está definido; revisa el divisor."}
+{"original": "error initializer", "es": "error en el inicializador", "pista": ""}
+{"original": "expression expected", "es": "se esperaba una expresión", "pista": "Falta un valor o una operación en ese lugar."}
+{"original": "extern with initializer", "es": "extern con inicializador", "pista": "Una declaración extern no puede asignar valor; la definición debe ir sin extern."}
+{"original": "flexible array as an argument not allowed", "es": "no se permite un arreglo flexible como argumento", "pista": "Un arreglo flexible (sin tamaño) solo puede ser el último miembro de una struct."}
+{"original": "flexible array member must be last element", "es": "el miembro de arreglo flexible debe ser el último elemento", "pista": "El arreglo sin tamaño debe ir al final de la struct."}
+{"original": "format `%.*s' expects a matching argument", "es": "el formato «%.*s» requiere un argumento correspondiente", "pista": "Cada especificador de formato de printf o scanf necesita su argumento."}
+{"original": "function `%.*s' expect %d arguments, but %d", "es": "la función «%.*s» espera %d argumentos, pero recibió %d", "pista": "Compara la cantidad de argumentos de la llamada con los parámetros de la declaración."}
+{"original": "function's parameters must be known", "es": "los parámetros de la función deben estar declarados", "pista": "Declara explícitamente los parámetros de la función antes de usarla."}
+{"original": "fseek failed", "es": "falló fseek", "pista": ""}
+{"original": "ident expected", "es": "se esperaba un identificador", "pista": "Falta el nombre de una variable, función, campo o etiqueta."}
+{"original": "ident expected for dotted initializer", "es": "se esperaba un identificador para el inicializador con punto", "pista": "En un inicializador designado, el punto debe ir seguido del nombre de un campo, por ejemplo .campo = valor."}
+{"original": "identifier not allowed", "es": "identificador no permitido", "pista": ""}
+{"original": "if not closed", "es": "el if no está cerrado", "pista": "Falta cerrar un paréntesis o una llave del if."}
+{"original": "illegal bit width", "es": "ancho de bits no válido", "pista": "El ancho de un campo de bits debe ser un entero positivo."}
+{"original": "illegal bracket designator", "es": "designador con corchetes no válido", "pista": "En un inicializador con corchetes, el índice debe ser un entero constante."}
+{"original": "illegal character: %c", "es": "carácter no válido: %c", "pista": "Ese símbolo no pertenece al lenguaje C; puede ser un carácter pegado por error."}
+{"original": "illegal dotted designator", "es": "designador con punto no válido", "pista": ""}
+{"original": "illegal expression", "es": "expresión no válida", "pista": "Revisa los operadores y operandos de la expresión."}
+{"original": "illegal include: %s", "es": "#include no válido: %s", "pista": "Usa #include <archivo.h> o #include \"archivo.h\" con el nombre bien escrito."}
+{"original": "illegal initializer for member `%.*s'", "es": "inicializador no válido para el miembro «%.*s»", "pista": "El valor asignado no coincide con el tipo del campo."}
+{"original": "illegal struct/union usage", "es": "uso no válido de struct/union", "pista": ""}
+{"original": "illegal tag index: %.*s", "es": "índice de etiqueta no válido: %.*s", "pista": ""}
+{"original": "illegal type combination", "es": "combinación de tipos no válida", "pista": "Por ejemplo, «unsigned float» no es una combinación válida."}
+{"original": "illegal type index for %.*s: %d", "es": "índice de tipo no válido para %.*s: %d", "pista": ""}
+{"original": "illegal type index: %d", "es": "índice de tipo no válido: %d", "pista": ""}
+{"original": "illegal type: %.*s", "es": "tipo no válido: %.*s", "pista": ""}
+{"original": "illegal type: 0x%02x", "es": "tipo no válido: 0x%02x", "pista": ""}
+{"original": "import_module: string expected", "es": "import_module: se esperaba una cadena", "pista": ""}
+{"original": "import_name: string expected", "es": "import_name: se esperaba una cadena", "pista": ""}
+{"original": "incompatible type", "es": "tipo incompatible", "pista": "Los tipos de los dos lados de la operación o asignación no son compatibles."}
+{"original": "incomplete enum: `%.*s'", "es": "enum incompleto: «%.*s»", "pista": "El enum se usa antes de que se definan sus valores."}
+{"original": "incomplete format specifier `%.*s'", "es": "especificador de formato incompleto «%.*s»", "pista": "Un especificador como %d necesita su letra de conversión completa."}
+{"original": "incomplete struct: `%.*s'", "es": "struct incompleto: «%.*s»", "pista": "No puedes declarar una variable de una struct antes de definir sus campos."}
+{"original": "indirect function not found: %d", "es": "función indirecta no encontrada: %d", "pista": ""}
+{"original": "initializer for empty union", "es": "inicializador para una union vacía", "pista": ""}
+{"original": "initializer more than array size", "es": "hay más inicializadores que el tamaño del arreglo", "pista": "La lista de valores es más larga que el arreglo declarado."}
+{"original": "initializer must be constant", "es": "el inicializador debe ser constante", "pista": "Las variables globales y static solo pueden inicializarse con valores constantes."}
+{"original": "initializer overlapped", "es": "inicializadores superpuestos", "pista": ""}
+{"original": "int required for `['", "es": "se requiere un entero dentro de «[»", "pista": "El índice de un arreglo debe ser un entero."}
+{"original": "int type expected", "es": "se esperaba un tipo entero", "pista": ""}
+{"original": "invalid index", "es": "índice no válido", "pista": "El índice debe estar dentro de los límites del arreglo."}
+{"original": "label `%.*s' already defined", "es": "la etiqueta «%.*s» ya está definida", "pista": "Cada etiqueta debe tener un nombre distinto dentro de la función."}
+{"original": "label for goto expected", "es": "se esperaba una etiqueta para goto", "pista": "Después de goto debes escribir el nombre de una etiqueta."}
+{"original": "language not recognized: %s", "es": "idioma no reconocido: %s", "pista": ""}
+{"original": "lhs and rhs must be same type", "es": "ambos lados deben ser del mismo tipo", "pista": "Los dos operandos de la operación deben tener el mismo tipo."}
+{"original": "load failed: %s", "es": "falló la carga: %s", "pista": ""}
+{"original": "lvalue expected", "es": "se esperaba un lvalue", "pista": "Solo puedes asignar a algo que tenga una dirección en memoria, como una variable."}
+{"original": "main function must take no argument or two arguments", "es": "la función main debe no recibir argumentos o recibir dos", "pista": "Las formas válidas son main(void) o main(int argc, char *argv[])."}
+{"original": "member name expected", "es": "se esperaba el nombre de un miembro", "pista": "Después del punto o de la flecha debes escribir el nombre de un campo."}
+{"original": "memory overflow", "es": "desbordamiento de memoria", "pista": "El programa pidió más memoria de la disponible; revisa si hay bucles o recursiones sin fin."}
+{"original": "more than one initializer for union", "es": "más de un inicializador para la union", "pista": "Una union solo puede inicializarse con un valor, que va al primer miembro."}
+{"original": "multiple `const' specified", "es": "«const» especificado varias veces", "pista": ""}
+{"original": "multiple `restrict' specified", "es": "«restrict» especificado varias veces", "pista": ""}
+{"original": "multiple `volatile' specified", "es": "«volatile» especificado varias veces", "pista": ""}
+{"original": "multiple default values", "es": "múltiples valores por defecto", "pista": "Un switch solo puede tener un default."}
+{"original": "multiple qualifier specified", "es": "calificador especificado varias veces", "pista": ""}
+{"original": "multiple storage specified", "es": "clase de almacenamiento especificada varias veces", "pista": "Solo puede haber una clase de almacenamiento (static, extern, auto, register) por declaración."}
+{"original": "must be constant", "es": "debe ser constante", "pista": ""}
+{"original": "must be inside function", "es": "debe estar dentro de una función", "pista": "Este código solo puede aparecer dentro del cuerpo de una función."}
+{"original": "must be integer", "es": "debe ser un entero", "pista": ""}
+{"original": "must be the last parameter", "es": "debe ser el último parámetro", "pista": "El parámetro variádico (...) debe ir al final de la lista."}
+{"original": "non negative integer required", "es": "se requiere un entero no negativo", "pista": ""}
+{"original": "no matching type found", "es": "no se encontró un tipo correspondiente", "pista": ""}
+{"original": "not closed", "es": "no está cerrado", "pista": "Falta cerrar un paréntesis, corchete o llave."}
+{"original": "number type expected", "es": "se esperaba un tipo numérico", "pista": ""}
+{"original": "one arguments expected", "es": "se esperaba un argumento", "pista": ""}
+{"original": "only escape goto supported", "es": "solo se admite goto para salir de bloques anidados", "pista": "En este compilador, goto solo sirve para saltar fuera de bloques anidados."}
+{"original": "open_memstream failed", "es": "falló open_memstream", "pista": ""}
+{"original": "pointer subtraction of void*", "es": "resta de punteros de tipo void*", "pista": "No se pueden restar punteros void* porque no conocen el tamaño de lo que apuntan."}
+{"original": "positive integer expected: %s", "es": "se esperaba un entero positivo: %s", "pista": ""}
+{"original": "requires scaler", "es": "requiere un escalar (número o puntero)", "pista": "Se necesita un valor escalar; no se puede usar una struct o un arreglo en ese lugar."}
+{"original": "r|w|a required", "es": "se requiere r, w o a", "pista": "El modo de apertura de fopen debe empezar con «r», «w» o «a»."}
+{"original": "size unknown", "es": "tamaño desconocido", "pista": "No se puede calcular el tamaño del tipo; revisa que esté completamente definido."}
+{"original": "statement expected", "es": "se esperaba una sentencia", "pista": "Falta una instrucción, o sobra un punto y coma o una llave."}
+{"original": "storage class specifier not allowed", "es": "especificador de clase de almacenamiento no permitido", "pista": "Ese especificador (static, extern, etc.) no puede usarse en este lugar."}
+{"original": "storage specifier not allowed", "es": "especificador de almacenamiento no permitido", "pista": "Ese especificador no puede usarse en este lugar."}
+{"original": "string literal expected", "es": "se esperaba una cadena literal", "pista": "Aquí debes escribir un texto entre comillas dobles."}
+{"original": "struct initializer requires `{'", "es": "el inicializador de struct requiere «{»", "pista": "Los valores de una struct van entre llaves, por ejemplo {valor1, valor2}."}
+{"original": "too many arguments for format", "es": "demasiados argumentos para el formato", "pista": "Sobran argumentos respecto a los especificadores de formato del texto."}
+{"original": "two arguments expected", "es": "se esperaban dos argumentos", "pista": ""}
+{"original": "two arguments required", "es": "se requieren dos argumentos", "pista": ""}
+{"original": "type expected", "es": "se esperaba un tipo", "pista": "Falta el tipo de dato (int, char, float, una struct, etc.)."}
+{"original": "unexpected token", "es": "token inesperado", "pista": "El compilador encontró un símbolo que no esperaba; revisa la línea anterior, a veces el error está ahí."}
+{"original": "unhandled `setjmp' usage", "es": "uso no manejado de «setjmp»", "pista": "setjmp solo puede usarse en comparaciones o asignaciones simples."}
+{"original": "unknown conversion `%.*s' in format", "es": "conversión desconocida «%.*s» en el formato", "pista": "Revisa la letra del especificador de formato, por ejemplo %d, %s o %f."}
+{"original": "unknown directive: [%s]", "es": "directiva desconocida: [%s]", "pista": "Revisa el nombre de la directiva del preprocesador, por ejemplo #include o #define."}
+{"original": "unused function: `%.*s'", "es": "función no usada: «%.*s»", "pista": "Es una advertencia: la función está declarada pero nunca se llama."}
+{"original": "unused variable `%.*s'", "es": "variable no usada «%.*s»", "pista": "Es una advertencia: la variable se declara pero nunca se usa."}
+{"original": "unused variable: `%.*s'", "es": "variable no usada: «%.*s»", "pista": "Es una advertencia: la variable se declara pero nunca se usa."}
+{"original": "using flexible array as a parameter not allowed", "es": "no se permite usar un arreglo flexible como parámetro", "pista": ""}
+{"original": "variable expected", "es": "se esperaba una variable", "pista": ""}
+{"original": "variable length array cannot use in global scope", "es": "no se puede usar un arreglo de longitud variable en el ámbito global", "pista": "Los arreglos de tamaño variable solo pueden declararse dentro de funciones."}
+{"original": "variable length array with initializer", "es": "arreglo de longitud variable con inicializador", "pista": "Un arreglo de longitud variable no puede inicializarse con una lista de valores."}
+{"original": "void function `return' a value", "es": "una función void no puede devolver un valor con «return»", "pista": "Quita el valor del return, o cambia el tipo de retorno de la función."}
+{"original": "wrong tag for `%.*s'", "es": "etiqueta incorrecta para «%.*s»", "pista": ""}
+{"original": "x required", "es": "se requiere x", "pista": ""}
