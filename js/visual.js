@@ -12,13 +12,35 @@ const SEP = 58;                         // espacio entre nodos
 const X0 = 64, YL = 16, YN = 128;       // margen, fila de la List, fila de los nodos
 const CL = 70;                          // ancho de cada campo de la List
 
-// Los nodos se dibujan como en la memoria: cada uno en un lugar fijo según su dirección
-// (no se mueven al cambiar los enlaces; solo cambian las flechas).
-// opciones.lugares: Map dirección → lugar, el mismo para todos los dibujos de una ejecución
-// (si no se da, se ordenan las direcciones de este estado). opciones.porFila: lugares por fila.
+// Cada nodo tiene un lugar fijo durante toda la ejecución (no se mueve al cambiar los enlaces).
+// Los lugares siguen el orden de la lista al final del test; un nodo que se eliminó queda donde
+// estaba entre sus vecinos la última vez que estuvo en la lista, y uno que nunca se enlazó, al final.
+// Se identifica por su dirección: si otro nodo ocupa después esa memoria, ocupa también su lugar.
+// opciones.lugares: Map dirección → lugar (si no se da, el orden de la lista de este estado).
 export function lugaresDe(estados) {
-  const dirs = [...new Set(estados.flatMap(e => (e?.nodos ?? []).map(n => n.dir)))].sort((a, b) => a - b);
-  return new Map(dirs.map((d, k) => [d, k]));
+  const cadena = e => {   // direcciones desde head siguiendo next
+    const ns = e?.nodos ?? [], out = [], visto = new Set();
+    for (let i = e?.lista?.head; Number.isInteger(i) && !visto.has(i) && ns[i]; i = ns[i].next) { visto.add(i); out.push(ns[i].dir); }
+    return out;
+  };
+  const cadenas = estados.map(cadena);
+  const orden = [...(cadenas.at(-1) ?? [])];
+  const todos = [...new Set(estados.flatMap(e => (e?.nodos ?? []).map(n => n.dir)))];
+  for (const d of todos) {
+    if (orden.includes(d)) continue;
+    let k = cadenas.length - 1;
+    while (k >= 0 && !cadenas[k].includes(d)) k--;
+    let ins = orden.length;
+    if (k >= 0) {   // junto a sus vecinos de la última vez que estuvo en la lista
+      const c = cadenas[k], p = c.indexOf(d);
+      const antes = c.slice(0, p).reverse().find(x => orden.includes(x));
+      const despues = c.slice(p + 1).find(x => orden.includes(x));
+      if (antes != null) ins = orden.indexOf(antes) + 1;
+      else if (despues != null) ins = orden.indexOf(despues);
+    }
+    orden.splice(ins, 0, d);
+  }
+  return new Map(orden.map((d, k) => [d, k]));
 }
 export function svgLista(estado, nombre = 'L', opciones = {}) {
   const POR_FILA = Math.max(2, opciones.porFila ?? (innerWidth <= 600 ? 3 : 5));
