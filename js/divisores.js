@@ -9,6 +9,7 @@ export function activarDivisores(grilla, alCambiar = () => {}) {
   try { Object.assign(anchos, JSON.parse(localStorage.getItem(CLAVE) || '{}')); } catch { /* sin almacenamiento */ }
 
   const aplicar = () => {
+    if (innerWidth <= 1000) { alCambiar(); return; }   // celular: una columna (pestañas); no se tocan los anchos guardados
     const max = Math.max(MIN, grilla.clientWidth - 360);   // el editor conserva al menos ~360 px
     anchos.izq = Math.min(Math.max(anchos.izq, MIN), max);
     anchos.der = Math.min(Math.max(anchos.der, MIN), max);

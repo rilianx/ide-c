@@ -9,7 +9,7 @@ const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');   /
 const CP = 26, CD = 46, CN = 26;        // celdas prev, dato, next
 const AN = CP + CD + CN, AL = 38;       // ancho y alto de un nodo
 const SEP = 58;                         // espacio entre nodos
-const X0 = 64, YL = 26, YN = 150;       // margen, fila de la List, fila de los nodos
+const X0 = 64, YL = 16, YN = 128;       // margen, fila de la List, fila de los nodos
 const CL = 70;                          // ancho de cada campo de la List
 
 export function svgLista(estado, nombre = 'L') {
@@ -50,7 +50,7 @@ export function svgLista(estado, nombre = 'L') {
   if (conVars && fila2) resto.forEach(i => { pos.get(i).y += BAJO; });
   const yUltima = resto.length && fila2 ? YN + 120 + BAJO : YN;
   const ancho = Math.max(X0 + 3 * CL + 120, X0 + Math.max(fila.length, resto.length, 1) * (AN + SEP) + 20, resto.length ? 470 : 0);
-  const alto = yUltima + AL + 40 + BAJO + (sueltas.length ? 22 : 0);
+  const alto = nodos.length ? yUltima + AL + 30 + BAJO + (sueltas.length ? 22 : 0) : YL + AL + 46 + (sueltas.length ? 22 : 0);
   const s = [];
 
   // Flecha con punta
@@ -131,9 +131,9 @@ export function svgLista(estado, nombre = 'L') {
   }
   if (sueltas.length) s.push(`<text x="${X0}" y="${alto - 10}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
   if (resto.length && fila.length) s.push(`<text x="${X0}" y="${YN + 104 + BAJO}" class="nota-svg">fuera de la lista (no se alcanzan desde head siguiendo next):</text>`);
-  if (!nodos.length) s.push(`<text x="${X0}" y="${YN + 20}" class="nota-svg">(sin nodos)</text>`);
+  if (!nodos.length) s.push(`<text x="${X0}" y="${YL + AL + 30}" class="nota-svg">(sin nodos)</text>`);
 
   const marca = c => `<marker id="punta-${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta ${c}"/></marker>`;
-  return `<svg class="memoria" viewBox="0 0 ${ancho} ${alto}" width="${ancho}" height="${alto}" role="img" aria-label="Memoria de la lista">
+  return `<svg class="memoria" viewBox="0 0 ${ancho} ${alto}" style="max-width:${Math.round(ancho * 0.8)}px" role="img" aria-label="Memoria de la lista">
 <defs>${['head', 'tail', 'current', 'next', 'prev', 'var'].map(marca).join('')}</defs>${s.join('')}</svg>`;
 }
