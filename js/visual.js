@@ -12,9 +12,9 @@ const SEP = 58;                         // espacio entre nodos
 const X0 = 64, YL = 16, YN = 128;       // margen, fila de la List, fila de los nodos
 const CL = 70;                          // ancho de cada campo de la List
 
-// Cada nodo tiene un lugar fijo durante toda la ejecución (no se mueve al cambiar los enlaces).
-// Los lugares siguen el orden de la lista al final del test; un nodo que se eliminó queda donde
-// estaba entre sus vecinos la última vez que estuvo en la lista, y uno que nunca se enlazó, al final.
+// Cada nodo tiene un lugar fijo durante toda la ejecución (no se mueve al cambiar los punteros).
+// Solo al comienzo (la entrada) están ordenados: los nodos de la lista de entrada, en su orden;
+// los que se crean después van a continuación, en el orden en que aparecen.
 // Se identifica por su dirección: si otro nodo ocupa después esa memoria, ocupa también su lugar.
 // opciones.lugares: Map dirección → lugar (si no se da, el orden de la lista de este estado).
 export function lugaresDe(estados) {
@@ -23,23 +23,8 @@ export function lugaresDe(estados) {
     for (let i = e?.lista?.head; Number.isInteger(i) && !visto.has(i) && ns[i]; i = ns[i].next) { visto.add(i); out.push(ns[i].dir); }
     return out;
   };
-  const cadenas = estados.map(cadena);
-  const orden = [...(cadenas.at(-1) ?? [])];
-  const todos = [...new Set(estados.flatMap(e => (e?.nodos ?? []).map(n => n.dir)))];
-  for (const d of todos) {
-    if (orden.includes(d)) continue;
-    let k = cadenas.length - 1;
-    while (k >= 0 && !cadenas[k].includes(d)) k--;
-    let ins = orden.length;
-    if (k >= 0) {   // junto a sus vecinos de la última vez que estuvo en la lista
-      const c = cadenas[k], p = c.indexOf(d);
-      const antes = c.slice(0, p).reverse().find(x => orden.includes(x));
-      const despues = c.slice(p + 1).find(x => orden.includes(x));
-      if (antes != null) ins = orden.indexOf(antes) + 1;
-      else if (despues != null) ins = orden.indexOf(despues);
-    }
-    orden.splice(ins, 0, d);
-  }
+  const inicial = estados.find(e => e?.lista && typeof e.lista === 'object');
+  const orden = [...new Set([...cadena(inicial), ...estados.flatMap(e => (e?.nodos ?? []).map(n => n.dir))])];
   return new Map(orden.map((d, k) => [d, k]));
 }
 // Estado (como el del volcado) de una lista dada por sus datos: para dibujar la entrada y la salida

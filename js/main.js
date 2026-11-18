@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611182215';
-import { Runner } from './runner.js?v=202611182215';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182215';
-import { traducirMensaje } from './mensajes.js?v=202611182215';
-import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado, estadoDeLista } from './visual.js?v=202611182215';
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182215';
-import { Asistente } from './asistente.js?v=202611182215';
-import { activarDivisores } from './divisores.js?v=202611182215';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182215';
+import { Editor } from './editor.js?v=202611182317';
+import { Runner } from './runner.js?v=202611182317';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182317';
+import { traducirMensaje } from './mensajes.js?v=202611182317';
+import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado, estadoDeLista } from './visual.js?v=202611182317';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182317';
+import { Asistente } from './asistente.js?v=202611182317';
+import { activarDivisores } from './divisores.js?v=202611182317';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182317';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
