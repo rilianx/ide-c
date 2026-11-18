@@ -11,6 +11,7 @@ const archivos = {}; for (const a of ej.archivos) archivos[a.nombre] = readFileS
 if (ALUMNO) archivos[ej.alumno] = readFileSync(ALUMNO, 'utf8');
 const { descifrar, CLAVE_INTERNA } = await import(new URL('../js/cifrado.js', import.meta.url));
 const ocultos = {}; for (const o of ej.ocultos ?? []) { const t = readFileSync(EJ + '/' + o, 'utf8'); ocultos[o] = o.endsWith('.enc') ? await descifrar(t, CLAVE_INTERNA) : t; }
+P.prepararTests(ej, archivos);   // tests declarativos → código y salida esperada
 const tests = ej.pasos.flatMap((p, k) => p.tests.map(t => ({ ...t, paso: k + 1 })));
 const prog = P.armarTests(ej, archivos, ocultos, tests, true);   // con la revisión de punteros, como la app
 rmSync(OUT, { recursive: true, force: true }); mkdirSync(OUT, { recursive: true });

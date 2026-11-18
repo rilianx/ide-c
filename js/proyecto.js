@@ -424,3 +424,68 @@ export function leerVolcados(stdout) {
   });
   return { salida: out, cuadros, ultima: falla ?? ultima, falla };   // ultima: la última línea que empezó a ejecutarse
 }
+
+// ---------- Tests declarativos (listas) ----------
+// Un test se describe con datos, no con código:
+//   entrada: {lista: [1, 2, 3] (o null: la lista la crea la primera llamada, p. ej. createList), current: 1 (posición)}
+//   llamadas: [["popCurrent"], ["pushFront", 7], ...]   (la función y su argumento entero, si tiene)
+//   salida: {retornos: [2, null, ...] (uno por cada llamada que retorna algo), lista: [1, 3], current: 3 o null}
+// Si salida no trae current, no se revisa dónde queda.
+
+// Tipo de retorno de cada función del .h: Map nombre → «void», «void *», «List *»…
+export function retornosDelH(h) {
+  const m = new Map();
+  for (const r of sinComentarios(h ?? '').matchAll(/(?:^|[;}\n])\s*([A-Za-z_][\w \t*]*?[\s*])([A-Za-z_]\w*)\s*\([^;{)]*\)\s*;/g))
+    m.set(r[2], r[1].replace(/\s+/g, ' ').replace(/\s*\*\s*/g, ' *').trim());
+  return m;
+}
+
+const valorTexto = v => v === null || v === undefined ? 'NULL' : String(v);
+
+// {codigo, esperado} de un test declarativo.
+export function generarTest(t, retornos, variable = 'L') {
+  const e = t.entrada ?? {}, s = t.salida ?? {};
+  const lineas = [];
+  if (e.lista === null || e.lista === undefined) {   // la lista la crea la primera llamada
+    lineas.push('ensuciarMemoria();   // memoria con basura: se nota si algo no se inicializa');
+  } else if (e.lista.length) {
+    lineas.push(`int v[] = {${e.lista.join(', ')}};`, `List * ${variable} = listaCon(${e.lista.length}, v);`);
+  } else lineas.push(`List * ${variable} = listaCon(0, NULL);   // lista vacía`);
+  if (Number.isInteger(e.current)) lineas.push(`irA(${variable}, ${e.current});   // current en el ${e.lista[e.current]}`);
+  const esperado = [];
+  let k = 0, creada = !(e.lista === null || e.lista === undefined);
+  for (const [f, arg] of t.llamadas ?? []) {
+    const tipo = retornos.get(f) ?? 'void';
+    const args = [creada ? variable : null, arg !== undefined ? `entero(${arg})` : null].filter(Boolean).join(', ');
+    if (/^List \*$/.test(tipo)) { lineas.push(`List * ${variable} = ${f}(${args});`); creada = true; }
+    else if (tipo === 'void') lineas.push(`${f}(${args});`);
+    else { lineas.push(`retorno(${f}(${args}));`); esperado.push(`retorna: ${valorTexto(s.retornos?.[k++])}`); }
+  }
+  const conCurrent = 'current' in s;
+  lineas.push(`resultado(${variable}, ${conCurrent ? 1 : 0});`);
+  const lista = s.lista ?? [];
+  esperado.push(`lista: [${lista.join(', ')}]`,
+    `head: ${valorTexto(lista[0])}, tail: ${valorTexto(lista.at(-1))}` + (conCurrent ? `, current: ${valorTexto(s.current)}` : ''),
+    'enlaces: bien');
+  return { codigo: lineas.join('\n'), esperado: esperado.join('\n') };
+}
+
+// Genera el código y la salida esperada de los tests declarativos del ejercicio.
+export function prepararTests(ej, archivos) {
+  const h = Object.entries(archivos).find(([n]) => n.endsWith('.h'))?.[1];
+  const retornos = retornosDelH(h);
+  for (const p of ej.pasos) for (const t of p.tests) if (t.llamadas) Object.assign(t, generarTest(t, retornos, ej.visual?.variable ?? 'L'));
+}
+
+// Descripción corta de un test declarativo (para mostrarlo en vez del código).
+export function describirTest(t) {
+  if (!t.llamadas) return null;
+  const e = t.entrada ?? {}, s = t.salida ?? {};
+  const lista = l => `[${(l ?? []).join(', ')}]`;
+  const entrada = e.lista === null || e.lista === undefined ? 'sin lista'
+    : `${lista(e.lista)}${Number.isInteger(e.current) ? `, current en ${e.lista[e.current]}` : ''}`;
+  const llamadas = t.llamadas.map(([f, a]) => `${f}(${a !== undefined ? a : ''})`).join(', ');
+  const rets = (s.retornos ?? []).map(valorTexto);
+  const salida = (rets.length ? `retorna ${rets.join(', ')}; ` : '') + `queda ${lista(s.lista)}` + ('current' in s ? `, current en ${valorTexto(s.current)}` : '');
+  return { entrada, llamadas, salida };
+}

@@ -1,7 +1,7 @@
 // Tests: cada uno es un trozo de C que usa solo la interfaz (.h) e imprime algo;
 // se compara su salida con la esperada. Si un test se cuelga (ciclo infinito),
 // se detiene y se siguen corriendo los que faltan.
-import { armarTests, mismaSalida, mensajes } from './proyecto.js?v=202611181900';
+import { armarTests, mismaSalida, mensajes, describirTest } from './proyecto.js?v=202611182023';
 
 // tests: [{nombre, codigo, esperado, paso}]; alActualizar(resultados) se llama a medida que avanzan.
 // Devuelve {compilacion, resultados} con resultados[i] = {estado, obtenido, error}.
@@ -43,6 +43,15 @@ export async function correrTests(runner, ej, archivos, ocultos, tests, alActual
   return { compilacion, resultados };
 }
 
+// El test: entrada, llamadas y salida esperada (o su código, si es un test escrito en C).
+export function htmlTest(t) {
+  const d = describirTest(t);
+  if (!d) return `<pre class="codigo-test">${esc(t.codigo)}</pre>`;
+  return `<table class="test-decl"><tr><th>Entrada</th><td><code>${esc(d.entrada)}</code></td></tr>`
+    + `<tr><th>Llamada</th><td><code>${esc(d.llamadas)}</code></td></tr>`
+    + `<tr><th>Se espera</th><td><code>${esc(d.salida)}</code></td></tr></table>`;
+}
+
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 // Lista de resultados: nombre, estado y, si falla, salida esperada y obtenida lado a lado.
@@ -53,7 +62,7 @@ export function htmlResultados(tests, resultados) {
     const abierto = r.estado === 'falla' || r.estado === 'error';
     return `<details class="test ${r.estado}" ${abierto ? 'open' : ''}>
       <summary>${icono[r.estado]} ${esc(t.nombre)}${t.idx != null ? `<button class="ver-vis" data-vis="${t.paso}.${t.idx}" title="Ejecutar este test paso a paso y ver la memoria">👁 Ver</button>` : ''}</summary>
-      <pre class="codigo-test">${esc(t.codigo)}</pre>
+      ${htmlTest(t)}
       ${r.estado === 'pendiente' || r.estado === 'sin-compilar' || r.estado === 'sin-correr' ? '' : `
       <div class="salidas">
         <div><h4>Esperado</h4><pre>${esc(t.esperado)}</pre></div>

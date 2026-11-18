@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181900';
-import { Runner } from './runner.js?v=202611181900';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181900';
-import { traducirMensaje } from './mensajes.js?v=202611181900';
-import { svgLista, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611181900';
-import { armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181900';
-import { Asistente } from './asistente.js?v=202611181900';
-import { activarDivisores } from './divisores.js?v=202611181900';
-import { correrTests, htmlResultados } from './tests.js?v=202611181900';
+import { Editor } from './editor.js?v=202611182023';
+import { Runner } from './runner.js?v=202611182023';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182023';
+import { traducirMensaje } from './mensajes.js?v=202611182023';
+import { svgLista, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611182023';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182023';
+import { Asistente } from './asistente.js?v=202611182023';
+import { activarDivisores } from './divisores.js?v=202611182023';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182023';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -92,6 +92,7 @@ function ocupar(si) {
 
 async function abrirEjercicio(id) {
   E = await cargarEjercicio(id);
+  prepararTests(E.ej, E.originales);   // tests declarativos (entrada, llamadas, salida) → código y salida esperada
   if (MODO_PROFESOR) E.originales[E.ej.alumno] = solucionCompleta(E.ej, E.originales[E.ej.alumno], await pedirSolucion(E.ej));
   archivos = archivosGuardados(E.ej, E.originales);
   estadoPasos = E.ej.pasos.map(() => null);
@@ -551,7 +552,9 @@ function mostrarPaso() {
   // en el editor del centro se marca la línea de la función que se está ejecutando
   editor.marcarEjecucion(E.ej.alumno, dentro ? c.linea : null);
   // la ventana de ejecución sobre el editor (celular): el resultado, el paso y el dibujo
-  $('vivo-info').innerHTML = `${esc(vis.test.nombre)} · ${quePaso}`;
+  const d = describirTest(vis.test);
+  $('vivo-info').innerHTML = `${esc(vis.test.nombre)}${d ? ` <span class="decl">(${esc(d.entrada)} → ${esc(d.llamadas)})</span>` : ''} · ${quePaso}`;
+  $('vis-test-desc').innerHTML = htmlTest(vis.test);
   $('vivo-cuerpo').innerHTML = dibujo + (c?.error ? htmlDiagnostico(c, dentro) : '') + (c && !c.error ? htmlVariables(c.estado) : '');
   mostrarVivo();
 }

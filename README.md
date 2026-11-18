@@ -50,6 +50,23 @@ Con GitHub Pages (Settings → Pages → la rama y la carpeta de la app). Hace f
 
 Antes de cada commit que se publica, conviene correr `node herramientas/version.mjs`: pone un número de versión en las URLs de los JS y el CSS para que el navegador no mezcle archivos nuevos con otros viejos guardados en caché.
 
+## Tests declarativos
+
+Cada test se describe con datos, no con código (en `ejercicio.json`):
+
+```json
+{ "nombre": "elimina un nodo del medio y retorna su dato",
+  "entrada": { "lista": [1, 2, 3], "current": 1 },
+  "llamadas": [["popCurrent"]],
+  "salida": { "retornos": [2], "lista": [1, 3], "current": 3 } }
+```
+
+- `entrada.lista`: los datos de la lista de entrada (`null` si la crea la primera llamada, como `createList`); `current`: la posición donde queda current (opcional).
+- `llamadas`: las funciones que se llaman, con su argumento entero si tienen (`["pushFront", 7]`).
+- `salida`: lo que retorna cada llamada que retorna algo, cómo queda la lista (head y tail se deducen) y dónde queda current (si se omite, no se revisa). Siempre se revisa que los enlaces `prev`/`next` sean consistentes.
+
+`prepararTests` (`js/proyecto.js`) genera el código C del test (con `listaCon`, `irA`, `retorno` y `resultado` de `ayudas.c`) y la salida esperada; en la app se muestran como Entrada / Llamada / Se espera. También se puede escribir un test con `codigo` y `esperado` directamente.
+
 ## Visualización
 
 **Ventana de ejecución en el celular:** en la pestaña Código, arriba del editor, una ventana (se cierra con ✕ y se vuelve a abrir con 👁) muestra la ejecución: el resultado, cuántos tests pasan, el paso y el dibujo, con ◀ ▶. Con avance automático se corren todos los tests de la función y se muestra el **primero que falla**. **Tocar una línea** de la función lleva la ejecución a ese momento (la cabecera: al entrar a la función).

@@ -65,19 +65,19 @@
       "enunciado": "Implementa `List * createList(void)`: reserva memoria para una `List` (con `malloc`), deja `head`, `tail` y `current` en `NULL` y retorna el puntero a la lista.",
       "tests": [
         {
-          "nombre": "retorna un puntero a una lista (no NULL)",
-          "codigo": "List * L = createList();\nprintf(\"%s\\n\", L == NULL ? \"NULL\" : \"no es NULL\");",
-          "esperado": "no es NULL"
-        },
-        {
-          "nombre": "deja head, tail y current en NULL",
-          "codigo": "// ensuciarMemoria() deja basura en la memoria libre:\n// si createList no inicializa un campo, aquí se nota.\nensuciarMemoria();\nList * L = createList();\nprintf(\"head: %s\\n\", L->head == NULL ? \"NULL\" : \"basura (no se inicializó)\");\nprintf(\"tail: %s\\n\", L->tail == NULL ? \"NULL\" : \"basura (no se inicializó)\");\nprintf(\"current: %s\\n\", L->current == NULL ? \"NULL\" : \"basura (no se inicializó)\");",
-          "esperado": "head: NULL\ntail: NULL\ncurrent: NULL"
-        },
-        {
-          "nombre": "cada llamada crea una lista distinta",
-          "codigo": "List * A = createList();\nList * B = createList();\nprintf(\"%s\\n\", A != B ? \"distintas\" : \"la misma lista\");",
-          "esperado": "distintas"
+          "nombre": "crea una lista vacía: head, tail y current en NULL",
+          "entrada": {
+            "lista": null
+          },
+          "llamadas": [
+            [
+              "createList"
+            ]
+          ],
+          "salida": {
+            "lista": [],
+            "current": null
+          }
         }
       ],
       "plantillas": {
@@ -92,19 +92,75 @@
       "enunciado": "Implementa `void * firstList(List * list)`: deja `current` apuntando al primer nodo (`head`) y retorna su dato. Si la lista está vacía, retorna `NULL`.",
       "tests": [
         {
-          "nombre": "retorna el primer dato",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\ndato(firstList(L));",
-          "esperado": "1"
+          "nombre": "retorna el primer dato y deja current en él",
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ]
+          },
+          "llamadas": [
+            [
+              "firstList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              1
+            ],
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 1
+          }
         },
         {
-          "nombre": "deja current en el primer nodo",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nirA(L, 2);          // current en el 3\nfirstList(L);\nestado(L);",
-          "esperado": "head: 1, tail: 3, current: 1"
+          "nombre": "con current en otro nodo, vuelve al primero",
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 2
+          },
+          "llamadas": [
+            [
+              "firstList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              1
+            ],
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 1
+          }
         },
         {
           "nombre": "en una lista vacía retorna NULL",
-          "codigo": "List * L = listaCon(0, NULL);   // lista vacía\ndato(firstList(L));\nestado(L);",
-          "esperado": "NULL\nhead: NULL, tail: NULL, current: NULL"
+          "entrada": {
+            "lista": []
+          },
+          "llamadas": [
+            [
+              "firstList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "lista": [],
+            "current": null
+          }
         }
       ],
       "plantillas": {
@@ -120,28 +176,161 @@
       "tests": [
         {
           "nombre": "avanza current y retorna el dato siguiente",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nirA(L, 0);          // current en el 1\ndato(nextList(L));\nestado(L);",
-          "esperado": "2\nhead: 1, tail: 3, current: 2"
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 0
+          },
+          "llamadas": [
+            [
+              "nextList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              2
+            ],
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 2
+          }
         },
         {
-          "nombre": "llamadas seguidas avanzan de a uno",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nirA(L, 0);\ndato(nextList(L));\ndato(nextList(L));",
-          "esperado": "2\n3"
+          "nombre": "dos llamadas avanzan de a uno",
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 0
+          },
+          "llamadas": [
+            [
+              "nextList"
+            ],
+            [
+              "nextList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              2,
+              3
+            ],
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 3
+          }
         },
         {
           "nombre": "en el último nodo retorna NULL",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nirA(L, 2);          // current en el 3 (el último)\ndato(nextList(L));",
-          "esperado": "NULL"
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 2
+          },
+          "llamadas": [
+            [
+              "nextList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "lista": [
+              1,
+              2,
+              3
+            ]
+          }
         },
         {
           "nombre": "con current en NULL retorna NULL",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\n// listaCon deja current en NULL\ndato(nextList(L));",
-          "esperado": "NULL"
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ]
+          },
+          "llamadas": [
+            [
+              "nextList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "lista": [
+              1,
+              2,
+              3
+            ]
+          }
         },
         {
           "nombre": "recorre la lista con firstList y nextList",
-          "codigo": "int v[] = {4, 8, 15, 16, 23};\nList * L = listaCon(5, v);\nfor (int * p = firstList(L); p != NULL; p = nextList(L))\n    printf(\"%d \", *p);\nprintf(\"\\n\");",
-          "esperado": "4 8 15 16 23"
+          "entrada": {
+            "lista": [
+              4,
+              8,
+              15,
+              16,
+              23
+            ]
+          },
+          "llamadas": [
+            [
+              "firstList"
+            ],
+            [
+              "nextList"
+            ],
+            [
+              "nextList"
+            ],
+            [
+              "nextList"
+            ],
+            [
+              "nextList"
+            ],
+            [
+              "nextList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              4,
+              8,
+              15,
+              16,
+              23,
+              null
+            ],
+            "lista": [
+              4,
+              8,
+              15,
+              16,
+              23
+            ]
+          }
         }
       ],
       "plantillas": {
@@ -156,19 +345,75 @@
       "enunciado": "Implementa `void * lastList(List * list)`: deja `current` apuntando al último nodo (`tail`) y retorna su dato. Si la lista está vacía, retorna `NULL`.",
       "tests": [
         {
-          "nombre": "retorna el último dato",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\ndato(lastList(L));",
-          "esperado": "3"
+          "nombre": "retorna el último dato y deja current en él",
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ]
+          },
+          "llamadas": [
+            [
+              "lastList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              3
+            ],
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 3
+          }
         },
         {
-          "nombre": "deja current en el último nodo",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nirA(L, 0);          // current en el 1\nlastList(L);\nestado(L);",
-          "esperado": "head: 1, tail: 3, current: 3"
+          "nombre": "con current en otro nodo, va al último",
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 0
+          },
+          "llamadas": [
+            [
+              "lastList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              3
+            ],
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 3
+          }
         },
         {
           "nombre": "en una lista vacía retorna NULL",
-          "codigo": "List * L = listaCon(0, NULL);   // lista vacía\ndato(lastList(L));\nestado(L);",
-          "esperado": "NULL\nhead: NULL, tail: NULL, current: NULL"
+          "entrada": {
+            "lista": []
+          },
+          "llamadas": [
+            [
+              "lastList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "lista": [],
+            "current": null
+          }
         }
       ],
       "plantillas": {
@@ -184,28 +429,161 @@
       "tests": [
         {
           "nombre": "retrocede current y retorna el dato anterior",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nirA(L, 2);          // current en el 3\ndato(prevList(L));\nestado(L);",
-          "esperado": "2\nhead: 1, tail: 3, current: 2"
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 2
+          },
+          "llamadas": [
+            [
+              "prevList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              2
+            ],
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 2
+          }
         },
         {
-          "nombre": "llamadas seguidas retroceden de a uno",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nirA(L, 2);\ndato(prevList(L));\ndato(prevList(L));",
-          "esperado": "2\n1"
+          "nombre": "dos llamadas retroceden de a uno",
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 2
+          },
+          "llamadas": [
+            [
+              "prevList"
+            ],
+            [
+              "prevList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              2,
+              1
+            ],
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 1
+          }
         },
         {
           "nombre": "en el primer nodo retorna NULL",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nirA(L, 0);          // current en el 1 (el primero)\ndato(prevList(L));",
-          "esperado": "NULL"
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 0
+          },
+          "llamadas": [
+            [
+              "prevList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "lista": [
+              1,
+              2,
+              3
+            ]
+          }
         },
         {
           "nombre": "con current en NULL retorna NULL",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\n// listaCon deja current en NULL\ndato(prevList(L));",
-          "esperado": "NULL"
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ]
+          },
+          "llamadas": [
+            [
+              "prevList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "lista": [
+              1,
+              2,
+              3
+            ]
+          }
         },
         {
           "nombre": "recorre al revés con lastList y prevList",
-          "codigo": "int v[] = {4, 8, 15, 16, 23};\nList * L = listaCon(5, v);\nfor (int * p = lastList(L); p != NULL; p = prevList(L))\n    printf(\"%d \", *p);\nprintf(\"\\n\");",
-          "esperado": "23 16 15 8 4"
+          "entrada": {
+            "lista": [
+              4,
+              8,
+              15,
+              16,
+              23
+            ]
+          },
+          "llamadas": [
+            [
+              "lastList"
+            ],
+            [
+              "prevList"
+            ],
+            [
+              "prevList"
+            ],
+            [
+              "prevList"
+            ],
+            [
+              "prevList"
+            ],
+            [
+              "prevList"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              23,
+              16,
+              15,
+              8,
+              4,
+              null
+            ],
+            "lista": [
+              4,
+              8,
+              15,
+              16,
+              23
+            ]
+          }
         }
       ],
       "plantillas": {
@@ -221,23 +599,76 @@
       "tests": [
         {
           "nombre": "en una lista vacía: head y tail apuntan al nodo nuevo",
-          "codigo": "List * L = listaCon(0, NULL);   // lista vacía\npushFront(L, entero(7));\nmostrar(L);\nextremos(L);",
-          "esperado": "[7]\nhead: 7, tail: 7"
+          "entrada": {
+            "lista": []
+          },
+          "llamadas": [
+            [
+              "pushFront",
+              7
+            ]
+          ],
+          "salida": {
+            "lista": [
+              7
+            ],
+            "current": null
+          }
         },
         {
-          "nombre": "agrega al comienzo y actualiza head",
-          "codigo": "int v[] = {1, 2};\nList * L = listaCon(2, v);\npushFront(L, entero(0));\nmostrar(L);\nextremos(L);",
-          "esperado": "[0, 1, 2]\nhead: 0, tail: 2"
-        },
-        {
-          "nombre": "enlaza también hacia atrás (prev)",
-          "codigo": "int v[] = {1, 2};\nList * L = listaCon(2, v);\npushFront(L, entero(0));\nmostrarReves(L);\nrevisar(L);",
-          "esperado": "[2, 1, 0]\nenlaces bien"
+          "nombre": "agrega al comienzo, actualiza head y enlaza prev",
+          "entrada": {
+            "lista": [
+              1,
+              2
+            ]
+          },
+          "llamadas": [
+            [
+              "pushFront",
+              0
+            ]
+          ],
+          "salida": {
+            "lista": [
+              0,
+              1,
+              2
+            ],
+            "current": null
+          }
         },
         {
           "nombre": "varios pushFront seguidos",
-          "codigo": "List * L = listaCon(0, NULL);   // lista vacía\nfor (int i = 1; i <= 4; i++) pushFront(L, entero(i));\nmostrar(L);\nmostrarReves(L);\nrevisar(L);",
-          "esperado": "[4, 3, 2, 1]\n[1, 2, 3, 4]\nenlaces bien"
+          "entrada": {
+            "lista": []
+          },
+          "llamadas": [
+            [
+              "pushFront",
+              1
+            ],
+            [
+              "pushFront",
+              2
+            ],
+            [
+              "pushFront",
+              3
+            ],
+            [
+              "pushFront",
+              4
+            ]
+          ],
+          "salida": {
+            "lista": [
+              4,
+              3,
+              2,
+              1
+            ]
+          }
         }
       ],
       "plantillas": {
@@ -253,23 +684,97 @@
       "tests": [
         {
           "nombre": "inserta después de current (en el medio)",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nirA(L, 0);          // current en el 1\npushCurrent(L, entero(9));\nmostrar(L);\nmostrarReves(L);\nrevisar(L);",
-          "esperado": "[1, 9, 2, 3]\n[3, 2, 9, 1]\nenlaces bien"
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 0
+          },
+          "llamadas": [
+            [
+              "pushCurrent",
+              9
+            ]
+          ],
+          "salida": {
+            "lista": [
+              1,
+              9,
+              2,
+              3
+            ]
+          }
         },
         {
           "nombre": "después del último: actualiza tail",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nirA(L, 2);          // current en el 3 (el último)\npushCurrent(L, entero(9));\nmostrar(L);\nextremos(L);\nrevisar(L);",
-          "esperado": "[1, 2, 3, 9]\nhead: 1, tail: 9\nenlaces bien"
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 2
+          },
+          "llamadas": [
+            [
+              "pushCurrent",
+              9
+            ]
+          ],
+          "salida": {
+            "lista": [
+              1,
+              2,
+              3,
+              9
+            ]
+          }
         },
         {
           "nombre": "en una lista vacía queda como único nodo",
-          "codigo": "List * L = listaCon(0, NULL);   // lista vacía\npushCurrent(L, entero(5));\nmostrar(L);\nextremos(L);\nrevisar(L);",
-          "esperado": "[5]\nhead: 5, tail: 5\nenlaces bien"
+          "entrada": {
+            "lista": []
+          },
+          "llamadas": [
+            [
+              "pushCurrent",
+              5
+            ]
+          ],
+          "salida": {
+            "lista": [
+              5
+            ]
+          }
         },
         {
           "nombre": "pushBack (usa tu pushCurrent) agrega al final",
-          "codigo": "List * L = listaCon(0, NULL);   // lista vacía\npushBack(L, entero(5));\npushBack(L, entero(6));\npushBack(L, entero(7));\nmostrar(L);\nrevisar(L);",
-          "esperado": "[5, 6, 7]\nenlaces bien"
+          "entrada": {
+            "lista": []
+          },
+          "llamadas": [
+            [
+              "pushBack",
+              5
+            ],
+            [
+              "pushBack",
+              6
+            ],
+            [
+              "pushBack",
+              7
+            ]
+          ],
+          "salida": {
+            "lista": [
+              5,
+              6,
+              7
+            ]
+          }
         }
       ],
       "plantillas": {
@@ -285,33 +790,131 @@
       "tests": [
         {
           "nombre": "elimina un nodo del medio y retorna su dato",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nirA(L, 1);          // current en el 2\ndato(popCurrent(L));\nmostrar(L);\nmostrarReves(L);\nrevisar(L);",
-          "esperado": "2\n[1, 3]\n[3, 1]\nenlaces bien"
-        },
-        {
-          "nombre": "current queda en el siguiente del eliminado",
-          "codigo": "int v[] = {1, 2, 3, 4};\nList * L = listaCon(4, v);\nirA(L, 1);          // current en el 2\npopCurrent(L);\nestado(L);",
-          "esperado": "head: 1, tail: 4, current: 3"
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 1
+          },
+          "llamadas": [
+            [
+              "popCurrent"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              2
+            ],
+            "lista": [
+              1,
+              3
+            ],
+            "current": 3
+          }
         },
         {
           "nombre": "elimina el primero: actualiza head",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nirA(L, 0);\ndato(popCurrent(L));\nmostrar(L);\nextremos(L);\nrevisar(L);",
-          "esperado": "1\n[2, 3]\nhead: 2, tail: 3\nenlaces bien"
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 0
+          },
+          "llamadas": [
+            [
+              "popCurrent"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              1
+            ],
+            "lista": [
+              2,
+              3
+            ],
+            "current": 2
+          }
         },
         {
           "nombre": "elimina el último: actualiza tail",
-          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nirA(L, 2);\ndato(popCurrent(L));\nmostrar(L);\nextremos(L);\nrevisar(L);",
-          "esperado": "3\n[1, 2]\nhead: 1, tail: 2\nenlaces bien"
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3
+            ],
+            "current": 2
+          },
+          "llamadas": [
+            [
+              "popCurrent"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              3
+            ],
+            "lista": [
+              1,
+              2
+            ],
+            "current": null
+          }
         },
         {
           "nombre": "elimina el único nodo: la lista queda vacía",
-          "codigo": "int v[] = {1};\nList * L = listaCon(1, v);\nirA(L, 0);\ndato(popCurrent(L));\nmostrar(L);\nextremos(L);",
-          "esperado": "1\n[]\nhead: NULL, tail: NULL"
+          "entrada": {
+            "lista": [
+              1
+            ],
+            "current": 0
+          },
+          "llamadas": [
+            [
+              "popCurrent"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              1
+            ],
+            "lista": [],
+            "current": null
+          }
         },
         {
           "nombre": "popFront y popBack (usan tu popCurrent)",
-          "codigo": "int v[] = {1, 2, 3, 4};\nList * L = listaCon(4, v);\ndato(popFront(L));\ndato(popBack(L));\nmostrar(L);\nrevisar(L);",
-          "esperado": "1\n4\n[2, 3]\nenlaces bien"
+          "entrada": {
+            "lista": [
+              1,
+              2,
+              3,
+              4
+            ]
+          },
+          "llamadas": [
+            [
+              "popFront"
+            ],
+            [
+              "popBack"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              1,
+              4
+            ],
+            "lista": [
+              2,
+              3
+            ]
+          }
         }
       ],
       "plantillas": {

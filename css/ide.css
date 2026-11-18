@@ -283,3 +283,9 @@ svg.memoria .etiqueta.retorno { fill: #d9f2dd; stroke: #1a7f37; }
 .vivo svg.memoria { margin-top: 2px; }
 #vivo-abrir[hidden] { display: none; }
 @media (min-width: 1001px) { .vivo, #vivo-abrir { display: none !important; } }
+
+/* tests declarativos */
+.test-decl { border-collapse: collapse; margin: 6px 0; font-size: 13px; }
+.test-decl th { text-align: left; color: var(--suave); font-weight: 600; padding: 2px 10px 2px 0; vertical-align: top; white-space: nowrap; }
+.test-decl td { padding: 2px 0; }
+.test-decl code { font-family: var(--mono); }
