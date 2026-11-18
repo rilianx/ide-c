@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611182128';
-import { Runner } from './runner.js?v=202611182128';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182128';
-import { traducirMensaje } from './mensajes.js?v=202611182128';
-import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado, estadoDeLista } from './visual.js?v=202611182128';
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182128';
-import { Asistente } from './asistente.js?v=202611182128';
-import { activarDivisores } from './divisores.js?v=202611182128';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182128';
+import { Editor } from './editor.js?v=202611182132';
+import { Runner } from './runner.js?v=202611182132';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182132';
+import { traducirMensaje } from './mensajes.js?v=202611182132';
+import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado, estadoDeLista } from './visual.js?v=202611182132';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182132';
+import { Asistente } from './asistente.js?v=202611182132';
+import { activarDivisores } from './divisores.js?v=202611182132';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182132';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -53,11 +53,26 @@ function aplicarVista() {
   $('ajustar').classList.toggle('activo', pref.ajustar);
   editor.teclado(pref.teclado);
   $('teclado').classList.toggle('activo', pref.teclado);
+  $('enter').hidden = pref.teclado;   // sin teclado: botón para agregar una línea
   try { localStorage.setItem('ide-c:vista', JSON.stringify(pref)); } catch { /* sin almacenamiento */ }
 }
 $('letra-menos').onclick = () => { pref.letra--; aplicarVista(); };
 $('letra-mas').onclick = () => { pref.letra++; aplicarVista(); };
 $('ajustar').onclick = () => { pref.ajustar = !pref.ajustar; aplicarVista(); };
+// ↵ (sin teclado): una línea nueva debajo de la del cursor, con la sangría que corresponde
+$('enter').onclick = () => {
+  const cm = editor.cm, c = cm.getCursor(), l = cm.getLine(c.line);
+  const ind = (l.match(/^\s*/) || [''])[0] + (/\{\s*$/.test(l) ? '    ' : '');
+  if (/^\s*\}/.test(l) && c.ch <= l.search(/\S/)) {   // en una «}»: la línea va antes, dentro del bloque
+    cm.replaceRange(ind + '    \n', { line: c.line, ch: 0 });
+    cm.setCursor({ line: c.line, ch: ind.length + 4 });
+  } else {
+    cm.replaceRange('\n' + ind, { line: c.line, ch: l.length });
+    cm.setCursor({ line: c.line + 1, ch: ind.length });
+  }
+  cm.focus();
+};
+
 // Celular: con el teclado abierto (escribiendo en el editor) se esconde el asistente de abajo.
 // El teclado se detecta por el foco del editor (con teclado activado) o porque la pantalla visible se achica.
 function tecladoAbierto() {
@@ -657,8 +672,10 @@ function mostrarPaso() {
   // celular: solo el dibujo; en la línea de definición de la función, también la salida esperada
   const esEntrada = c?.dentro && !c.condicion && !c.error && c.linea === c.fn?.cabecera;
   const sal = vis.test.salida;
-  const esperadoMini = esEntrada && sal ? `<div class="esperado-mini"><span class="rot">se espera</span>${svgLista(estadoDeLista(sal.lista, 'current' in sal ? sal.current : undefined, true), c.fn.lista, { sinDirecciones: true, escala: 0.5, porFila: 5 })}${(sal.retornos ?? []).map(r => `<span class="ret">↩ ${esc(r === null ? 'NULL' : r)}</span>`).join(' ')}</div>` : '';
-  $('vivo-zoom').innerHTML = `<div class="vivo-fila">${dibujoFinal}${esperadoMini}</div>`;
+  const esperadoMini = esEntrada && sal ? `<div class="esperado-mini"><span class="rot">→ se espera</span>${svgLista(estadoDeLista(sal.lista, 'current' in sal ? sal.current : undefined, true), c.fn.lista, { sinDirecciones: true, escala: 0.5, porFila: 5 })}${(sal.retornos ?? []).map(r => `<span class="ret">↩ ${esc(r === null ? 'NULL' : r)}</span>`).join(' ')}</div>` : '';
+  const entradaVacia = esEntrada && !c.estado?.lista && !(c.estado?.nodos ?? []).length;
+  const entradaHtml = esEntrada ? `<div class="entrada-mini"><span class="rot">entrada</span>${entradaVacia ? `<code>${esc(c.fn.nombre)}()</code><span class="nota">sin lista</span>` : dibujoFinal}</div>` : dibujoFinal;
+  $('vivo-zoom').innerHTML = `<div class="vivo-fila">${entradaHtml}${esperadoMini}</div>`;
   $('vivo').classList.toggle('pasa', !!vis.pasa);
   $('vivo').classList.toggle('falla', !vis.pasa);
   mostrarVivo();

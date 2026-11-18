@@ -340,3 +340,8 @@ svg.memoria text.var { font-size: 14px; font-weight: 500; }
 
 .vivo-error { font-size: 13px; color: var(--mal); padding: 4px 26px 4px 2px; }
 .vivo .desactualizado { opacity: .4; }
+
+.entrada-mini { flex: 1 1 auto; display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.entrada-mini .rot { font-size: 10px; color: var(--suave); text-transform: uppercase; }
+.entrada-mini code { font-family: var(--mono); font-size: 15px; margin-top: 6px; }
+#enter[hidden] { display: none; }
