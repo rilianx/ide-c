@@ -60,8 +60,10 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   // variables (nuevo, aux…): etiquetas amarillas debajo de su nodo
   const porNodo = new Map(), sueltas = [];
   for (const v of vars) {
-    if (Number.isInteger(v.ptr)) { if (!porNodo.has(v.ptr)) porNodo.set(v.ptr, []); porNodo.get(v.ptr).push(v.nombre); }
-    else sueltas.push(`${v.nombre} = ${v.ptr === null ? 'NULL' : '? (basura)'}`);
+    if (!('ptr' in v)) continue;   // enteros y datos: van en la tabla (fuera del dibujo)
+    const nombre = v.nombre === 'return' ? '↩ retorna' : v.nombre;
+    if (Number.isInteger(v.ptr)) { if (!porNodo.has(v.ptr)) porNodo.set(v.ptr, []); porNodo.get(v.ptr).push(nombre); }
+    else sueltas.push(`${nombre} = ${v.ptr === null ? 'NULL' : '? (basura)'}`);
   }
   const conVars = porNodo.size > 0, BAJO = conVars ? 44 : 0;
 
@@ -182,7 +184,7 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
     const { x, y } = pos.get(i), cx = x + CP + CD / 2, ty = y + AL + 32;
     const w = Math.max(30, nombres.join(', ').length * 8 + 12);
     s.push(`<path d="M${cx},${ty - 4} L${cx},${y + AL + 18}" class="flecha var" marker-end="url(#punta-var)"/>`);
-    s.push(`<rect x="${cx - w / 2}" y="${ty - 4}" width="${w}" height="20" rx="3" class="etiqueta"/>`);
+    s.push(`<rect x="${cx - w / 2}" y="${ty - 4}" width="${w}" height="20" rx="3" class="etiqueta${nombres.some(n => n.startsWith('↩')) ? ' retorno' : ''}"/>`);
     s.push(`<text x="${cx}" y="${ty + 10}" class="var">${esc(nombres.join(', '))}</text>`);
   }
   if (sueltas.length) s.push(`<text x="${X0}" y="${alto - 10}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
@@ -225,4 +227,25 @@ export function diagnosticar(linea, estado, nombreLista) {
     }
   }
   return null;
+}
+
+// Tabla de las variables que no son punteros a nodos (enteros, double, datos void *) y lo que
+// retorna la función (destacado). Los punteros a nodos van como etiquetas en el dibujo.
+export function htmlVariables(estado) {
+  const vars = estado?.vars ?? [];
+  const valor = v => 'valor' in v ? String(v.valor)
+    : 'dato' in v ? (v.dato === null ? 'NULL' : v.dato === '?' ? '? (basura)' : `→ ${v.dato}`)
+    : v.ptr === null ? 'NULL' : v.ptr === '?' ? '? (basura)' : `→ nodo ${estado.nodos?.[v.ptr]?.dato ?? ''}`;
+  const ret = vars.find(v => v.nombre === 'return');
+  const otras = vars.filter(v => v.nombre !== 'return' && !('ptr' in v));
+  let h = '';
+  if (ret) {
+    const que = 'dato' in ret && Number.isInteger(ret.dato) ? `el dato <b>${esc(ret.dato)}</b>`
+      : 'ptr' in ret && Number.isInteger(ret.ptr) ? `el nodo <b>${esc(estado.nodos?.[ret.ptr]?.dato ?? '')}</b>`
+      : `<b>${esc(valor(ret))}</b>`;
+    h += `<p class="retorno">↩ retorna ${que}</p>`;
+  }
+  if (otras.length) h += `<table class="tabla-vars"><tr><th>variable</th><th>valor</th></tr>${otras.map(v =>
+    `<tr><td><code>${esc(v.nombre)}</code></td><td><code>${esc(valor(v))}</code></td></tr>`).join('')}</table>`;
+  return h;
 }

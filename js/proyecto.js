@@ -213,7 +213,8 @@ export function mensajes(texto) {
 // La instrucción se envuelve en llaves junto al volcado, para que quede dentro de un if/else o de
 // un ciclo sin llaves: «else x = 1;» → «else { x = 1; volcado }». Las declaraciones no se envuelven
 // (cambiaría su alcance) y antes de un return el volcado va primero.
-function conVolcado(L, m, dv, pre = '') {
+// ret (opcional): {tipo, dv} para guardar lo que retorna en __r y volcarlo antes de retornar.
+function conVolcado(L, m, dv, pre = '', ret = null) {
   const p_ = pre ? pre + ' ' : '';
   const t = m.trim();
   const ini = m.length - m.trimStart().length, fin = m.trimEnd().length;
@@ -241,7 +242,11 @@ function conVolcado(L, m, dv, pre = '') {
   if ((fuera.match(/;/g) || []).length > 1 || /[{}]/.test(fuera.slice(1)) || /\belse\b/.test(fuera)) return null;
   if (/^\}\s*while\b/.test(cuerpo)) return `${L.slice(0, fin)} ${dv}${L.slice(fin)}`;   // fin de un do-while
   const esDecl = /^((const|struct|unsigned|signed)\s+)*[A-Za-z_]\w*(\s+|\s*\*+\s*)[A-Za-z_]\w*\s*(=|;|,|\[)/.test(cuerpo) && !/^(return|else|do|goto)\b/.test(cuerpo);
-  if (/^return\b/.test(cuerpo)) return `${L.slice(0, a)}{ ${dv} ${p_}${L.slice(a, fin)} }${L.slice(fin)}`;
+  if (/^return\b/.test(cuerpo)) {
+    const expr = L.slice(a, fin).replace(/^return\b/, '').replace(/;\s*$/, '').trim();
+    if (ret && expr) return `${L.slice(0, a)}{ ${ret.tipo} __r = (${expr}); ${ret.dv} ${p_}return __r; }${L.slice(fin)}`;
+    return `${L.slice(0, a)}{ ${dv} ${p_}${L.slice(a, fin)} }${L.slice(fin)}`;
+  }
   if (prefijo) return `${L.slice(0, a)}{ ${p_}${L.slice(a, fin)} ${dv} }${L.slice(fin)}`;
   if (cuerpo.startsWith('}')) return `${L.slice(0, fin)} ${dv}${L.slice(fin)}`;
   if (esDecl) return `${L.slice(0, a)}${p_}${L.slice(a, fin)} ${dv}${L.slice(fin)}`;
@@ -326,14 +331,21 @@ export function instrumentarFuncion(texto, nombre, ej, revisar = true, soloRevis
   const lineas = texto.split('\n'), m = enmascarar(texto).split('\n');
   const lineaDe = pos => texto.slice(0, pos).split('\n').length - 1;   // 0-based
   const l0 = lineaDe(fn.cuerpo), l1 = lineaDe(fn.fin);
-  // variables visibles: [{nombre, tipo, prof}]
-  let vars = fn.params.filter(q => q.ptr === 1 && (q.base === v.tipo || q.base === nodo)).map(q => ({ nombre: q.nombre, tipo: q.base, prof: 0 }));
-  const volcado = n => {   // una expresión (sirve también dentro de una condición)
-    const lista = [...vars].reverse().find(x => x.tipo === v.tipo)?.nombre ?? `(${v.tipo} *)0`;
-    const ns = vars.filter(x => x.tipo === nodo);
-    return `__volcarv(${n}, ${lista}, ${ns.length}${ns.map(x => `, "${x.nombre}", (void *)${x.nombre}`).join('')})`;
+  // variables visibles: [{nombre, tipo, prof, clase}]; clase: lista, nodo, dato (void *), int, double
+  const clase = (base, ptr) => ptr === 1 ? (base === v.tipo ? 'lista' : base === nodo ? 'nodo' : base === 'void' ? 'dato' : null)
+    : ptr === 0 ? (/^(int|long|short|char|unsigned|signed)$/.test(base) ? 'int' : /^(double|float)$/.test(base) ? 'double' : null) : null;
+  let vars = fn.params.map(q => ({ nombre: q.nombre, tipo: q.base, prof: 0, clase: clase(q.base, q.ptr) })).filter(x => x.clase);
+  const CODIGO = { nodo: 0, dato: 1, int: 2, double: 3 };
+  const arg = (x, valor = x.nombre) => `, ${CODIGO[x.clase]}, "${x.nombre}", ${x.clase === 'int' ? `(long)(${valor})` : x.clase === 'double' ? `(double)(${valor})` : `(void *)(${valor})`}`;
+  const volcado = (n, extra = []) => {   // una expresión (sirve también dentro de una condición)
+    const lista = [...vars].reverse().find(x => x.clase === 'lista')?.nombre ?? `(${v.tipo} *)0`;
+    const vs = vars.filter(x => x.clase !== 'lista').slice(-14);
+    return `__volcarv(${n}, ${lista}, ${vs.length + extra.length}${vs.map(x => arg(x)).join('')}${extra.map(x => arg(x, x.valor)).join('')})`;
   };
-  const decl = new RegExp(`\\b(${v.tipo}|${nodo})\\s*\\*\\s*([A-Za-z_]\\w*)\\s*(?=[=;,])`, 'g');
+  // lo que retorna la función: se guarda en __r y se muestra como «return»
+  const r = fn.retorno, claseRet = clase(r.base, r.ptr);
+  const tipoRet = claseRet && claseRet !== 'lista' ? `${r.base} ${'*'.repeat(r.ptr)}`.trim() : null;
+  const decl = new RegExp(`\\b(?:const\\s+|unsigned\\s+|signed\\s+)?(${v.tipo}|${nodo}|void|int|long|short|char|double|float)\\s*(\\**)\\s*([A-Za-z_]\\w*)\\s*(?=[=;,])`, 'g');
   if (l0 === l1) {   // toda la función en una línea: solo se revisan sus punteros
     if (!revisar) return texto;
     const ini = fn.cuerpo - (texto.lastIndexOf('\n', fn.cuerpo - 1) + 1), fin = ini + (fn.fin - fn.cuerpo);
@@ -351,7 +363,8 @@ export function instrumentarFuncion(texto, nombre, ej, revisar = true, soloRevis
     }
     const antes = prof;
     const sinParentesis = linea.replace(/\([^()]*\)/g, x => ' '.repeat(x.length)).replace(/\([^()]*\)/g, x => ' '.repeat(x.length));
-    const nuevas = [...sinParentesis.matchAll(decl)].map(r => ({ nombre: r[2], tipo: r[1], prof: antes }));   // no las de un for (...)
+    const nuevas = [...sinParentesis.matchAll(decl)].map(r => ({ nombre: r[3], tipo: r[1], prof: antes, clase: clase(r[1], r[2].length) }))
+      .filter(x => x.clase && !/^(return|sizeof)$/.test(x.nombre));   // no las de un for (...)
     if (i === l0 || !linea.trim()) {
       vars.push(...nuevas);
       if (i === l0 && revisar && linea.trim()) {   // función en una sola línea: igual se revisan sus punteros
@@ -365,7 +378,8 @@ export function instrumentarFuncion(texto, nombre, ej, revisar = true, soloRevis
     if (c) { L = c; M = enmascarar(c); }
     for (const ch of linea) { if (ch === '{') prof++; else if (ch === '}') { prof--; vars = vars.filter(x => x.prof <= prof); } }
     vars.push(...nuevas);   // después de la línea que las declara
-    lineas[i] = soloRevision ? L : conVolcado(L, M, volcado(i + 1) + ';', `__voyf(${i + 1});`) ?? L;
+    const ret = tipoRet ? { tipo: tipoRet, dv: volcado(i + 1, [{ nombre: 'return', clase: claseRet, valor: '__r' }]) + ';' } : null;
+    lineas[i] = soloRevision ? L : conVolcado(L, M, volcado(i + 1) + ';', `__voyf(${i + 1});`, ret) ?? L;
     if (revisar) lineas[i] = conRevision(lineas[i], i + 1, new Map(vars.map(x => [x.nombre, x.tipo])), ej.estructuras ?? {});
   }
   return lineas.join('\n');

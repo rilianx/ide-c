@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181735';
-import { Runner } from './runner.js?v=202611181735';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181735';
-import { traducirMensaje } from './mensajes.js?v=202611181735';
-import { svgLista, lugaresDe, diagnosticar } from './visual.js?v=202611181735';
-import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181735';
-import { Asistente } from './asistente.js?v=202611181735';
-import { activarDivisores } from './divisores.js?v=202611181735';
-import { correrTests, htmlResultados } from './tests.js?v=202611181735';
+import { Editor } from './editor.js?v=202611181741';
+import { Runner } from './runner.js?v=202611181741';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181741';
+import { traducirMensaje } from './mensajes.js?v=202611181741';
+import { svgLista, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611181741';
+import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181741';
+import { Asistente } from './asistente.js?v=202611181741';
+import { activarDivisores } from './divisores.js?v=202611181741';
+import { correrTests, htmlResultados } from './tests.js?v=202611181741';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -389,7 +389,9 @@ function mostrarPaso() {
   }
   const quePaso = i < 0 ? 'Antes de empezar.' : c.error ? `💥 Falló la línea ${c.linea} ${dentro ? 'de ' + esc(E.ej.alumno) : 'del test'}.` : dentro
     ? (c.condicion ? `Al evaluar la condición de la línea ${c.linea} de ${esc(E.ej.alumno)}.`
-      : c.linea === c.fn.cabecera ? `Al entrar a ${esc(c.fn.nombre)}.` : `Después de la línea ${c.linea} de ${esc(E.ej.alumno)}.`)
+      : c.linea === c.fn.cabecera ? `Al entrar a ${esc(c.fn.nombre)}.`
+      : c.estado?.vars?.some(v => v.nombre === 'return') ? `Retorna (línea ${c.linea} de ${esc(E.ej.alumno)}).`
+      : `Después de la línea ${c.linea} de ${esc(E.ej.alumno)}.`)
       + (finDeLlamada(i) === i ? (cuadros[i + 1]?.dentro ? ' La llamada terminó; Siguiente ▶ entra a la próxima.' : ' La llamada terminó.') : '')
     : c.condicion ? `Al evaluar la condición de la línea ${c.linea} del test.` : `Después de la línea ${c.linea} del test.`;
   const dibujo = i < 0 ? '<p class="nota">Toca Siguiente ▶ para ejecutar la primera línea' + (cuadros[0]?.dentro ? ', o ⤵ Entrar para verla por dentro' : '') + '.</p>'
@@ -412,7 +414,7 @@ function mostrarPaso() {
     </div>
     <div class="paso-cuerpo${dentro ? ' dentro' : ''}">
       <div class="paso-codigo">${codigo}</div>
-      <div class="paso-dibujo">${dibujo}
+      <div class="paso-dibujo">${dibujo}${c && !c.error ? htmlVariables(c.estado) : ''}
         ${ultimo && vis.error ? `<p class="error-ej">${esc(vis.error)}</p>` : ''}
         ${c?.error ? (() => {
           const codigoLinea = dentro ? vis.lineasAlumno[c.linea - 1] : vis.lineasTest[c.linea - 1];

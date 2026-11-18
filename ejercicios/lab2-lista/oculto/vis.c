@@ -79,7 +79,10 @@ static void __ptr(const char * nombre, int i) {
 }
 
 // Vuelca la lista y, opcionalmente, variables puntero a nodos (nombre → puntero).
-static void __volcarCon(const char * marca, int linea, List * L, int nv, const char ** nombres, void ** ptrs) {
+// Variables que se vuelcan: tipos[k] = 0 puntero a nodo, 1 dato (void *, se muestra el int al que
+// apunta), 2 entero, 3 double.
+static void __volcarCon(const char * marca, int linea, List * L, int nv, const char ** nombres, void ** ptrs,
+                        const int * tipos, const long * ents, const double * dbls) {
     fflush(stdout);
     printf("@@%s %d {", marca, linea);
     __n = 0;
@@ -94,12 +97,20 @@ static void __volcarCon(const char * marca, int linea, List * L, int nv, const c
         printf("}");
     }
     int iv[16];
-    for (int k = 0; k < nv && k < 16; k++) iv[k] = __indice((Node *)ptrs[k]);   // también se dibujan sus nodos
+    for (int k = 0; k < nv && k < 16; k++) iv[k] = tipos && tipos[k] != 0 ? 0 : __indice((Node *)ptrs[k]);   // también se dibujan sus nodos
     printf(",\"vars\":[");
     for (int k = 0; k < nv && k < 16; k++) {
         printf(k ? ",{" : "{");
         printf("\"nombre\":\"%s\",", nombres[k]);
-        __ptr("ptr", iv[k]);
+        int t = tipos ? tipos[k] : 0;
+        if (t == 0) __ptr("ptr", iv[k]);
+        else if (t == 1) {
+            if (ptrs[k] == NULL) printf("\"dato\":null");
+            else if (__valido(ptrs[k], sizeof(int))) printf("\"dato\":%d", *(int *)ptrs[k]);
+            else printf("\"dato\":\"?\"");
+        }
+        else if (t == 2) printf("\"valor\":%ld", ents[k]);
+        else printf("\"valor\":%g", dbls[k]);
         printf("}");
     }
     for (int k = 0; k < __nl; k++) if (__visto(__lib[k])) __indice((Node *)__lib[k]);   // los liberados que fueron nodos
@@ -151,16 +162,24 @@ void * __ck(void * p, int linea) {
 }
 
 // Después de cada línea del test.
-int __volcar(int linea, List * L) { __volcarCon("VIS", linea, L, 0, 0, 0); return 0; }
+int __volcar(int linea, List * L) { __volcarCon("VIS", linea, L, 0, 0, 0, 0, 0, 0); return 0; }
 
 // Dentro de una función del estudiante (línea de list.c; negativa: al evaluar una condición),
 // con sus variables Node *: __volcarv(linea, L, n, "nombre1", ptr1, "nombre2", ptr2, ...).
+// __volcarv(linea, L, n, tipo1, "nombre1", valor1, ...): tipo 0 nodo / 1 dato (void *) / 2 int / 3 double.
 int __volcarv(int linea, List * L, int nv, ...) {
-    const char * nombres[16]; void * ptrs[16];
+    const char * nombres[16]; void * ptrs[16]; int tipos[16]; long ents[16]; double dbls[16];
     va_list a;
     va_start(a, nv);
-    for (int k = 0; k < nv && k < 16; k++) { nombres[k] = va_arg(a, const char *); ptrs[k] = va_arg(a, void *); }
+    for (int k = 0; k < nv && k < 16; k++) {
+        tipos[k] = va_arg(a, int);
+        nombres[k] = va_arg(a, const char *);
+        ptrs[k] = 0; ents[k] = 0; dbls[k] = 0;
+        if (tipos[k] == 2) ents[k] = va_arg(a, long);
+        else if (tipos[k] == 3) dbls[k] = va_arg(a, double);
+        else ptrs[k] = va_arg(a, void *);
+    }
     va_end(a);
-    __volcarCon("VISF", linea, L, nv < 16 ? nv : 16, nombres, ptrs);
+    __volcarCon("VISF", linea, L, nv < 16 ? nv : 16, nombres, ptrs, tipos, ents, dbls);
     return 0;
 }
