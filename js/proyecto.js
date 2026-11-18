@@ -130,7 +130,7 @@ function defines(ej, archivos) {
 function base(ej, archivos, ocultos) {
   const files = { ...archivos };
   files[REF] = ocultos[ej.referencia];
-  if (ej.ayudas) files[AYUDAS] = ocultos[ej.ayudas];
+  if (ej.ayudas) files[AYUDAS] = archivos[ej.ayudas] ?? ocultos[ej.ayudas];   // visible (solo lectura) u oculto
   return files;
 }
 

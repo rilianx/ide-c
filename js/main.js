@@ -1,11 +1,11 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181248';
-import { Runner } from './runner.js?v=202611181248';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181248';
-import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181248';
-import { Asistente } from './asistente.js?v=202611181248';
-import { activarDivisores } from './divisores.js?v=202611181248';
-import { correrTests, htmlResultados } from './tests.js?v=202611181248';
+import { Editor } from './editor.js?v=202611181257';
+import { Runner } from './runner.js?v=202611181257';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181257';
+import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181257';
+import { Asistente } from './asistente.js?v=202611181257';
+import { activarDivisores } from './divisores.js?v=202611181257';
+import { correrTests, htmlResultados } from './tests.js?v=202611181257';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -99,7 +99,7 @@ function elegirPaso(k, conFoco = true, fn = null) {
   const faltan = p.funciones.filter(f => !funcionesDefinidas(archivos[E.ej.alumno], [f]).length);
   $('enunciado').innerHTML = md(p.enunciado) + (faltan.length
     ? `<button id="escribir">✎ Escribir ${faltan.map(f => `<code>${f}</code>`).join(' y ')} en ${E.ej.alumno}</button>`
-    : `<p class="descripcion">Ya está en ${E.ej.alumno}: ✓ Probar paso para revisarla.</p>`);
+    : `<p class="descripcion">Ya está en ${E.ej.alumno}: ▶ Probar actual para revisarla.</p>`);
   if (faltan.length) $('escribir').onclick = () => {
     editor.abrir(E.ej.alumno);
     editor.poner(E.ej.alumno, agregarPlantilla(editor.texto(E.ej.alumno), p));
