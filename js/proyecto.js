@@ -137,11 +137,12 @@ const CK = `#include <stdio.h>
 void * __ck(void * p, int linea) {
     uintptr_t a = (uintptr_t)p;
     const char * tipo = p == NULL ? "NULL" : (a % sizeof(void *) || a < 4096 || a >= (uintptr_t)sbrk(0)) ? "BASURA" : 0;
-    if (!tipo) return p;
-    fflush(stdout);
-    printf("@@FALLA %d %s\\n", linea, tipo);
-    fflush(stdout);
-    exit(1);
+    if (tipo) {
+        fflush(stdout);
+        printf("@@FALLA %d %s\\n", linea, tipo);
+        fflush(stdout);
+        exit(1);
+    }
     return p;
 }
 `;

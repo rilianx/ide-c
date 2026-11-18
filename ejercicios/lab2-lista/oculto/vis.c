@@ -141,11 +141,12 @@ int __voyf(int n) { fflush(stdout); printf("@@LF %d\n", n); fflush(stdout); retu
 // liberado, se avisa y se detiene el programa (el intérprete no siempre lo detecta solo).
 void * __ck(void * p, int linea) {
     const char * tipo = p == NULL ? "NULL" : !__valido(p, 1) ? "BASURA" : __libre(p) ? "LIBERADO" : 0;
-    if (!tipo) return p;
-    fflush(stdout);
-    printf("@@FALLA %d %s\n", linea, tipo);
-    fflush(stdout);
-    exit(1);
+    if (tipo) {
+        fflush(stdout);
+        printf("@@FALLA %d %s\n", linea, tipo);
+        fflush(stdout);
+        exit(1);
+    }
     return p;
 }
 
