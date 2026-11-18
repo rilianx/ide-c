@@ -17,7 +17,8 @@
     }
   ],
   "ocultos": [
-    "oculto/list_ref.c"
+    "oculto/list_ref.c",
+    "oculto/vis.c"
   ],
   "alumno": "list.c",
   "referencia": "oculto/list_ref.c",
@@ -323,5 +324,10 @@
       "#include \"list_interno.h\"",
       "#include \"list.h\""
     ]
-  ]
+  ],
+  "visual": {
+    "archivo": "oculto/vis.c",
+    "variable": "L",
+    "tipo": "List"
+  }
 }

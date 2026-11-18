@@ -50,7 +50,13 @@ Con GitHub Pages (Settings → Pages → la rama y la carpeta de la app). Hace f
 
 Antes de cada commit que se publica, conviene correr `node herramientas/version.mjs`: pone un número de versión en las URLs de los JS y el CSS para que el navegador no mezcle archivos nuevos con otros viejos guardados en caché.
 
+## Visualización
+
+La pestaña **Visualización** corre un test con el `list.c` del estudiante y dibuja la memoria (estática, sin animación) después de cada línea del test: la `List` con `head`, `tail` y `current`, y cada nodo como `[prev | dato | next]` con flechas. Las líneas que no cambian la memoria se juntan con el dibujo anterior. Los punteros basura se marcan con `?`.
+
+Cómo funciona: `js/proyecto.js` (`instrumentar`) agrega `__volcar(línea, L);` después de cada instrucción del test; `oculto/vis.c` imprime una línea `@@VIS` con la lista en JSON (revisa cada puntero antes de seguirlo); `js/visual.js` la dibuja en SVG. En `ejercicio.json`, la clave `visual` indica el archivo del volcado, la variable y su tipo.
+
 ## Pendiente
 
-- La pestaña **Visualización** (memoria, como en Puntero C).
+- Visualización: elegir qué variables dibujar, otras estructuras (pilas, colas, árboles) y marcar nodos liberados.
 - Labs 1, 3, 4 y 5.

@@ -163,3 +163,41 @@ export function mensajes(texto) {
   }
   return out;
 }
+
+// ---------- Visualización ----------
+
+// Agrega «__volcar(n, L);» después de cada instrucción del test (desde que L existe),
+// para dibujar la memoria línea a línea. n es el número de línea del test (desde 1).
+export function instrumentar(codigo, variable) {
+  const lineas = codigo.split('\n'), m = enmascarar(codigo).split('\n');
+  const decl = new RegExp(`\\b[A-Za-z_]\\w*\\s*\\*\\s*${variable}\\b`);
+  let prof = 0, existe = false;
+  return lineas.map((l, i) => {
+    for (const ch of m[i]) { if (ch === '{') prof++; else if (ch === '}') prof--; }
+    if (!existe && decl.test(m[i])) existe = true;
+    const fin = m[i].trimEnd().length;   // antes de un comentario al final de la línea
+    if (!existe || prof !== 0 || !/[;}]$/.test(m[i].trimEnd())) return l;
+    return `${l.slice(0, fin)} __volcar(${i + 1}, ${variable});${l.slice(fin)}`;
+  }).join('\n');
+}
+
+// Programa para dibujar un test: como armarTests, con el volcado y el test instrumentado.
+export function armarVisual(ej, archivos, ocultos, test) {
+  const v = ej.visual;
+  const t = { ...test, codigo: `void __volcar(int, ${v.tipo} *);\n${instrumentar(test.codigo, v.variable)}` };
+  const prog = armarTests(ej, archivos, ocultos, [t]);
+  prog.files['__vis.c'] = ocultos[v.archivo];
+  prog.files['__programa.c'] += '#include "__vis.c"\n';
+  return prog;
+}
+
+// Separa la salida del programa de los volcados: {salida, cuadros: [{linea, estado}]}.
+export function leerVolcados(stdout) {
+  const cuadros = [], salida = [];
+  for (const l of (stdout ?? '').split('\n')) {
+    const m = /^@@VIS (\d+) (.*)$/.exec(l);
+    if (!m) { salida.push(l); continue; }
+    try { cuadros.push({ linea: +m[1], estado: JSON.parse(m[2]) }); } catch { /* volcado cortado */ }
+  }
+  return { salida: salida.join('\n'), cuadros };
+}

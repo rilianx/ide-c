@@ -1,11 +1,12 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181301';
-import { Runner } from './runner.js?v=202611181301';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181301';
-import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181301';
-import { Asistente } from './asistente.js?v=202611181301';
-import { activarDivisores } from './divisores.js?v=202611181301';
-import { correrTests, htmlResultados } from './tests.js?v=202611181301';
+import { Editor } from './editor.js?v=202611181318';
+import { Runner } from './runner.js?v=202611181318';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181318';
+import { svgLista } from './visual.js?v=202611181318';
+import { agregarPlantilla, funcionesDefinidas, funcionesPropias, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181318';
+import { Asistente } from './asistente.js?v=202611181318';
+import { activarDivisores } from './divisores.js?v=202611181318';
+import { correrTests, htmlResultados } from './tests.js?v=202611181318';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -57,7 +58,7 @@ function estado(texto, error = false) {
 
 function ocupar(si) {
   ocupado = si;
-  for (const id of ['probar-paso', 'probar-todo']) $(id).disabled = si;
+  for (const id of ['probar-paso', 'probar-todo', 'verificar-curso', 'vis-dibujar']) $(id).disabled = si;
   $('detener').hidden = !si;
 }
 
@@ -151,6 +152,13 @@ async function probar(todos) {
   // «todos»: los pasos de las funciones que escribió el estudiante (no las plantillas vacías)
   const propias = new Set(funcionesPropias(E.ej, archivos[E.ej.alumno] ?? ''));
   const pasos = curso ? E.ej.pasos.map((p, k) => k) : todos ? E.ej.pasos.map((p, k) => k).filter(k => E.ej.pasos[k].funciones.some(f => propias.has(f))) : [paso];
+  if (!todos && !E.ej.pasos[paso].funciones.some(f => propias.has(f))) {
+    const f = E.ej.pasos[paso].funciones.join(' y ');
+    estado(`Aún no implementas ${f}: escríbela en ${E.ej.alumno} antes de probarla.`, true);
+    $('resultados').innerHTML = `<p class="nota">Aún no implementas <code>${esc(f)}</code> (no está en ${esc(E.ej.alumno)} o está vacía). Escríbela y vuelve a tocar ▶ Probar actual.<br>Si quieres ver que los tests pasan con la versión del curso, usa ✔ Verificar código del curso.</p>`;
+    $('resumen-tests').textContent = '';
+    ocupar(false); return;
+  }
   if (!pasos.length) { estado('Aún no has escrito ninguna función: elige un paso y toca ✎ Escribir.', true); ocupar(false); return; }
   const tests = pasos.flatMap(k => E.ej.pasos[k].tests.map(t => ({ ...t, paso: k })));
   $('compilacion-tests').innerHTML = '';
@@ -210,7 +218,64 @@ document.querySelectorAll('.vista').forEach(b => b.onclick = () => {
   $('codigo').hidden = b.dataset.vista !== 'codigo';
   $('visual').hidden = b.dataset.vista !== 'visual';
   editor.refrescar();
+  if (!$('visual').hidden) prepararVisual(true);
 });
+
+// ---------- Visualización ----------
+
+// Selector con todos los tests, agrupados por función; al abrir la pestaña se elige
+// el primer test de la función actual (si cambió) y se dibuja.
+let visPaso = null;
+function prepararVisual(dibujar = false) {
+  if (!E.ej.visual) { $('vis-cuadros').innerHTML = '<p class="pronto">Este ejercicio aún no tiene visualización.</p>'; return; }
+  $('vis-test').innerHTML = E.ej.pasos.map((p, k) => `<optgroup label="${esc(p.titulo)}">`
+    + p.tests.map((t, i) => `<option value="${k}.${i}">${esc(t.nombre)}</option>`).join('') + '</optgroup>').join('');
+  $('vis-nota').textContent = 'Corre el test con tu ' + E.ej.alumno + ' y dibuja la memoria después de cada línea.';
+  if (visPaso !== paso) { visPaso = paso; $('vis-test').value = `${paso}.0`; $('vis-cuadros').innerHTML = ''; if (dibujar) dibujarVisual(); }
+  else $('vis-test').value = visElegido ?? `${paso}.0`;
+}
+let visElegido = null;
+$('vis-test').onchange = () => dibujarVisual();
+$('vis-dibujar').onclick = () => dibujarVisual();
+
+async function dibujarVisual() {
+  if (ocupado) return;
+  visElegido = $('vis-test').value;
+  const [k, i] = visElegido.split('.').map(Number);
+  const test = E.ej.pasos[k].tests[i];
+  const lineas = test.codigo.split('\n');
+  ocupar(true);
+  estado('Dibujando…');
+  const caja = $('vis-cuadros');
+  try {
+    const r = await runner.ejecutar(armarVisual(E.ej, archivos, E.ocultos, test));
+    if (!r.compilado?.ok) {
+      caja.innerHTML = '<div class="cuadro"></div>';
+      mostrarCompilacion(caja.firstChild, mensajesDe(r), false);
+      estado('No compila.', true);
+    } else {
+      const d = r.llamadas.get(0) ?? {};
+      const { salida, cuadros } = leerVolcados(d.stdout);
+      // un dibujo por cambio en la memoria; las líneas que no la cambian se juntan con el anterior
+      const grupos = [];
+      for (const c of cuadros) {
+        const clave = JSON.stringify(c.estado), g = grupos.at(-1);
+        if (g && g.clave === clave) g.lineas.push({ n: c.linea, igual: true });
+        else grupos.push({ clave, estado: c.estado, lineas: [{ n: c.linea, igual: false }] });
+      }
+      const linea = (l, i) => `<div class="cuadro-linea${l.igual ? ' sin-cambio' : ''}"><span class="num">línea ${l.n}</span><code>${esc(lineas[l.n - 1].trim())}</code>${l.igual ? '<span class="nota">(no cambia la memoria)</span>' : ''}</div>`;
+      const nombre = E.ej.visual.variable;
+      caja.innerHTML = grupos.map(g => `<div class="cuadro">${g.lineas.map(linea).join('')}${svgLista(g.estado, nombre)}</div>`).join('')
+        + (d.error || !d.ok ? `<p class="error-ej">${esc(traducir(d.error ?? d.stderr ?? 'No se pudo ejecutar'))}${cuadros.length ? ` (después de la línea ${cuadros.at(-1).linea})` : ''}</p>` : '')
+        + (salida.trim() ? `<h4>Lo que imprimió el test</h4><pre class="vis-salida">${esc(salida.trim())}</pre>` : '');
+      estado(d.error || !d.ok ? 'El test se detuvo con un error.' : `Listo: ${grupos.length} dibujo${grupos.length === 1 ? '' : 's'}.`, !!(d.error || !d.ok));
+    }
+  } catch (e) {
+    estado('No se pudo dibujar: ' + e.message, true);
+  }
+  ocupar(false);
+}
+const mensajesDe = r => r.compilado ? mensajesCompilador(r.compilado.mensajes) : [{ archivo: null, linea: null, texto: 'El compilador no respondió.' }];
 
 $('probar-paso').onclick = () => probar(false);
 $('probar-todo').onclick = () => probar(true);

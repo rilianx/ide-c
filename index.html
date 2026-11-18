@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IDE C · Estructuras de Datos</title>
 <link rel="stylesheet" href="vendor/codemirror/codemirror.css">
-<link rel="stylesheet" href="css/ide.css?v=202611181301">
+<link rel="stylesheet" href="css/ide.css?v=202611181318">
 <script src="vendor/codemirror/codemirror.js"></script>
 <script src="vendor/codemirror/clike.js"></script>
 <script src="vendor/codemirror/matchbrackets.js"></script>
@@ -20,7 +20,7 @@
   addEventListener('error', e => errorInicio(e.message || 'no se pudo cargar ' + (e.target && (e.target.src || e.target.href) || 'un archivo')), true);
   addEventListener('unhandledrejection', e => errorInicio(String(e.reason && e.reason.message || e.reason)));
 </script>
-<script type="module" src="js/main.js?v=202611181301"></script>
+<script type="module" src="js/main.js?v=202611181318"></script>
 </head>
 <body>
 <header>
@@ -31,7 +31,7 @@
 
 <nav class="vistas" role="tablist">
   <button class="vista activa" data-vista="codigo" role="tab">Código</button>
-  <button class="vista" data-vista="visual" role="tab" disabled title="Próximamente">Visualización (pronto)</button>
+  <button class="vista" data-vista="visual" role="tab" title="Dibuja la memoria línea a línea al correr un test">Visualización</button>
 </nav>
 
 <main id="codigo">
@@ -78,7 +78,12 @@
 </main>
 
 <main id="visual" hidden>
-  <p class="pronto">La visualización de la memoria llegará pronto.</p>
+  <div class="vis-barra">
+    <label>Test <select id="vis-test"></select></label>
+    <button id="vis-dibujar" class="principal" title="Corre el test con tu list.c y dibuja la memoria después de cada línea">▶ Dibujar</button>
+    <span id="vis-nota" class="nota"></span>
+  </div>
+  <div id="vis-cuadros" class="vis-cuadros"></div>
 </main>
 </body>
 </html>
