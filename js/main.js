@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611182132';
-import { Runner } from './runner.js?v=202611182132';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182132';
-import { traducirMensaje } from './mensajes.js?v=202611182132';
-import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado, estadoDeLista } from './visual.js?v=202611182132';
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182132';
-import { Asistente } from './asistente.js?v=202611182132';
-import { activarDivisores } from './divisores.js?v=202611182132';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182132';
+import { Editor } from './editor.js?v=202611182144';
+import { Runner } from './runner.js?v=202611182144';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182144';
+import { traducirMensaje } from './mensajes.js?v=202611182144';
+import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado, estadoDeLista } from './visual.js?v=202611182144';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182144';
+import { Asistente } from './asistente.js?v=202611182144';
+import { activarDivisores } from './divisores.js?v=202611182144';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182144';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -53,25 +53,39 @@ function aplicarVista() {
   $('ajustar').classList.toggle('activo', pref.ajustar);
   editor.teclado(pref.teclado);
   $('teclado').classList.toggle('activo', pref.teclado);
-  $('enter').hidden = pref.teclado;   // sin teclado: botón para agregar una línea
+  if (typeof ponerEnter === 'function') setTimeout(ponerEnter);   // sin teclado: ↵ al final de la línea
   try { localStorage.setItem('ide-c:vista', JSON.stringify(pref)); } catch { /* sin almacenamiento */ }
 }
 $('letra-menos').onclick = () => { pref.letra--; aplicarVista(); };
 $('letra-mas').onclick = () => { pref.letra++; aplicarVista(); };
 $('ajustar').onclick = () => { pref.ajustar = !pref.ajustar; aplicarVista(); };
-// ↵ (sin teclado): una línea nueva debajo de la del cursor, con la sangría que corresponde
-$('enter').onclick = () => {
-  const cm = editor.cm, c = cm.getCursor(), l = cm.getLine(c.line);
+// ↵ (sin teclado): un botón al final de la línea del cursor que agrega una línea nueva debajo,
+// con la sangría que corresponde (en una «}», la línea va antes, dentro del bloque)
+function nuevaLinea(n) {
+  const cm = editor.cm, l = cm.getLine(n);
   const ind = (l.match(/^\s*/) || [''])[0] + (/\{\s*$/.test(l) ? '    ' : '');
-  if (/^\s*\}/.test(l) && c.ch <= l.search(/\S/)) {   // en una «}»: la línea va antes, dentro del bloque
-    cm.replaceRange(ind + '    \n', { line: c.line, ch: 0 });
-    cm.setCursor({ line: c.line, ch: ind.length + 4 });
+  if (/^\s*\}/.test(l)) {
+    cm.replaceRange(ind + '    \n', { line: n, ch: 0 });
+    cm.setCursor({ line: n, ch: ind.length + 4 });
   } else {
-    cm.replaceRange('\n' + ind, { line: c.line, ch: l.length });
-    cm.setCursor({ line: c.line + 1, ch: ind.length });
+    cm.replaceRange('\n' + ind, { line: n, ch: l.length });
+    cm.setCursor({ line: n + 1, ch: ind.length });
   }
   cm.focus();
-};
+}
+let marcaEnter = null;
+function ponerEnter() {
+  marcaEnter?.clear(); marcaEnter = null;
+  const cm = editor.cm;
+  if (pref.teclado || editor.actual !== E?.ej?.alumno || cm.getOption('readOnly') === 'nocursor') return;
+  const n = cm.getCursor().line;
+  const b = document.createElement('span');
+  b.className = 'enter-linea'; b.textContent = '↵'; b.title = 'Nueva línea debajo';
+  b.onmousedown = b.ontouchstart = e => { e.preventDefault(); e.stopPropagation(); nuevaLinea(n); };
+  marcaEnter = cm.setBookmark({ line: n, ch: cm.getLine(n).length }, { widget: b });
+}
+editor.cm.on('cursorActivity', () => setTimeout(ponerEnter));
+editor.cm.on('swapDoc', () => setTimeout(ponerEnter));
 
 // Celular: con el teclado abierto (escribiendo en el editor) se esconde el asistente de abajo.
 // El teclado se detecta por el foco del editor (con teclado activado) o porque la pantalla visible se achica.
@@ -405,6 +419,7 @@ async function dibujarVisual(soloSiCambio = false, posicion = 'auto') {
       vis = { cuadros, i: Math.min(antes, cuadros.length - 1), test, lineasTest, lineasAlumno, aviso, fns, paso: k,
         error: textoFalla ?? (seCayo ? traducir(d.error ?? d.stderr ?? 'No se pudo ejecutar') : null) };
       vis.salidaFinal = salida;
+      vis.sinEscribir = !delPaso.length;
       vis.lugares = lugaresDe(cuadros.map(c => c.estado));   // cada nodo en un lugar fijo durante toda la ejecución
       if (posicion === 'auto') vis.i = pasoAuto();
       if (irAEntrada) {   // deslizar en el celular: la línea de definición de la función (su entrada)
@@ -417,7 +432,8 @@ async function dibujarVisual(soloSiCambio = false, posicion = 'auto') {
       visDibujado = { test: visElegido, codigo: codigoAlumno };
       const pasa = !seCayo && mismaSalida(test.esperado, salida);
       vis.pasa = pasa;
-      resultadoVivo(seCayo ? '<span class="res-mal">💥 El test se cae (ver la línea marcada)</span>'
+      if (vis.sinEscribir) resultadoVivo(`<span class="nota">✎ Escribe tu ${esc(E.ej.pasos[k].funciones.join(', '))}: arriba, la entrada y cómo debe quedar</span>`);
+      else resultadoVivo(seCayo ? '<span class="res-mal">💥 El test se cae (ver la línea marcada)</span>'
         : pasa ? '<span class="res-bien">✅ Este test pasa</span>' : (test.salida ? '<span class="res-mal">❌ Todavía no: mira lo marcado en rojo al final</span>' : '<span class="res-mal">❌ Todavía no: compara Esperado y Obtenido</span>'));
     }
   } catch (e) {
@@ -536,7 +552,9 @@ async function ejecutarEnVivo() {
   if (res && !res.some(r => r.estado === 'sin-compilar')) {
     const ok = res.filter(r => r.estado === 'ok').length;
     resumenVivo = `${ok}/${tests.length} tests pasan`;
-    estadoPasos[k] = ok === tests.length ? 'ok' : 'falla';
+    const escrita = E.ej.pasos[k].funciones.some(f => funcionesPropias(E.ej, archivos[E.ej.alumno] ?? '').includes(f));
+    estadoPasos[k] = !escrita ? undefined : ok === tests.length ? 'ok' : 'falla';
+    if (!escrita) resumenVivo = '';
     dibujarPasos();
     const f = res.findIndex(r => r.estado !== 'ok');
     if (f >= 0 && `${k}.${f}` !== visElegido) { visElegido = `${k}.${f}`; $('vis-test-sel').value = visElegido; }
@@ -675,6 +693,17 @@ function mostrarPaso() {
   const esperadoMini = esEntrada && sal ? `<div class="esperado-mini"><span class="rot">→ se espera</span>${svgLista(estadoDeLista(sal.lista, 'current' in sal ? sal.current : undefined, true), c.fn.lista, { sinDirecciones: true, escala: 0.5, porFila: 5 })}${(sal.retornos ?? []).map(r => `<span class="ret">↩ ${esc(r === null ? 'NULL' : r)}</span>`).join(' ')}</div>` : '';
   const entradaVacia = esEntrada && !c.estado?.lista && !(c.estado?.nodos ?? []).length;
   const entradaHtml = esEntrada ? `<div class="entrada-mini"><span class="rot">entrada</span>${entradaVacia ? `<code>${esc(c.fn.nombre)}()</code><span class="nota">sin lista</span>` : dibujoFinal}</div>` : dibujoFinal;
+  if (vis.sinEscribir && sal) {   // la función del paso aún no está escrita: la entrada del test y lo que se espera
+    const ent = vis.test.entrada ?? {}, fn0 = E.ej.pasos[vis.paso].funciones[0];
+    const dibEnt = ent.lista == null ? `<code>${esc(fn0)}()</code><span class="nota">sin lista</span>`
+      : svgLista(estadoDeLista(ent.lista, ent.current ?? undefined), E.ej.visual.variable, { sinDirecciones: true, escala: 0.5, porFila: 5 });
+    const dibEsp = svgLista(estadoDeLista(sal.lista, 'current' in sal ? sal.current : undefined, true), E.ej.visual.variable, { sinDirecciones: true, escala: 0.5, porFila: 5 })
+      + (sal.retornos ?? []).map(r => `<span class="ret">↩ ${esc(r === null ? 'NULL' : r)}</span>`).join(' ');
+    $('vivo-zoom').innerHTML = `<div class="vivo-fila"><div class="entrada-mini"><span class="rot">entrada</span>${dibEnt}</div><div class="esperado-mini"><span class="rot">→ se espera</span>${dibEsp}</div></div>`;
+    $('vivo').classList.remove('pasa', 'falla');
+    mostrarVivo();
+    return;
+  }
   $('vivo-zoom').innerHTML = `<div class="vivo-fila">${entradaHtml}${esperadoMini}</div>`;
   $('vivo').classList.toggle('pasa', !!vis.pasa);
   $('vivo').classList.toggle('falla', !vis.pasa);

@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar } from './proyecto.js?v=202611182132';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar } from './proyecto.js?v=202611182144';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -157,6 +157,8 @@ export class Asistente {
     const deseado = hueco.k === 'ret' ? fn.retorno : hueco.tipo(valores);
     let lista = exprs.filter(e => deseado ? mismo(e, deseado) : (!hueco.soloStructs || ctx.est[e.base]));
     if (!hueco.sinNull && (!deseado || deseado.ptr)) lista = [...lista, { texto: 'NULL', base: deseado?.base ?? 'void', ptr: 1 }];
+    // un struct nuevo en memoria: (List *)malloc(sizeof(List))
+    if (deseado?.ptr === 1 && ctx.est[deseado.base]) lista = [...lista, { texto: `(${deseado.base} *)malloc(sizeof(${deseado.base}))`, base: deseado.base, ptr: 1 }];
     return lista;
   }
 
