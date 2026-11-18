@@ -1,12 +1,12 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181553';
-import { Runner } from './runner.js?v=202611181553';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181553';
-import { svgLista } from './visual.js?v=202611181553';
-import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181553';
-import { Asistente } from './asistente.js?v=202611181553';
-import { activarDivisores } from './divisores.js?v=202611181553';
-import { correrTests, htmlResultados } from './tests.js?v=202611181553';
+import { Editor } from './editor.js?v=202611181558';
+import { Runner } from './runner.js?v=202611181558';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181558';
+import { svgLista, lugaresDe } from './visual.js?v=202611181558';
+import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181558';
+import { Asistente } from './asistente.js?v=202611181558';
+import { activarDivisores } from './divisores.js?v=202611181558';
+import { correrTests, htmlResultados } from './tests.js?v=202611181558';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -313,6 +313,7 @@ async function dibujarVisual(soloSiCambio = false, mantenerPaso = false) {
       vis = { cuadros, i: Math.min(antes, cuadros.length - 1), test, lineasTest, lineasAlumno, fnInfo, detalle, lineaCabecera, lineaFin, nombreListaFn, aviso,
         error: d.error || !d.ok ? traducir(d.error ?? d.stderr ?? 'No se pudo ejecutar') : null };
       vis.salidaFinal = salida;
+      vis.lugares = lugaresDe(cuadros.map(c => c.estado));   // cada nodo en un lugar fijo durante toda la ejecución
       mostrarPaso();
       visDibujado = { test: visElegido, codigo: codigoAlumno };
       estado(d.error || !d.ok ? 'El test se detuvo con un error (avanza hasta el final para verlo).' : 'Listo: avanza con Siguiente ▶ o con las flechas del teclado.', !!(d.error || !d.ok));
@@ -370,7 +371,7 @@ function mostrarPaso() {
       + (finDeLlamada(i) === i ? (cuadros[i + 1]?.dentro ? ' La llamada terminó; Siguiente ▶ entra a la próxima.' : ' La llamada terminó.') : '')
     : `Después de la línea ${c.linea} del test.`;
   const dibujo = i < 0 ? '<p class="nota">Toca Siguiente ▶ para ejecutar la primera línea' + (cuadros[0]?.dentro ? ', o ⤵ Entrar para verla por dentro' : '') + '.</p>'
-    : svgLista(c.estado, dentro ? vis.nombreListaFn : E.ej.visual.variable);
+    : svgLista(c.estado, dentro ? vis.nombreListaFn : E.ej.visual.variable, { lugares: vis.lugares });
   const ultimo = i === cuadros.length - 1;
   const salida = (i < 0 ? '' : ultimo ? vis.salidaFinal : c.salida).trim();
   const puede = a => { const j = acciones[a](i); return j !== null && j !== undefined && j !== i; };
