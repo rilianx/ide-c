@@ -147,6 +147,12 @@ main#visual { flex: 1; overflow: auto; padding: 12px 16px 40px; }
 .cuadro-linea .num { color: var(--suave); min-width: 4.5em; font-size: 12px; }
 .cuadro-linea + .cuadro-linea { margin-top: 2px; }
 .cuadro-linea.sin-cambio code { color: var(--suave); }
+#vis-panel .paso-cuerpo { grid-template-columns: 1fr; }
+#vis-panel .paso-barra { top: 0; }
+.vis-cabecera { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.vis-cabecera b { flex: 1; min-width: 0; font-size: 14px; }
+.test summary .ver-vis { float: right; padding: 1px 8px; font-size: 12px; margin-left: 6px; }
+.test.sin-correr summary { color: var(--texto); }
 .paso-barra { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; position: sticky; top: -12px; background: var(--fondo); padding: 6px 0; z-index: 2; }
 .paso-info { color: var(--suave); font-size: 14px; margin-left: 6px; }
 .paso-cuerpo { display: grid; grid-template-columns: minmax(260px, 2fr) 3fr; gap: 14px; align-items: start; margin-top: 8px; }

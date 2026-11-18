@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IDE C · Estructuras de Datos</title>
 <link rel="stylesheet" href="vendor/codemirror/codemirror.css">
-<link rel="stylesheet" href="css/ide.css?v=202611181518">
+<link rel="stylesheet" href="css/ide.css?v=202611181523">
 <script src="vendor/codemirror/codemirror.js"></script>
 <script src="vendor/codemirror/clike.js"></script>
 <script src="vendor/codemirror/matchbrackets.js"></script>
@@ -20,7 +20,7 @@
   addEventListener('error', e => errorInicio(e.message || 'no se pudo cargar ' + (e.target && (e.target.src || e.target.href) || 'un archivo')), true);
   addEventListener('unhandledrejection', e => errorInicio(String(e.reason && e.reason.message || e.reason)));
 </script>
-<script type="module" src="js/main.js?v=202611181518"></script>
+<script type="module" src="js/main.js?v=202611181523"></script>
 </head>
 <body>
 <header>
@@ -29,10 +29,6 @@
   <span id="estado" class="estado">Cargando el compilador…</span>
 </header>
 
-<nav class="vistas" role="tablist">
-  <button class="vista activa" data-vista="codigo" role="tab">Código</button>
-  <button class="vista" data-vista="visual" role="tab" title="Dibuja la memoria línea a línea al correr un test">Visualización</button>
-</nav>
 
 <main id="codigo">
   <aside class="pasos" id="col-pasos">
@@ -71,19 +67,21 @@
       </div>
     </div>
     <div id="panel-tests" class="panel-cuerpo">
+      <div id="vis-panel" hidden>
+        <div class="vis-cabecera">
+          <button id="vis-volver" title="Volver a la lista de tests">← Tests</button>
+          <b id="vis-titulo"></b>
+          <button id="vis-dibujar" title="Volver a correr el test y dibujar">↻</button>
+        </div>
+        <div id="vis-cuadros" class="vis-cuadros"></div>
+      </div>
+      <div id="vista-tests">
       <div id="compilacion-tests"></div>
       <div id="resultados"><p class="nota">▶ Probar actual compila list.c y corre los tests de la función elegida; ▶▶ Probar todas, los de todas las funciones que escribiste. Cada test imprime algo y se compara con lo esperado (las funciones que usan los tests están en ayudas.c).</p></div>
+      </div>
     </div>
   </section>
 </main>
 
-<main id="visual" hidden>
-  <div class="vis-barra">
-    <label>Test <select id="vis-test"></select></label>
-    <button id="vis-dibujar" title="Vuelve a correr el test y dibujar">↻ Volver a dibujar</button>
-    <span id="vis-nota" class="nota"></span>
-  </div>
-  <div id="vis-cuadros" class="vis-cuadros"></div>
-</main>
 </body>
 </html>
