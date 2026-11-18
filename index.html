@@ -18,9 +18,8 @@
   <h1>IDE C <span>· Estructuras de Datos</span></h1>
   <select id="ejercicio" aria-label="Ejercicio"></select>
   <div class="acciones">
-    <button id="play" class="principal" title="Compilar y ejecutar main.c">▶ Play</button>
-    <button id="probar-paso" title="Correr los tests del paso elegido">✓ Probar paso</button>
-    <button id="probar-todo" title="Correr todos los tests">✓✓ Todo</button>
+    <button id="probar-paso" class="principal" title="Correr los tests del paso elegido (Ctrl+Enter)">▶ Probar paso</button>
+    <button id="probar-todo" title="Correr todos los tests (Ctrl+Shift+Enter)">▶▶ Todos</button>
     <button id="detener" hidden title="Detener la ejecución">■ Detener</button>
   </div>
   <span id="estado" class="estado">Cargando el compilador…</span>
@@ -32,7 +31,7 @@
 </nav>
 
 <main id="codigo">
-  <aside class="pasos">
+  <aside class="pasos" id="col-pasos">
     <h2 id="titulo-ejercicio"></h2>
     <p id="descripcion" class="descripcion"></p>
     <ol id="lista-pasos"></ol>
@@ -41,26 +40,20 @@
     <ul id="funciones" class="funciones"></ul>
     <button id="restaurar" class="secundario">⟲ Restaurar archivos</button>
   </aside>
+  <div class="divisor" data-col="izq" title="Arrastra para cambiar el ancho (doble clic: ocultar/mostrar)"></div>
 
   <section class="centro">
     <div id="pestanas" class="pestanas"></div>
     <div id="editor" class="editor"></div>
+    <div id="asistente" class="asistente"></div>
   </section>
+  <div class="divisor" data-col="der" title="Arrastra para cambiar el ancho (doble clic: ocultar/mostrar)"></div>
 
-  <section class="panel">
-    <div class="pestanas-panel">
-      <button class="panel-tab activa" data-panel="consola">Consola</button>
-      <button class="panel-tab" data-panel="tests">Tests <span id="resumen-tests"></span></button>
-    </div>
-    <div id="panel-consola" class="panel-cuerpo">
-      <label for="stdin">Entrada (stdin)</label>
-      <textarea id="stdin" rows="3" spellcheck="false" placeholder="Lo que el programa leerá con scanf…"></textarea>
-      <div id="compilacion"></div>
-      <pre id="salida" class="salida"></pre>
-    </div>
-    <div id="panel-tests" class="panel-cuerpo" hidden>
+  <section class="panel" id="col-tests">
+    <div class="titulo-panel">Tests <span id="resumen-tests"></span></div>
+    <div id="panel-tests" class="panel-cuerpo">
       <div id="compilacion-tests"></div>
-      <div id="resultados"></div>
+      <div id="resultados"><p class="nota">▶ Probar paso compila list.c y corre los tests del paso elegido. Cada test usa solo la interfaz (list.h) y compara lo que imprime con lo esperado.</p></div>
     </div>
   </section>
 </main>

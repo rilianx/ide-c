@@ -2,7 +2,9 @@
 import { Editor } from './editor.js';
 import { Runner } from './runner.js';
 import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js';
-import { armarPlay, agregarPlantilla, funcionesDefinidas, mensajes } from './proyecto.js';
+import { agregarPlantilla, funcionesDefinidas } from './proyecto.js';
+import { Asistente } from './asistente.js';
+import { activarDivisores } from './divisores.js';
 import { correrTests, htmlResultados } from './tests.js';
 
 const $ = id => document.getElementById(id);
@@ -26,6 +28,8 @@ const editor = new Editor($('editor'), $('pestanas'), {
     if (nombre === E.ej.alumno) dibujarFunciones();
   },
 });
+const asistente = new Asistente($('asistente'), editor, () => ({ ej: E.ej, archivos }));
+activarDivisores(document.getElementById('codigo'), () => editor.refrescar());
 
 function estado(texto, error = false) {
   $('estado').textContent = texto;
@@ -34,7 +38,7 @@ function estado(texto, error = false) {
 
 function ocupar(si) {
   ocupado = si;
-  for (const id of ['play', 'probar-paso', 'probar-todo']) $(id).disabled = si;
+  for (const id of ['probar-paso', 'probar-todo']) $(id).disabled = si;
   $('detener').hidden = !si;
 }
 
@@ -48,8 +52,9 @@ async function abrirEjercicio(id) {
   $('descripcion').textContent = E.ej.descripcion;
   editor.cargar(E.ej.archivos.map(a => ({ nombre: a.nombre, texto: archivos[a.nombre], editable: a.editable })));
   elegirPaso(0, false);
-  $('resultados').innerHTML = ''; $('resumen-tests').textContent = '';
+  $('resumen-tests').textContent = '';
   dibujarFunciones();
+  asistente.dibujar();
 }
 
 function dibujarPasos() {
@@ -71,15 +76,13 @@ function elegirPaso(k, conFoco = true) {
     ? `<button id="escribir">✎ Escribir ${faltan.map(f => `<code>${f}</code>`).join(' y ')} en ${E.ej.alumno}</button>`
     : `<p class="descripcion">Ya está en ${E.ej.alumno}: ✓ Probar paso para revisarla.</p>`);
   if (faltan.length) $('escribir').onclick = () => {
-    const nuevo = agregarPlantilla(editor.texto(E.ej.alumno), p);
     editor.abrir(E.ej.alumno);
-    editor.poner(E.ej.alumno, nuevo);
-    const linea = nuevo.split('\n').findIndex(l => l.includes(p.funciones[0] + '(')) + 1;
-    editor.abrir(E.ej.alumno, linea || undefined);
-    elegirPaso(k);
+    editor.poner(E.ej.alumno, agregarPlantilla(editor.texto(E.ej.alumno), p));
+    asistente.irAFuncion(faltan[0]);
+    elegirPaso(k, false);
   };
   dibujarPasos();
-  if (conFoco && !faltan.length) editor.abrir(E.ej.alumno);
+  if (conFoco && !faltan.length) asistente.irAFuncion(p.funciones[0]);
 }
 
 // Qué funciones escribió el estudiante y cuáles usan la versión del curso.
@@ -108,33 +111,6 @@ function mostrarCompilacion(contenedor, lista, ok) {
   editor.marcarErrores(ok ? [] : (lista ?? []).filter(m => m.archivo));
 }
 
-// ---------- ▶ Play ----------
-
-async function play() {
-  if (ocupado) return;
-  ocupar(true); panel('consola');
-  const salida = $('salida');
-  salida.textContent = ''; $('compilacion').innerHTML = '';
-  estado('Compilando…');
-  const prog = armarPlay(E.ej, archivos, E.ocultos);
-  prog.calls[0].stdin = $('stdin').value;
-  try {
-    const r = await runner.ejecutar(prog, {
-      compilado: d => { mostrarCompilacion($('compilacion'), mensajes(d.mensajes), d.ok); estado(d.ok ? 'Ejecutando…' : 'No compila.', !d.ok); },
-    });
-    const d = r.llamadas.get('main');
-    if (d) {
-      salida.textContent = d.stdout;
-      const resto = d.stderr.replace(/Runtime error:[^\n]*\n?/, '').trim();
-      if (resto) salida.insertAdjacentHTML('beforeend', `<div class="error-ej">${esc(resto)}</div>`);
-      if (d.error) salida.insertAdjacentHTML('beforeend', `<div class="error-ej">${esc(traducir(d.error))}</div>`);
-      salida.insertAdjacentHTML('beforeend', `<div class="fin">— fin del programa —</div>`);
-      estado(d.error ? 'El programa terminó con un error.' : 'Listo.', !!d.error);
-    } else if (r.detenido === 'usuario') estado('Detenido.');
-  } catch (e) { estado('No se pudo ejecutar: ' + e.message, true); }
-  ocupar(false);
-}
-
 // Los errores de ejecución, en castellano.
 function traducir(error) {
   return error
@@ -150,7 +126,7 @@ function traducir(error) {
 
 async function probar(todos) {
   if (ocupado) return;
-  ocupar(true); panel('tests');
+  ocupar(true);
   const pasos = todos ? E.ej.pasos.map((p, k) => k) : [paso];
   const tests = pasos.flatMap(k => E.ej.pasos[k].tests.map(t => ({ ...t, paso: k })));
   $('compilacion-tests').innerHTML = '';
@@ -180,12 +156,6 @@ async function probar(todos) {
 
 // ---------- Paneles, vistas y botones ----------
 
-function panel(nombre) {
-  document.querySelectorAll('.panel-tab').forEach(b => b.classList.toggle('activa', b.dataset.panel === nombre));
-  $('panel-consola').hidden = nombre !== 'consola';
-  $('panel-tests').hidden = nombre !== 'tests';
-}
-document.querySelectorAll('.panel-tab').forEach(b => b.onclick = () => panel(b.dataset.panel));
 document.querySelectorAll('.vista').forEach(b => b.onclick = () => {
   document.querySelectorAll('.vista').forEach(x => x.classList.toggle('activa', x === b));
   $('codigo').hidden = b.dataset.vista !== 'codigo';
@@ -193,7 +163,6 @@ document.querySelectorAll('.vista').forEach(b => b.onclick = () => {
   editor.refrescar();
 });
 
-$('play').onclick = play;
 $('probar-paso').onclick = () => probar(false);
 $('probar-todo').onclick = () => probar(true);
 $('detener').onclick = () => runner.detener?.();
@@ -203,7 +172,7 @@ $('restaurar').onclick = () => {
   abrirEjercicio(E.ej.id);
 };
 document.addEventListener('keydown', e => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); e.shiftKey ? probar(false) : play(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); probar(e.shiftKey); }
 });
 
 // ---------- Inicio ----------
