@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IDE C · Estructuras de Datos</title>
 <link rel="stylesheet" href="vendor/codemirror/codemirror.css">
-<link rel="stylesheet" href="css/ide.css?v=202611181528">
+<link rel="stylesheet" href="css/ide.css?v=202611181532">
 <script src="vendor/codemirror/codemirror.js"></script>
 <script src="vendor/codemirror/clike.js"></script>
 <script src="vendor/codemirror/matchbrackets.js"></script>
@@ -20,7 +20,7 @@
   addEventListener('error', e => errorInicio(e.message || 'no se pudo cargar ' + (e.target && (e.target.src || e.target.href) || 'un archivo')), true);
   addEventListener('unhandledrejection', e => errorInicio(String(e.reason && e.reason.message || e.reason)));
 </script>
-<script type="module" src="js/main.js?v=202611181528"></script>
+<script type="module" src="js/main.js?v=202611181532"></script>
 </head>
 <body>
 <header>
@@ -83,5 +83,17 @@
   </section>
 </main>
 
+<dialog id="dialogo-clave" class="dialogo-clave">
+  <form method="dialog">
+    <h3>Modo profesor</h3>
+    <p class="nota">Escribe la contraseña para ver las funciones del curso.</p>
+    <input id="clave-profesor" type="password" autocomplete="current-password" placeholder="Contraseña">
+    <p id="clave-error" class="error-ej" hidden>Contraseña incorrecta.</p>
+    <div class="acciones">
+      <button value="ok" class="principal">Entrar</button>
+      <button value="cancelar" formnovalidate>Ir al modo normal</button>
+    </div>
+  </form>
+</dialog>
 </body>
 </html>

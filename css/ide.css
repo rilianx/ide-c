@@ -209,3 +209,9 @@ svg.memoria .flecha.current { stroke: var(--c-current); stroke-dasharray: 5 3; }
   .panel { border-top: 1px solid var(--borde); min-height: 50vh; }
   .estado { margin-left: 0; width: 100%; }
 }
+
+.dialogo-clave { border: 1px solid var(--borde); border-radius: 10px; background: var(--panel); color: var(--texto); padding: 18px 20px; width: min(360px, 90vw); }
+.dialogo-clave::backdrop { background: rgb(0 0 0 / .35); }
+.dialogo-clave h3 { margin: 0 0 6px; }
+.dialogo-clave input { width: 100%; box-sizing: border-box; font: inherit; padding: 8px 10px; margin: 10px 0 6px; border: 1px solid var(--borde); border-radius: 6px; background: var(--fondo); color: var(--texto); }
+.dialogo-clave .acciones { margin-top: 10px; }

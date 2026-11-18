@@ -1,12 +1,12 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181528';
-import { Runner } from './runner.js?v=202611181528';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181528';
-import { svgLista } from './visual.js?v=202611181528';
-import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181528';
-import { Asistente } from './asistente.js?v=202611181528';
-import { activarDivisores } from './divisores.js?v=202611181528';
-import { correrTests, htmlResultados } from './tests.js?v=202611181528';
+import { Editor } from './editor.js?v=202611181532';
+import { Runner } from './runner.js?v=202611181532';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181532';
+import { svgLista } from './visual.js?v=202611181532';
+import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181532';
+import { Asistente } from './asistente.js?v=202611181532';
+import { activarDivisores } from './divisores.js?v=202611181532';
+import { correrTests, htmlResultados } from './tests.js?v=202611181532';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -419,7 +419,7 @@ async function pedirSolucion(ej) {
   let clave = null;
   try { clave = sessionStorage.getItem('ide-c:clave-profesor'); } catch { /* sin almacenamiento */ }
   for (let intento = 0; ; intento++) {
-    if (!clave) clave = prompt(intento ? 'Contraseña incorrecta. Contraseña del profesor:' : 'Modo profesor: escribe la contraseña.');
+    if (!clave) clave = await pedirClave(intento > 0);
     if (!clave) { location.search = ''; throw new Error('modo profesor cancelado'); }
     try {
       const sol = await cargarSolucion(ej, clave);
@@ -430,6 +430,18 @@ async function pedirSolucion(ej) {
       clave = null;
     }
   }
+}
+
+// Cuadro para escribir la contraseña (en la página, no una ventana del navegador).
+function pedirClave(error) {
+  const d = $('dialogo-clave');
+  $('clave-error').hidden = !error;
+  $('clave-profesor').value = '';
+  return new Promise(listo => {
+    d.onclose = () => listo(d.returnValue === 'ok' ? $('clave-profesor').value : null);
+    d.showModal();
+    $('clave-profesor').focus();
+  });
 }
 
 // ---------- Inicio ----------
