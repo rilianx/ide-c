@@ -9,25 +9,48 @@ const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');   /
 const CP = 26, CD = 46, CN = 26;        // celdas prev, dato, next
 const AN = CP + CD + CN, AL = 38;       // ancho y alto de un nodo
 const SEP = 58;                         // espacio entre nodos
-const X0 = 40, YL = 26, YN = 150;       // margen, fila de la List, fila de los nodos
+const X0 = 64, YL = 26, YN = 150;       // margen, fila de la List, fila de los nodos
 const CL = 70;                          // ancho de cada campo de la List
 
 export function svgLista(estado, nombre = 'L') {
-  const L = estado?.lista;
-  if (L === null) return `<p class="nota">${esc(nombre)} es NULL.</p>`;
-  if (L === '?' || !L) return `<p class="nota">${esc(nombre)} apunta a una dirección inválida (basura).</p>`;
-  const nodos = estado.nodos ?? [];
+  const nodos = estado?.nodos ?? [], vars = estado?.vars ?? [];
+  let L = estado?.lista;
+  if (L === null || L === '?' || !L) {   // sin lista: igual se dibujan los nodos de las variables
+    if (!nodos.length && !vars.length) return `<p class="nota">${esc(nombre)} ${L === '?' ? 'apunta a una dirección inválida (basura)' : 'aún no existe (NULL)'}.</p>`;
+    L = { sinLista: true, estado: L, head: null, tail: null, current: null };
+  }
 
   // Orden: primero la cadena desde head siguiendo next; los demás en una segunda fila.
   const orden = [], visto = new Set();
   for (let i = L.head; Number.isInteger(i) && !visto.has(i); i = nodos[i].next) { visto.add(i); orden.push(i); }
-  const resto = nodos.map((n, i) => i).filter(i => !visto.has(i));
+  let resto = nodos.map((n, i) => i).filter(i => !visto.has(i));
+  // Un nodo que aún no está en la lista pero ya apunta a uno de ella se dibuja a su lado
+  // (antes de su next o después de su prev), con borde punteado.
+  const fila = [...orden], fuera = new Set(resto);
+  for (let cambio = true; cambio;) {
+    cambio = false;
+    for (const r of resto) {
+      const q = fila.indexOf(nodos[r].next), p = fila.indexOf(nodos[r].prev);
+      if (q >= 0) fila.splice(q, 0, r); else if (p >= 0) fila.splice(p + 1, 0, r); else continue;
+      resto = resto.filter(x => x !== r); cambio = true; break;
+    }
+  }
   const pos = new Map();
-  orden.forEach((i, k) => pos.set(i, { x: X0 + k * (AN + SEP), y: YN }));
-  resto.forEach((i, k) => pos.set(i, { x: X0 + k * (AN + SEP), y: YN + 120 }));
+  fila.forEach((i, k) => pos.set(i, { x: X0 + k * (AN + SEP), y: YN }));
+  const fila2 = fila.length ? 120 : 0;   // si no hay cadena desde head, los demás van en la primera fila
+  resto.forEach((i, k) => pos.set(i, { x: X0 + k * (AN + SEP), y: YN + fila2 }));
 
-  const ancho = Math.max(X0 + 3 * CL + 120, X0 + Math.max(orden.length, resto.length, 1) * (AN + SEP) + 20);
-  const alto = resto.length ? YN + 120 + AL + 40 : YN + AL + 40;
+  // variables (nuevo, aux…): etiquetas amarillas debajo de su nodo
+  const porNodo = new Map(), sueltas = [];
+  for (const v of vars) {
+    if (Number.isInteger(v.ptr)) { if (!porNodo.has(v.ptr)) porNodo.set(v.ptr, []); porNodo.get(v.ptr).push(v.nombre); }
+    else sueltas.push(`${v.nombre} = ${v.ptr === null ? 'NULL' : '? (basura)'}`);
+  }
+  const conVars = porNodo.size > 0, BAJO = conVars ? 44 : 0;
+  if (conVars && fila2) resto.forEach(i => { pos.get(i).y += BAJO; });
+  const yUltima = resto.length && fila2 ? YN + 120 + BAJO : YN;
+  const ancho = Math.max(X0 + 3 * CL + 120, X0 + Math.max(fila.length, resto.length, 1) * (AN + SEP) + 20, resto.length ? 470 : 0);
+  const alto = yUltima + AL + 40 + BAJO + (sueltas.length ? 22 : 0);
   const s = [];
 
   // Flecha con punta
@@ -36,6 +59,8 @@ export function svgLista(estado, nombre = 'L') {
   const basura = (x, y, w, h) => s.push(`<text x="${x + w / 2}" y="${y + h / 2 + 5}" class="basura">?</text>`);
 
   // La List
+  if (L.sinLista) s.push(`<text x="${X0}" y="${YL + 26}" class="nota-svg">${esc(nombre)} ${L.estado === '?' ? 'es basura' : 'aún no existe (NULL)'}</text>`);
+  else {
   s.push(`<text x="${X0 - 8}" y="${YL + 26}" class="nombre" text-anchor="end">${esc(nombre)}</text>`);
   s.push(`<rect x="${X0}" y="${YL}" width="${3 * CL}" height="${AL + 6}" class="lista"/>`);
   ['head', 'tail', 'current'].forEach((campo, k) => {
@@ -54,11 +79,12 @@ export function svgLista(estado, nombre = 'L') {
     }
   });
   s.push(`<text x="${X0 + 3 * CL + 6}" y="${YL + AL + 4}" class="dir">${hex(L.dir)}</text>`);
+  }
 
   // Los nodos
   nodos.forEach((n, i) => {
     const { x, y } = pos.get(i);
-    s.push(`<rect x="${x}" y="${y}" width="${AN}" height="${AL}" class="nodo"/>`);
+    s.push(`<rect x="${x}" y="${y}" width="${AN}" height="${AL}" class="nodo${fuera.has(i) ? ' fuera' : ''}"/>`);
     s.push(`<line x1="${x + CP}" y1="${y}" x2="${x + CP}" y2="${y + AL}" class="div"/>`);
     s.push(`<line x1="${x + CP + CD}" y1="${y}" x2="${x + CP + CD}" y2="${y + AL}" class="div"/>`);
     s.push(n.dato === '?' ? `<text x="${x + CP + CD / 2}" y="${y + AL / 2 + 5}" class="basura">?</text>`
@@ -95,10 +121,19 @@ export function svgLista(estado, nombre = 'L') {
       }
     }
   });
-  if (resto.length && orden.length) s.push(`<text x="${X0}" y="${YN + 104}" class="nota-svg">no se alcanzan desde head siguiendo next:</text>`);
+  // etiquetas de variables
+  for (const [i, nombres] of porNodo) {
+    const { x, y } = pos.get(i), cx = x + CP + CD / 2, ty = y + AL + 32;
+    const w = Math.max(30, nombres.join(', ').length * 8 + 12);
+    s.push(`<path d="M${cx},${ty - 4} L${cx},${y + AL + 18}" class="flecha var" marker-end="url(#punta-var)"/>`);
+    s.push(`<rect x="${cx - w / 2}" y="${ty - 4}" width="${w}" height="20" rx="3" class="etiqueta"/>`);
+    s.push(`<text x="${cx}" y="${ty + 10}" class="var">${esc(nombres.join(', '))}</text>`);
+  }
+  if (sueltas.length) s.push(`<text x="${X0}" y="${alto - 10}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
+  if (resto.length && fila.length) s.push(`<text x="${X0}" y="${YN + 104 + BAJO}" class="nota-svg">fuera de la lista (no se alcanzan desde head siguiendo next):</text>`);
   if (!nodos.length) s.push(`<text x="${X0}" y="${YN + 20}" class="nota-svg">(sin nodos)</text>`);
 
   const marca = c => `<marker id="punta-${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta ${c}"/></marker>`;
   return `<svg class="memoria" viewBox="0 0 ${ancho} ${alto}" width="${ancho}" height="${alto}" role="img" aria-label="Memoria de la lista">
-<defs>${['head', 'tail', 'current', 'next', 'prev'].map(marca).join('')}</defs>${s.join('')}</svg>`;
+<defs>${['head', 'tail', 'current', 'next', 'prev', 'var'].map(marca).join('')}</defs>${s.join('')}</svg>`;
 }

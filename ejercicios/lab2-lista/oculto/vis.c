@@ -30,16 +30,31 @@ static void __ptr(const char * nombre, int i) {
     else printf("\"%s\":%d", nombre, i);
 }
 
-void __volcar(int linea, List * L) {
+// Vuelca la lista y, opcionalmente, variables puntero a nodos (nombre → puntero).
+static void __volcarCon(const char * marca, int linea, List * L, int nv, const char ** nombres, void ** ptrs) {
     fflush(stdout);
-    printf("@@VIS %d {", linea);
-    if (L == NULL) { printf("\"lista\":null}\n"); return; }
-    if (!__valido(L, sizeof(List))) { printf("\"lista\":\"?\"}\n"); return; }
+    printf("@@%s %d {", marca, linea);
     __n = 0;
-    int h = __indice(L->head), t = __indice(L->tail), c = __indice(L->current);
-    printf("\"lista\":{\"dir\":%lu,", (unsigned long)(uintptr_t)L);
-    __ptr("head", h); printf(","); __ptr("tail", t); printf(","); __ptr("current", c);
-    printf("},\"nodos\":[");
+    int h = -1, t = -1, c = -1, ok = 0;
+    if (L == NULL) printf("\"lista\":null");
+    else if (!__valido(L, sizeof(List))) printf("\"lista\":\"?\"");
+    else {
+        ok = 1;
+        h = __indice(L->head); t = __indice(L->tail); c = __indice(L->current);
+        printf("\"lista\":{\"dir\":%lu,", (unsigned long)(uintptr_t)L);
+        __ptr("head", h); printf(","); __ptr("tail", t); printf(","); __ptr("current", c);
+        printf("}");
+    }
+    int iv[16];
+    for (int k = 0; k < nv && k < 16; k++) iv[k] = __indice((Node *)ptrs[k]);   // también se dibujan sus nodos
+    printf(",\"vars\":[");
+    for (int k = 0; k < nv && k < 16; k++) {
+        printf(k ? ",{" : "{");
+        printf("\"nombre\":\"%s\",", nombres[k]);
+        __ptr("ptr", iv[k]);
+        printf("}");
+    }
+    printf("],\"nodos\":[");
     for (int i = 0; i < __n; i++) {   // __n crece mientras se recorren los enlaces
         Node * x = __nodos[i];
         int nx = __indice(x->next), pv = __indice(x->prev);
@@ -52,4 +67,13 @@ void __volcar(int linea, List * L) {
         printf("}");
     }
     printf("]}\n");
+    (void)ok;
+}
+
+// Después de cada línea del test.
+void __volcar(int linea, List * L) { __volcarCon("VIS", linea, L, 0, 0, 0); }
+
+// Dentro de la función del estudiante (línea de list.c), con sus variables Node *.
+void __volcarf(int linea, List * L, int nv, const char ** nombres, void ** ptrs) {
+    __volcarCon("VISF", linea, L, nv, nombres, ptrs);
 }

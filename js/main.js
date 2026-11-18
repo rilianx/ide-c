@@ -1,12 +1,12 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181318';
-import { Runner } from './runner.js?v=202611181318';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181318';
-import { svgLista } from './visual.js?v=202611181318';
-import { agregarPlantilla, funcionesDefinidas, funcionesPropias, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181318';
-import { Asistente } from './asistente.js?v=202611181318';
-import { activarDivisores } from './divisores.js?v=202611181318';
-import { correrTests, htmlResultados } from './tests.js?v=202611181318';
+import { Editor } from './editor.js?v=202611181330';
+import { Runner } from './runner.js?v=202611181330';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181330';
+import { svgLista } from './visual.js?v=202611181330';
+import { agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181330';
+import { Asistente } from './asistente.js?v=202611181330';
+import { activarDivisores } from './divisores.js?v=202611181330';
+import { correrTests, htmlResultados } from './tests.js?v=202611181330';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -231,24 +231,41 @@ function prepararVisual(dibujar = false) {
   $('vis-test').innerHTML = E.ej.pasos.map((p, k) => `<optgroup label="${esc(p.titulo)}">`
     + p.tests.map((t, i) => `<option value="${k}.${i}">${esc(t.nombre)}</option>`).join('') + '</optgroup>').join('');
   $('vis-nota').textContent = 'Corre el test con tu ' + E.ej.alumno + ' y dibuja la memoria después de cada línea.';
-  if (visPaso !== paso) { visPaso = paso; $('vis-test').value = `${paso}.0`; $('vis-cuadros').innerHTML = ''; if (dibujar) dibujarVisual(); }
-  else $('vis-test').value = visElegido ?? `${paso}.0`;
+  if (visPaso !== paso) { visPaso = paso; visElegido = `${paso}.0`; }
+  $('vis-test').value = visElegido ?? `${paso}.0`;
+  if (dibujar) dibujarVisual(true);   // solo si cambió el test o el código
 }
 let visElegido = null;
 $('vis-test').onchange = () => dibujarVisual();
 $('vis-dibujar').onclick = () => dibujarVisual();
 
-async function dibujarVisual() {
+// Dibuja el test elegido. Si la función del paso es del estudiante, también se ve por dentro
+// (línea a línea en su archivo, con sus variables) en cada línea del test que la llama.
+let visDibujado = null;   // {test, codigo}: para no volver a dibujar si nada cambió
+async function dibujarVisual(soloSiCambio = false) {
   if (ocupado) return;
   visElegido = $('vis-test').value;
   const [k, i] = visElegido.split('.').map(Number);
   const test = E.ej.pasos[k].tests[i];
-  const lineas = test.codigo.split('\n');
+  const codigoAlumno = archivos[E.ej.alumno] ?? '';
+  if (soloSiCambio && visDibujado?.test === visElegido && visDibujado.codigo === codigoAlumno) return;
+  const lineasTest = test.codigo.split('\n'), lineasAlumno = codigoAlumno.split('\n');
+  const propias = new Set(funcionesPropias(E.ej, codigoAlumno));
+  const detalle = E.ej.pasos[k].funciones.find(f => propias.has(f)) ?? null;   // la función del test elegido
+  const fnInfo = detalle ? funcionesDelArchivo(codigoAlumno).find(f => f.nombre === detalle) : null;
+  const lineaCabecera = fnInfo ? codigoAlumno.slice(0, fnInfo.cuerpo).split('\n').length : null;
+  const nombreListaFn = fnInfo ? (fnInfo.params.find(q => q.base === E.ej.visual.tipo && q.ptr === 1)?.nombre
+    ?? new RegExp(`\\b${E.ej.visual.tipo}\\s*\\*\\s*(\\w+)`).exec(codigoAlumno.slice(fnInfo.cuerpo, fnInfo.fin))?.[1] ?? 'list') : null;
   ocupar(true);
   estado('Dibujando…');
   const caja = $('vis-cuadros');
   try {
-    const r = await runner.ejecutar(armarVisual(E.ej, archivos, E.ocultos, test));
+    let r = await runner.ejecutar(armarVisual(E.ej, archivos, E.ocultos, test, detalle));
+    let sinDetalle = false;
+    if (detalle && !r.compilado?.ok) {   // si no compila con el detalle, se intenta sin él
+      const r2 = await runner.ejecutar(armarVisual(E.ej, archivos, E.ocultos, test, null));
+      if (r2.compilado?.ok) { r = r2; sinDetalle = true; }
+    }
     if (!r.compilado?.ok) {
       caja.innerHTML = '<div class="cuadro"></div>';
       mostrarCompilacion(caja.firstChild, mensajesDe(r), false);
@@ -256,24 +273,54 @@ async function dibujarVisual() {
     } else {
       const d = r.llamadas.get(0) ?? {};
       const { salida, cuadros } = leerVolcados(d.stdout);
-      // un dibujo por cambio en la memoria; las líneas que no la cambian se juntan con el anterior
-      const grupos = [];
+      // Agrupa: los volcados de adentro de la función van con la línea del test que la llamó;
+      // las líneas que no cambian la memoria se juntan con el dibujo anterior.
+      const juntar = lista => {
+        const grupos = [];
+        for (const c of lista) {
+          const clave = JSON.stringify(c.estado), g = grupos.at(-1);
+          if (g && g.clave === clave && !c.dentro?.length) g.lineas.push({ ...c, igual: true });
+          else grupos.push({ clave, estado: c.estado, lineas: [{ ...c, igual: false }] });
+        }
+        return grupos;
+      };
+      const delTest = [];
+      let adentro = [];
       for (const c of cuadros) {
-        const clave = JSON.stringify(c.estado), g = grupos.at(-1);
-        if (g && g.clave === clave) g.lineas.push({ n: c.linea, igual: true });
-        else grupos.push({ clave, estado: c.estado, lineas: [{ n: c.linea, igual: false }] });
+        if (c.dentro) adentro.push(c);
+        else { delTest.push({ ...c, dentro: adentro }); adentro = []; }
       }
-      const linea = (l, i) => `<div class="cuadro-linea${l.igual ? ' sin-cambio' : ''}"><span class="num">línea ${l.n}</span><code>${esc(lineas[l.n - 1].trim())}</code>${l.igual ? '<span class="nota">(no cambia la memoria)</span>' : ''}</div>`;
       const nombre = E.ej.visual.variable;
-      caja.innerHTML = grupos.map(g => `<div class="cuadro">${g.lineas.map(linea).join('')}${svgLista(g.estado, nombre)}</div>`).join('')
-        + (d.error || !d.ok ? `<p class="error-ej">${esc(traducir(d.error ?? d.stderr ?? 'No se pudo ejecutar'))}${cuadros.length ? ` (después de la línea ${cuadros.at(-1).linea})` : ''}</p>` : '')
+      const htmlDentro = lista => {
+        // separa las llamadas (cada una empieza en la línea de la cabecera)
+        const llamadas = [];
+        for (const c of lista) { if (c.linea === lineaCabecera || !llamadas.length) llamadas.push([]); llamadas.at(-1).push(c); }
+        return llamadas.map((ll, n) => (llamadas.length > 1 ? `<h5>Llamada ${n + 1}</h5>` : '') + juntar(ll).map(g =>
+          `<div class="cuadro dentro">${g.lineas.map(l => `<div class="cuadro-linea${l.igual ? ' sin-cambio' : ''}"><a class="num" data-linea="${l.linea}" title="Ir a esta línea de ${esc(E.ej.alumno)}">${esc(E.ej.alumno)}:${l.linea}</a><code>${esc(l.linea === lineaCabecera ? 'al entrar a ' + detalle : lineasAlumno[l.linea - 1].trim())}</code>${l.igual ? '<span class="nota">(no cambia la memoria)</span>' : ''}</div>`).join('')}${svgLista(g.estado, nombreListaFn)}</div>`).join('')).join('');
+      };
+      const linea = l => `<div class="cuadro-linea${l.igual ? ' sin-cambio' : ''}"><span class="num">línea ${l.linea}</span><code>${esc(lineasTest[l.linea - 1].trim())}</code>${l.igual ? '<span class="nota">(no cambia la memoria)</span>' : ''}</div>`
+        + (l.dentro?.length ? `<details class="ver-dentro"><summary>🔍 Ver dentro de tu <code>${esc(detalle)}</code> (${l.dentro.length} paso${l.dentro.length === 1 ? '' : 's'})</summary>${htmlDentro(l.dentro)}</details>` : '');
+      const aviso = !detalle ? `<p class="nota">Tu <code>${esc(E.ej.pasos[k].funciones.join(', '))}</code> aún no está escrita: el test usa la del curso y no se puede ver por dentro.</p>`
+        : sinDetalle ? `<p class="nota">No se pudo preparar la vista por dentro de <code>${esc(detalle)}</code> (hay una línea que no supe instrumentar); se muestra solo el test.</p>` : '';
+      caja.innerHTML = aviso + juntar(delTest).map(g => `<div class="cuadro">${g.lineas.map(linea).join('')}${svgLista(g.estado, nombre)}</div>`).join('')
+        + (d.error || !d.ok ? `<p class="error-ej">${esc(traducir(d.error ?? d.stderr ?? 'No se pudo ejecutar'))}${cuadros.length ? ` (después de la línea ${cuadros.at(-1).linea}${cuadros.at(-1).dentro ? ' de ' + esc(E.ej.alumno) : ' del test'})` : ''}</p>` : '')
+        + (adentro.length ? `<details class="ver-dentro" open><summary>🔍 Dentro de tu <code>${esc(detalle)}</code> hasta el error</summary>${htmlDentro(adentro)}</details>` : '')
         + (salida.trim() ? `<h4>Lo que imprimió el test</h4><pre class="vis-salida">${esc(salida.trim())}</pre>` : '');
-      estado(d.error || !d.ok ? 'El test se detuvo con un error.' : `Listo: ${grupos.length} dibujo${grupos.length === 1 ? '' : 's'}.`, !!(d.error || !d.ok));
+      caja.querySelectorAll('a[data-linea]').forEach(a => a.onclick = () => irACodigo(+a.dataset.linea));
+      visDibujado = { test: visElegido, codigo: codigoAlumno };
+      const n = caja.querySelectorAll('.cuadro:not(.dentro)').length;
+      estado(d.error || !d.ok ? 'El test se detuvo con un error.' : `Listo: ${n} dibujo${n === 1 ? '' : 's'}.`, !!(d.error || !d.ok));
     }
   } catch (e) {
     estado('No se pudo dibujar: ' + e.message, true);
   }
   ocupar(false);
+}
+
+// Vuelve a la pestaña Código, en esa línea del archivo del estudiante.
+function irACodigo(linea) {
+  document.querySelector('.vista[data-vista=codigo]').click();
+  editor.abrir(E.ej.alumno, linea);
 }
 const mensajesDe = r => r.compilado ? mensajesCompilador(r.compilado.mensajes) : [{ archivo: null, linea: null, texto: 'El compilador no respondió.' }];
 

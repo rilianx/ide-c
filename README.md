@@ -52,7 +52,9 @@ Antes de cada commit que se publica, conviene correr `node herramientas/version.
 
 ## Visualización
 
-La pestaña **Visualización** corre un test con el `list.c` del estudiante y dibuja la memoria (estática, sin animación) después de cada línea del test: la `List` con `head`, `tail` y `current`, y cada nodo como `[prev | dato | next]` con flechas. Las líneas que no cambian la memoria se juntan con el dibujo anterior. Los punteros basura se marcan con `?`.
+La pestaña **Visualización** corre un test con el `list.c` del estudiante y dibuja la memoria (estática, sin animación) después de cada línea del test: la `List` con `head`, `tail` y `current`, y cada nodo como `[prev | dato | next]` con flechas. Las líneas que no cambian la memoria se juntan con el dibujo anterior. Los punteros basura se marcan con `?`. Se dibuja sola al abrir la pestaña o elegir otro test (si cambió el código).
+
+Si la función del test ya la escribió el estudiante, cada línea del test que la llama tiene «🔍 Ver dentro de tu …»: la memoria después de cada línea de su función, con sus variables `Node *` (`nuevo`, `aux`…) como etiquetas amarillas, separadas por llamada. Un nodo que aún no está en la lista pero ya apunta a uno de ella se dibuja a su lado con borde punteado. Tocar `list.c:N` lleva a esa línea del código. Para esto, `instrumentarFuncion` agrega volcados en la misma línea (no cambia los números de línea); si alguna línea no se puede instrumentar y no compila, se muestra solo el test.
 
 Cómo funciona: `js/proyecto.js` (`instrumentar`) agrega `__volcar(línea, L);` después de cada instrucción del test; `oculto/vis.c` imprime una línea `@@VIS` con la lista en JSON (revisa cada puntero antes de seguirlo); `js/visual.js` la dibuja en SVG. En `ejercicio.json`, la clave `visual` indica el archivo del volcado, la variable y su tipo.
 
