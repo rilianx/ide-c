@@ -38,6 +38,19 @@ static int __indice(Node * p) {   // índice del nodo (lo agrega si es nuevo); -
     return __n++;
 }
 
+// Nodos vistos en volcados anteriores: un nodo liberado se sigue dibujando (con su contenido,
+// que puede ser basura) solo si antes fue un nodo de verdad.
+static void * __vistos[128];
+static int __nvis;
+static int __visto(void * p) { for (int i = 0; i < __nvis; i++) if (__vistos[i] == p) return 1; return 0; }
+static void __marcar(void * p) { if (!__visto(p) && __nvis < 128) __vistos[__nvis++] = p; }
+// Desde un nodo liberado solo se siguen enlaces a nodos conocidos (su memoria puede tener basura).
+static int __indiceConocido(Node * p) {
+    if (p == NULL) return -1;
+    for (int i = 0; i < __n; i++) if (__nodos[i] == p) return i;
+    return __visto(p) ? __indice(p) : -2;
+}
+
 static void __ptr(const char * nombre, int i) {
     if (i == -1) printf("\"%s\":null", nombre);
     else if (i == -2) printf("\"%s\":\"?\"", nombre);
@@ -68,13 +81,17 @@ static void __volcarCon(const char * marca, int linea, List * L, int nv, const c
         __ptr("ptr", iv[k]);
         printf("}");
     }
+    for (int k = 0; k < __nl; k++) if (__visto(__lib[k])) __indice((Node *)__lib[k]);   // los liberados que fueron nodos
     printf("],\"nodos\":[");
     for (int i = 0; i < __n; i++) {   // __n crece mientras se recorren los enlaces
         Node * x = __nodos[i];
-        int nx = __indice(x->next), pv = __indice(x->prev);
+        int libre = __libre(x);
+        if (!libre) __marcar(x);
+        int nx = libre ? __indiceConocido(x->next) : __indice(x->next);
+        int pv = libre ? __indiceConocido(x->prev) : __indice(x->prev);
         printf(i ? ",{" : "{");
         printf("\"dir\":%lu,", (unsigned long)(uintptr_t)x);
-        if (__libre(x)) printf("\"libre\":1,");
+        if (libre) printf("\"libre\":1,");
         if (x->data == NULL) printf("\"dato\":null,");
         else if (__valido(x->data, sizeof(int))) printf("\"dato\":%d,", *(int *)x->data);
         else printf("\"dato\":\"?\",");

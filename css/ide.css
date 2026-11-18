@@ -183,6 +183,8 @@ svg.memoria .lista { fill: color-mix(in srgb, #1a7f37 10%, var(--panel)); stroke
 svg.memoria .nodo { fill: var(--panel); stroke: var(--texto); stroke-width: 1.5; }
 svg.memoria .nodo.fuera { stroke-dasharray: 5 3; }
 svg.memoria .nodo.liberado { stroke: var(--mal); stroke-dasharray: 3 3; fill: color-mix(in srgb, var(--mal) 8%, var(--panel)); }
+svg.memoria .grupo-liberado { opacity: .45; }
+svg.memoria .grupo-liberado path.flecha.flecha { stroke: var(--mal); } svg.memoria .grupo-liberado .punto, svg.memoria .grupo-liberado .dato { fill: var(--mal); }
 svg.memoria text.liberado { font-size: 11px; fill: var(--mal); text-anchor: middle; }
 svg.memoria .div { stroke: var(--texto); stroke-width: 1; opacity: .7; }
 svg.memoria .campo { font-size: 11px; fill: var(--suave); text-anchor: middle; }

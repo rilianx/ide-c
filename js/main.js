@@ -1,12 +1,12 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181600';
-import { Runner } from './runner.js?v=202611181600';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181600';
-import { svgLista, lugaresDe } from './visual.js?v=202611181600';
-import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181600';
-import { Asistente } from './asistente.js?v=202611181600';
-import { activarDivisores } from './divisores.js?v=202611181600';
-import { correrTests, htmlResultados } from './tests.js?v=202611181600';
+import { Editor } from './editor.js?v=202611181602';
+import { Runner } from './runner.js?v=202611181602';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181602';
+import { svgLista, lugaresDe } from './visual.js?v=202611181602';
+import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181602';
+import { Asistente } from './asistente.js?v=202611181602';
+import { activarDivisores } from './divisores.js?v=202611181602';
+import { correrTests, htmlResultados } from './tests.js?v=202611181602';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

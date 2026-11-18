@@ -59,9 +59,12 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   const s = [];
 
   // Flecha con punta
-  const flecha = (d, clase) => s.push(`<path d="${d}" class="flecha ${clase}" marker-end="url(#punta-${clase})"/>`);
-  const nulo = (x, y, w, h) => s.push(`<line x1="${x + 4}" y1="${y + h - 4}" x2="${x + w - 4}" y2="${y + 4}" class="nulo"/>`);
-  const basura = (x, y, w, h) => s.push(`<text x="${x + w / 2}" y="${y + h / 2 + 5}" class="basura">?</text>`);
+  const tgtBase = s;
+  let tgt = s;   // los elementos de un nodo liberado van aparte (semitransparentes, en rojo)
+  const sLib = [];
+  const flecha = (d, clase) => tgt.push(`<path d="${d}" class="flecha ${clase}" marker-end="url(#punta-${clase})"/>`);
+  const nulo = (x, y, w, h) => tgt.push(`<line x1="${x + 4}" y1="${y + h - 4}" x2="${x + w - 4}" y2="${y + 4}" class="nulo"/>`);
+  const basura = (x, y, w, h) => tgt.push(`<text x="${x + w / 2}" y="${y + h / 2 + 5}" class="basura">?</text>`);
 
   // La List
   if (L.sinLista) s.push(`<text x="${X0}" y="${YL + 26}" class="nota-svg">${esc(nombre)} ${L.estado === '?' ? 'es basura' : 'aún no existe (NULL)'}</text>`);
@@ -89,8 +92,9 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   // Los nodos
   nodos.forEach((n, i) => {
     const { x, y } = pos.get(i);
+    const s = n.libre ? sLib : tgtBase;
     s.push(`<rect x="${x}" y="${y}" width="${AN}" height="${AL}" class="nodo${n.libre ? ' liberado' : fuera.has(i) ? ' fuera' : ''}"/>`);
-    if (n.libre) s.push(`<text x="${x + AN / 2}" y="${y - 5}" class="liberado">liberado (free)</text>`);
+    if (n.libre) s.push(`<text x="${x + AN / 2}" y="${y - 5}" class="liberado">liberado</text>`);
     s.push(`<line x1="${x + CP}" y1="${y}" x2="${x + CP}" y2="${y + AL}" class="div"/>`);
     s.push(`<line x1="${x + CP + CD}" y1="${y}" x2="${x + CP + CD}" y2="${y + AL}" class="div"/>`);
     s.push(n.dato === '?' ? `<text x="${x + CP + CD / 2}" y="${y + AL / 2 + 5}" class="basura">?</text>`
@@ -110,6 +114,8 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   // Campos next (arriba) y prev (abajo) de cada nodo
   nodos.forEach((n, i) => {
     const { x, y } = pos.get(i);
+    tgt = n.libre ? sLib : tgtBase;
+    const s = tgt;
     // next
     const xn = x + CP + CD, yn = y + 12;
     if (n.next === null) nulo(xn, y, CN, AL);
@@ -147,6 +153,8 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
       }
     }
   });
+  tgt = tgtBase;
+  if (sLib.length) s.push(`<g class="grupo-liberado">${sLib.join('')}</g>`);
   // etiquetas de variables
   for (const [i, nombres] of porNodo) {
     const { x, y } = pos.get(i), cx = x + CP + CD / 2, ty = y + AL + 32;
