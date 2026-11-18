@@ -85,12 +85,11 @@
       }
     },
     {
-      "titulo": "2. firstList y nextList",
+      "titulo": "2. firstList",
       "funciones": [
-        "firstList",
-        "nextList"
+        "firstList"
       ],
-      "enunciado": "`void * firstList(List * list)` retorna el dato del primer nodo (`head`) y deja `current` apuntando a ese nodo.\n\n`void * nextList(List * list)` retorna el dato del nodo siguiente a `current` y mueve `current` a ese nodo. Si no hay siguiente (o `current` es `NULL`), retorna `NULL`.",
+      "enunciado": "`void * firstList(List * list)` retorna el dato del primer nodo (`head`) y deja `current` apuntando a ese nodo.",
       "tests": [
         {
           "nombre": "firstList retorna el primer dato de [1, 2, 3]",
@@ -102,6 +101,23 @@
           "codigo": "List * L = createList();\ndato(firstList(L));",
           "esperado": "NULL"
         },
+        {
+          "nombre": "firstList deja current en el primero (nextList da el segundo)",
+          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nfirstList(L);\ndato(nextList(L));",
+          "esperado": "2"
+        }
+      ],
+      "plantillas": {
+        "firstList": "void * firstList(List * list) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "3. nextList",
+      "funciones": [
+        "nextList"
+      ],
+      "enunciado": "`void * nextList(List * list)` retorna el dato del nodo siguiente a `current` y mueve `current` a ese nodo. Si no hay siguiente (o `current` es `NULL`), retorna `NULL`.",
+      "tests": [
         {
           "nombre": "nextList avanza: primero, siguiente, siguiente",
           "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\ndato(firstList(L));\ndato(nextList(L));\ndato(nextList(L));",
@@ -119,17 +135,15 @@
         }
       ],
       "plantillas": {
-        "firstList": "void * firstList(List * list) {\n\n}\n",
         "nextList": "void * nextList(List * list) {\n\n}\n"
       }
     },
     {
-      "titulo": "3. lastList y prevList",
+      "titulo": "4. lastList",
       "funciones": [
-        "lastList",
-        "prevList"
+        "lastList"
       ],
-      "enunciado": "`void * lastList(List * list)` retorna el dato del último nodo (`tail`) y deja `current` apuntando a él.\n\n`void * prevList(List * list)` retorna el dato del nodo anterior a `current` y mueve `current` a ese nodo. Si no hay anterior (o `current` es `NULL`), retorna `NULL`.",
+      "enunciado": "`void * lastList(List * list)` retorna el dato del último nodo (`tail`) y deja `current` apuntando a él.",
       "tests": [
         {
           "nombre": "lastList retorna el último dato de [1, 2, 3]",
@@ -141,6 +155,23 @@
           "codigo": "List * L = createList();\ndato(lastList(L));",
           "esperado": "NULL"
         },
+        {
+          "nombre": "lastList deja current en el último (prevList da el penúltimo)",
+          "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\nlastList(L);\ndato(prevList(L));",
+          "esperado": "2"
+        }
+      ],
+      "plantillas": {
+        "lastList": "void * lastList(List * list) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "5. prevList",
+      "funciones": [
+        "prevList"
+      ],
+      "enunciado": "`void * prevList(List * list)` retorna el dato del nodo anterior a `current` y mueve `current` a ese nodo. Si no hay anterior (o `current` es `NULL`), retorna `NULL`.",
+      "tests": [
         {
           "nombre": "prevList retrocede: último, anterior, anterior",
           "codigo": "int v[] = {1, 2, 3};\nList * L = listaCon(3, v);\ndato(lastList(L));\ndato(prevList(L));\ndato(prevList(L));",
@@ -158,12 +189,11 @@
         }
       ],
       "plantillas": {
-        "lastList": "void * lastList(List * list) {\n\n}\n",
         "prevList": "void * prevList(List * list) {\n\n}\n"
       }
     },
     {
-      "titulo": "4. pushFront",
+      "titulo": "6. pushFront",
       "funciones": [
         "pushFront"
       ],
@@ -195,7 +225,7 @@
       }
     },
     {
-      "titulo": "5. pushCurrent",
+      "titulo": "7. pushCurrent",
       "funciones": [
         "pushCurrent"
       ],
@@ -227,7 +257,7 @@
       }
     },
     {
-      "titulo": "6. popCurrent",
+      "titulo": "8. popCurrent",
       "funciones": [
         "popCurrent"
       ],

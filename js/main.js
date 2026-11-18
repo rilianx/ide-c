@@ -1,11 +1,11 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181224';
-import { Runner } from './runner.js?v=202611181224';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181224';
-import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181224';
-import { Asistente } from './asistente.js?v=202611181224';
-import { activarDivisores } from './divisores.js?v=202611181224';
-import { correrTests, htmlResultados } from './tests.js?v=202611181224';
+import { Editor } from './editor.js?v=202611181230';
+import { Runner } from './runner.js?v=202611181230';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181230';
+import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181230';
+import { Asistente } from './asistente.js?v=202611181230';
+import { activarDivisores } from './divisores.js?v=202611181230';
+import { correrTests, htmlResultados } from './tests.js?v=202611181230';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
