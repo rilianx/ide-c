@@ -6,6 +6,20 @@
 #include <unistd.h>
 #include "list.h"
 
+// malloc/calloc/free del programa pasan por aquí (la app los redefine antes de list.c),
+// para saber qué direcciones están liberadas y dibujarlas así.
+#undef malloc
+#undef calloc
+#undef free
+#define __MAXL 64
+static void * __lib[__MAXL];
+static int __nl;
+static void __olvidar(void * p) { for (int i = 0; i < __nl; i++) if (__lib[i] == p) { __lib[i] = __lib[--__nl]; return; } }
+void __liberar(void * p) { if (p != NULL && __nl < __MAXL) { __olvidar(p); __lib[__nl++] = p; } free(p); }
+void * __reservar(unsigned long n) { void * p = malloc(n); __olvidar(p); return p; }
+void * __reservarc(unsigned long a, unsigned long b) { void * p = calloc(a, b); __olvidar(p); return p; }
+static int __libre(void * p) { for (int i = 0; i < __nl; i++) if (__lib[i] == p) return 1; return 0; }
+
 static int __valido(void * p, unsigned long tam) {
     uintptr_t a = (uintptr_t)p;
     return p != NULL && a % sizeof(void *) == 0 && a > 4096 && a + tam <= (uintptr_t)sbrk(0);
@@ -60,12 +74,15 @@ static void __volcarCon(const char * marca, int linea, List * L, int nv, const c
         int nx = __indice(x->next), pv = __indice(x->prev);
         printf(i ? ",{" : "{");
         printf("\"dir\":%lu,", (unsigned long)(uintptr_t)x);
+        if (__libre(x)) printf("\"libre\":1,");
         if (x->data == NULL) printf("\"dato\":null,");
         else if (__valido(x->data, sizeof(int))) printf("\"dato\":%d,", *(int *)x->data);
         else printf("\"dato\":\"?\",");
         __ptr("next", nx); printf(","); __ptr("prev", pv);
         printf("}");
     }
+    printf("],\"liberados\":[");
+    for (int k = 0; k < __nl; k++) printf(k ? ",%lu" : "%lu", (unsigned long)(uintptr_t)__lib[k]);
     printf("]}\n");
     (void)ok;
 }

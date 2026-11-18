@@ -182,6 +182,8 @@ svg.memoria { display: block; width: 100%; height: auto; margin-top: 6px; font-f
 svg.memoria .lista { fill: color-mix(in srgb, #1a7f37 10%, var(--panel)); stroke: #1a7f37; stroke-width: 1.5; }
 svg.memoria .nodo { fill: var(--panel); stroke: var(--texto); stroke-width: 1.5; }
 svg.memoria .nodo.fuera { stroke-dasharray: 5 3; }
+svg.memoria .nodo.liberado { stroke: var(--mal); stroke-dasharray: 3 3; fill: color-mix(in srgb, var(--mal) 8%, var(--panel)); }
+svg.memoria text.liberado { font-size: 11px; fill: var(--mal); text-anchor: middle; }
 svg.memoria .div { stroke: var(--texto); stroke-width: 1; opacity: .7; }
 svg.memoria .campo { font-size: 11px; fill: var(--suave); text-anchor: middle; }
 svg.memoria .dato { font-size: 16px; fill: var(--texto); text-anchor: middle; font-weight: 600; }

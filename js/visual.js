@@ -89,13 +89,24 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   // Los nodos
   nodos.forEach((n, i) => {
     const { x, y } = pos.get(i);
-    s.push(`<rect x="${x}" y="${y}" width="${AN}" height="${AL}" class="nodo${fuera.has(i) ? ' fuera' : ''}"/>`);
+    s.push(`<rect x="${x}" y="${y}" width="${AN}" height="${AL}" class="nodo${n.libre ? ' liberado' : fuera.has(i) ? ' fuera' : ''}"/>`);
+    if (n.libre) s.push(`<text x="${x + AN / 2}" y="${y - 5}" class="liberado">liberado (free)</text>`);
     s.push(`<line x1="${x + CP}" y1="${y}" x2="${x + CP}" y2="${y + AL}" class="div"/>`);
     s.push(`<line x1="${x + CP + CD}" y1="${y}" x2="${x + CP + CD}" y2="${y + AL}" class="div"/>`);
     s.push(n.dato === '?' ? `<text x="${x + CP + CD / 2}" y="${y + AL / 2 + 5}" class="basura">?</text>`
       : `<text x="${x + CP + CD / 2}" y="${y + AL / 2 + 6}" class="dato">${n.dato === null ? 'NULL' : esc(n.dato)}</text>`);
     s.push(`<text x="${x + AN / 2}" y="${y + AL + 15}" class="dir">${hex(n.dir)}</text>`);
   });
+  // Nodos ya liberados que nadie apunta: queda su lugar marcado (la memoria no se mueve)
+  const enDibujo = new Set(nodos.map(n => n.dir));
+  for (const d of estado?.liberados ?? []) {
+    const k = lugares.get(d);
+    if (k == null || enDibujo.has(d)) continue;
+    const x = X0 + (k % POR_FILA) * (AN + SEP), y = YN + Math.floor(k / POR_FILA) * ALTO_FILA;
+    s.push(`<rect x="${x}" y="${y}" width="${AN}" height="${AL}" class="nodo liberado"/>`);
+    s.push(`<text x="${x + AN / 2}" y="${y + AL / 2 + 5}" class="liberado">liberado</text>`);
+    s.push(`<text x="${x + AN / 2}" y="${y + AL + 15}" class="dir">${hex(d)}</text>`);
+  }
   // Campos next (arriba) y prev (abajo) de cada nodo
   nodos.forEach((n, i) => {
     const { x, y } = pos.get(i);

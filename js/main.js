@@ -1,12 +1,12 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181558';
-import { Runner } from './runner.js?v=202611181558';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181558';
-import { svgLista, lugaresDe } from './visual.js?v=202611181558';
-import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181558';
-import { Asistente } from './asistente.js?v=202611181558';
-import { activarDivisores } from './divisores.js?v=202611181558';
-import { correrTests, htmlResultados } from './tests.js?v=202611181558';
+import { Editor } from './editor.js?v=202611181600';
+import { Runner } from './runner.js?v=202611181600';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181600';
+import { svgLista, lugaresDe } from './visual.js?v=202611181600';
+import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181600';
+import { Asistente } from './asistente.js?v=202611181600';
+import { activarDivisores } from './divisores.js?v=202611181600';
+import { correrTests, htmlResultados } from './tests.js?v=202611181600';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -31,7 +31,7 @@ const editor = new Editor($('editor'), $('pestanas'), {
     if (nombre === E.ej.alumno) { clearTimeout(tSelector); tSelector = setTimeout(dibujarPasos, 300); }
   },
 });
-const asistente = new Asistente($('asistente'), editor, () => ({ ej: E.ej, archivos }), {
+const asistente = new Asistente($('asistente'), editor, () => ({ ej: E.ej, archivos, ocultos: E.ocultos }), {
   // al entrar a una función con el cursor, se elige su paso
   alCambiarFuncion: f => { const k = E.ej.pasos.findIndex(p => p.funciones.includes(f)); if (k >= 0 && k !== paso) elegirPaso(k, false); else dibujarPasos(); },
 });

@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar } from './proyecto.js?v=202611181558';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar } from './proyecto.js?v=202611181600';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -26,19 +26,35 @@ function expresiones(vars, est) {
   return out;
 }
 
+// Nombres de variables que usa el código base del ejercicio (.h y código del curso), por tipo:
+// {List: ['list', ...], Node: ['nuevo', 'aux', ...], void: ['data', ...]}, los más usados primero.
+function nombresDelCodigo(textos, tipos, campos = new Set()) {
+  const cuenta = new Map();
+  const re = new RegExp(`\\b(${tipos.join('|')})\\s*\\*\\s*([A-Za-z_]\\w*)\\s*(?=[=;,)\\[])`, 'g');
+  for (const t of textos) for (const m of (t ?? '').replace(/\/\/[^\n]*/g, '').matchAll(re)) {
+    if (m[2].startsWith('__') || tipos.includes(m[2]) || campos.has(m[2])) continue;   // no los campos de los structs
+    const c = cuenta.get(m[1]) ?? new Map();
+    c.set(m[2], (c.get(m[2]) ?? 0) + 1);
+    cuenta.set(m[1], c);
+  }
+  return Object.fromEntries(tipos.map(t => [t, [...(cuenta.get(t) ?? new Map())].sort((a, b) => b[1] - a[1]).map(([n]) => n)]));
+}
+const juntar = (...listas) => [...new Set(listas.flat())];
+
 // Plantillas: huecos que se llenan en orden; cada uno sabe qué piezas acepta.
 //   nombre: un nombre nuevo · lval: algo asignable · expr: una expresión (de tipo dado) · ret: lo que retorna la función
-function plantillas(est, ctors, retorno) {
+function plantillas(est, ctors, retorno, nombres = {}) {
   const structs = Object.keys(est);
   const out = [];
+  const sug = (tipo, extra) => juntar(nombres[tipo] ?? [], extra).slice(0, 8);
   for (const s of structs) out.push({
     cat: 'Variables', etiqueta: `${s} * _ = _;`, clase: 'decl',
-    huecos: [{ k: 'nombre', sug: s === 'List' ? ['lista', 'l'] : ['nuevo', 'aux', 'actual', 'sig', 'ant', 'n'] }, { k: 'expr', tipo: () => T(s) }],
+    huecos: [{ k: 'nombre', sug: sug(s, s === 'List' ? ['lista', 'l'] : ['nuevo', 'aux', 'actual', 'sig', 'ant', 'n']) }, { k: 'expr', tipo: () => T(s) }],
     armar: v => [`${s} * ${v[0].texto} = ${v[1].texto};`],
   });
   out.push({
     cat: 'Variables', etiqueta: 'void * _ = _;', clase: 'decl',
-    huecos: [{ k: 'nombre', sug: ['dato', 'd'] }, { k: 'expr', tipo: () => T('void') }],
+    huecos: [{ k: 'nombre', sug: sug('void', ['dato', 'd']) }, { k: 'expr', tipo: () => T('void') }],
     armar: v => [`void * ${v[0].texto} = ${v[1].texto};`],
   });
   out.push({
@@ -48,12 +64,12 @@ function plantillas(est, ctors, retorno) {
   });
   for (const s of structs) out.push({
     cat: 'Memoria', etiqueta: `${s} * _ = malloc(sizeof(${s}));`, clase: 'mem',
-    huecos: [{ k: 'nombre', sug: s === 'List' ? ['lista', 'l'] : ['nuevo', 'n'] }],
+    huecos: [{ k: 'nombre', sug: sug(s, s === 'List' ? ['lista', 'l'] : ['nuevo', 'n']) }],
     armar: v => [`${s} * ${v[0].texto} = (${s} *)malloc(sizeof(${s}));`],
   });
   for (const c of ctors) out.push({
     cat: 'Memoria', etiqueta: `${c.tipo} * _ = ${c.nombre}(_);`, clase: 'mem',
-    huecos: [{ k: 'nombre', sug: ['nuevo', 'n', 'aux'] }, { k: 'expr', tipo: () => T(c.param) }],
+    huecos: [{ k: 'nombre', sug: sug(c.tipo, ['nuevo', 'n', 'aux']) }, { k: 'expr', tipo: () => T(c.param) }],
     armar: v => [`${c.tipo} * ${v[0].texto} = ${c.nombre}(${v[1].texto});`],
   });
   out.push({
@@ -170,7 +186,14 @@ export class Asistente {
         + (piezas.length ? '' : `<span class="nota">No hay ${plantilla.huecos[actualI].k === 'nombre' ? 'nombres libres' : 'piezas de ese tipo'} aquí.</span>`) + '</div>';
       this.piezasActuales = piezas;
     } else {
-      const todas = plantillas(ctx.est, ej.constructores ?? [], ctx.fn.retorno);
+      const { ocultos = {} } = this.obtener();
+      if (!this.nombres || this.nombresDe !== ej.id) {   // del código base: los .h y el código del curso
+        const textos = [...ej.archivos.filter(a => a.nombre.endsWith('.h')).map(a => archivos[a.nombre]), ocultos[ej.referencia]];
+        const campos = new Set(Object.values(ctx.est).flatMap(c => Object.keys(c)));
+        this.nombres = nombresDelCodigo(textos, [...Object.keys(ctx.est), 'void'], campos);
+        this.nombresDe = ej.id;
+      }
+      const todas = plantillas(ctx.est, ej.constructores ?? [], ctx.fn.retorno, this.nombres);
       if (ctx.linea) {
         this.lineaActual = { ...ctx.linea, rec: reconocer(ctx.linea.texto, todas) };
         html += `<div class="fila linea-actual"><span class="nota">Línea ${ctx.linea.n + 1}:</span><code>${esc(ctx.linea.texto.trim())}</code>`

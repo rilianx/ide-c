@@ -265,7 +265,10 @@ export function armarVisual(ej, archivos, ocultos, test, detalle = null) {
   const prog = armarTests(ej, conDetalle, ocultos, [t]);
   prog.files['__vis.c'] = ocultos[v.archivo];
   const h = ej.archivos.find(a => a.nombre.endsWith('.h'))?.nombre;
+  // malloc/calloc/free pasan por __vis.c, para saber qué nodos se liberaron
   prog.files['__programa.c'] = (h ? `#include "${h}"\n` : '') + `void __volcarf(int, ${v.tipo} *, int, const char **, void **);\n`
+    + 'void __liberar(void *);\nvoid * __reservar(unsigned long);\nvoid * __reservarc(unsigned long, unsigned long);\n'
+    + '#define free(p) __liberar(p)\n#define malloc(n) __reservar(n)\n#define calloc(a, b) __reservarc(a, b)\n'
     + prog.files['__programa.c'] + '#include "__vis.c"\n';
   return prog;
 }
