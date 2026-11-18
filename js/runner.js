@@ -12,7 +12,7 @@ export class Runner {
 
   crear() {
     this.worker?.terminate();
-    this.worker = new Worker(new URL('./worker.js?v=202611181610', import.meta.url), { type: 'module' });
+    this.worker = new Worker(new URL('./worker.js?v=202611181618', import.meta.url), { type: 'module' });
     this.listo = new Promise((ok, fallo) => {
       const al = ({ data }) => {
         if (data.tipo === 'listo') { this.worker.removeEventListener('message', al); ok(); }

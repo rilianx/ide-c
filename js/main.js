@@ -1,12 +1,12 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181610';
-import { Runner } from './runner.js?v=202611181610';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181610';
-import { svgLista, lugaresDe } from './visual.js?v=202611181610';
-import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181610';
-import { Asistente } from './asistente.js?v=202611181610';
-import { activarDivisores } from './divisores.js?v=202611181610';
-import { correrTests, htmlResultados } from './tests.js?v=202611181610';
+import { Editor } from './editor.js?v=202611181618';
+import { Runner } from './runner.js?v=202611181618';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181618';
+import { svgLista, lugaresDe } from './visual.js?v=202611181618';
+import { mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181618';
+import { Asistente } from './asistente.js?v=202611181618';
+import { activarDivisores } from './divisores.js?v=202611181618';
+import { correrTests, htmlResultados } from './tests.js?v=202611181618';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -281,11 +281,15 @@ async function dibujarVisual(soloSiCambio = false, mantenerPaso = false) {
   if (soloSiCambio && visDibujado?.test === visElegido && visDibujado.codigo === codigoAlumno) return;
   const lineasTest = test.codigo.split('\n'), lineasAlumno = codigoAlumno.split('\n');
   const propias = new Set(funcionesPropias(E.ej, codigoAlumno));
-  const detalle = E.ej.pasos[k].funciones.find(f => propias.has(f)) ?? null;   // la función del test elegido
-  const fnInfo = detalle ? funcionesDelArchivo(codigoAlumno).find(f => f.nombre === detalle) : null;
-  const lineaCabecera = fnInfo ? codigoAlumno.slice(0, fnInfo.cuerpo).split('\n').length : null;
-  const nombreListaFn = fnInfo ? (fnInfo.params.find(q => q.base === E.ej.visual.tipo && q.ptr === 1)?.nombre
-    ?? new RegExp(`\\b${E.ej.visual.tipo}\\s*\\*\\s*(\\w+)`).exec(codigoAlumno.slice(fnInfo.cuerpo, fnInfo.fin))?.[1] ?? 'list') : null;
+  // se puede entrar a todas las funciones que escribió el estudiante (no solo a la del paso)
+  const lineaDe = pos => codigoAlumno.slice(0, pos).split('\n').length;
+  const fns = funcionesDelArchivo(codigoAlumno).filter(f => propias.has(f.nombre)).map(f => ({
+    nombre: f.nombre, cabecera: lineaDe(f.cuerpo), fin: lineaDe(f.fin),
+    lista: f.params.find(q => q.base === E.ej.visual.tipo && q.ptr === 1)?.nombre
+      ?? new RegExp(`\\b${E.ej.visual.tipo}\\s*\\*\\s*(\\w+)`).exec(codigoAlumno.slice(f.cuerpo, f.fin))?.[1] ?? 'list',
+  }));
+  const detalle = fns.length ? fns.map(f => f.nombre) : null;
+  const delPaso = E.ej.pasos[k].funciones.filter(f => propias.has(f));
   ocupar(true);
   estado('Dibujando…');
   const caja = $('vis-cuadros');
@@ -303,14 +307,19 @@ async function dibujarVisual(soloSiCambio = false, mantenerPaso = false) {
     } else {
       const d = r.llamadas.get(0) ?? {};
       const { salida, cuadros } = leerVolcados(d.stdout);
-      const aviso = !detalle ? `<p class="nota">Tu <code>${esc(E.ej.pasos[k].funciones.join(', '))}</code> aún no está escrita: el test usa la del curso y no se puede entrar a ella.</p>`
-        : sinDetalle ? `<p class="nota">No se pudo preparar la vista por dentro de <code>${esc(detalle)}</code> (hay una línea que no supe instrumentar); se muestra solo el test.</p>` : '';
-      // numera las llamadas a la función (cada una empieza en la línea de la cabecera)
-      let llamada = 0;
-      for (const c of cuadros) if (c.dentro) { if (c.linea === lineaCabecera) llamada++; c.llamada = Math.max(llamada, 1); }
-      const lineaFin = fnInfo ? codigoAlumno.slice(0, fnInfo.fin).split('\n').length : null;
+      const aviso = sinDetalle ? '<p class="nota">No se pudo preparar la vista por dentro de tus funciones (hay una línea que no supe instrumentar); se muestra solo el test.</p>'
+        : !delPaso.length ? `<p class="nota">Tu <code>${esc(E.ej.pasos[k].funciones.join(', '))}</code> aún no está escrita: el test usa la del curso y no se puede entrar a ella.</p>` : '';
+      // a qué función pertenece cada volcado de adentro (por su línea) y qué llamada es
+      const cuenta = new Map();
+      for (const c of cuadros) if (c.dentro) {
+        const f = fns.find(f => c.linea >= f.cabecera && c.linea <= f.fin) ?? fns[0];
+        c.fn = f;
+        if (c.linea === f.cabecera && !c.condicion) cuenta.set(f.nombre, (cuenta.get(f.nombre) ?? 0) + 1);
+        c.llamada = Math.max(cuenta.get(f.nombre) ?? 0, 1);
+      }
+      for (const c of cuadros) if (c.dentro) c.llamadas = cuenta.get(c.fn.nombre) ?? 1;
       const antes = mantenerPaso && vis ? vis.i : -1;
-      vis = { cuadros, i: Math.min(antes, cuadros.length - 1), test, lineasTest, lineasAlumno, fnInfo, detalle, lineaCabecera, lineaFin, nombreListaFn, aviso,
+      vis = { cuadros, i: Math.min(antes, cuadros.length - 1), test, lineasTest, lineasAlumno, aviso,
         error: d.error || !d.ok ? traducir(d.error ?? d.stderr ?? 'No se pudo ejecutar') : null };
       vis.salidaFinal = salida;
       vis.lugares = lugaresDe(cuadros.map(c => c.estado));   // cada nodo en un lugar fijo durante toda la ejecución
@@ -334,7 +343,12 @@ let entrarSiempre = true;
 try { entrarSiempre = localStorage.getItem('ide-c:entrar') !== 'no'; } catch { /* sin almacenamiento */ }
 const enTest = i => i < 0 || !vis.cuadros[i].dentro;
 function proximoDelTest(i) { for (let k = i + 1; k < vis.cuadros.length; k++) if (!vis.cuadros[k].dentro) return k; return null; }
-function finDeLlamada(i) { let k = i; while (vis.cuadros[k + 1]?.dentro && vis.cuadros[k + 1].llamada === vis.cuadros[i].llamada) k++; return k; }
+function finDeLlamada(i) {
+  const c = vis.cuadros[i];
+  let k = i;
+  while (vis.cuadros[k + 1]?.dentro && vis.cuadros[k + 1].fn === c.fn && vis.cuadros[k + 1].llamada === c.llamada) k++;
+  return k;
+}
 function anteriorDelTest(i) { for (let k = i - 1; k >= 0; k--) if (!vis.cuadros[k].dentro) return k; return -1; }
 const acciones = {
   inicio: () => -1,
@@ -359,20 +373,21 @@ function mostrarPaso() {
     `<div class="lc${desde + k === actual ? ' actual' : ''}"><span class="n">${archivo && desde + k === actual ? '▶' : ''}${desde + k}</span><code>${esc(l) || ' '}</code></div>`).join('');
   let codigo;
   if (dentro) {
-    const ini = vis.lineaCabecera, fin = vis.lineaFin;
-    const llamadas = Math.max(...cuadros.filter(x => x.dentro).map(x => x.llamada));
-    codigo = `<h4>Dentro de tu <code>${esc(vis.detalle)}</code>${llamadas > 1 ? ` · llamada ${c.llamada} de ${llamadas}` : ''} <a class="ir" data-linea="${c.linea}" title="Ir a esta línea en la pestaña Código">${esc(E.ej.alumno)}:${c.linea} ✎</a></h4>`
+    const ini = c.fn.cabecera, fin = c.fn.fin, llamadas = c.llamadas;
+    codigo = `<h4>Dentro de tu <code>${esc(c.fn.nombre)}</code>${llamadas > 1 ? ` · llamada ${c.llamada} de ${llamadas}` : ''} <a class="ir" data-linea="${c.linea}" title="Ir a esta línea en la pestaña Código">${esc(E.ej.alumno)}:${c.linea} ✎</a></h4>`
       + `<div class="codigo-paso">${numerar(vis.lineasAlumno.slice(ini - 1, fin), ini, c.linea, true)}</div>`;
   } else {
     codigo = `<h4>Test: ${esc(vis.test.nombre)}</h4><div class="codigo-paso">${numerar(vis.lineasTest, 1, c ? c.linea : 0, false)}</div>`;
   }
   const quePaso = i < 0 ? 'Antes de empezar.' : dentro
-    ? (c.linea === vis.lineaCabecera ? `Al entrar a ${esc(vis.detalle)}.` : `Después de la línea ${c.linea} de ${esc(E.ej.alumno)}.`)
+    ? (c.condicion ? `Al evaluar la condición de la línea ${c.linea} de ${esc(E.ej.alumno)}.`
+      : c.linea === c.fn.cabecera ? `Al entrar a ${esc(c.fn.nombre)}.` : `Después de la línea ${c.linea} de ${esc(E.ej.alumno)}.`)
       + (finDeLlamada(i) === i ? (cuadros[i + 1]?.dentro ? ' La llamada terminó; Siguiente ▶ entra a la próxima.' : ' La llamada terminó.') : '')
-    : `Después de la línea ${c.linea} del test.`;
+    : c.condicion ? `Al evaluar la condición de la línea ${c.linea} del test.` : `Después de la línea ${c.linea} del test.`;
   const dibujo = i < 0 ? '<p class="nota">Toca Siguiente ▶ para ejecutar la primera línea' + (cuadros[0]?.dentro ? ', o ⤵ Entrar para verla por dentro' : '') + '.</p>'
-    : svgLista(c.estado, dentro ? vis.nombreListaFn : E.ej.visual.variable, { lugares: vis.lugares });
+    : svgLista(c.estado, dentro ? c.fn.lista : E.ej.visual.variable, { lugares: vis.lugares });
   const ultimo = i === cuadros.length - 1;
+  const proxFn = cuadros[i + 1]?.dentro ? cuadros[i + 1].fn.nombre : '';
   const salida = (i < 0 ? '' : ultimo ? vis.salidaFinal : c.salida).trim();
   const puede = a => { const j = acciones[a](i); return j !== null && j !== undefined && j !== i; };
   const proxEntra = puede('entrar');
@@ -380,8 +395,8 @@ function mostrarPaso() {
       <button data-a="inicio" title="Al comienzo">⏮</button>
       <button data-a="atras" title="Paso anterior (←)">◀<span class="txt"> Atrás</span></button>
       <button data-a="siguiente" class="principal" title="Siguiente línea (→)"><span class="txt">Siguiente </span>▶</button>
-      <button data-a="entrar" title="Ver por dentro la llamada de la siguiente línea (↓)"${proxEntra && !entrarSiempre ? '' : ' hidden'}>⤵<span class="txt"> Entrar en ${esc(vis.detalle ?? '')}</span></button>
-      <button data-a="saltar" title="Ejecutar la siguiente línea sin entrar a ${esc(vis.detalle ?? '')}"${proxEntra && entrarSiempre ? '' : ' hidden'}>⤼<span class="txt"> Sin entrar</span></button>
+      <button data-a="entrar" title="Ver por dentro la llamada de la siguiente línea (↓)"${proxEntra && !entrarSiempre ? '' : ' hidden'}>⤵<span class="txt"> Entrar en ${esc(proxFn)}</span></button>
+      <button data-a="saltar" title="Ejecutar la siguiente línea sin entrar a ${esc(proxFn)}"${proxEntra && entrarSiempre ? '' : ' hidden'}>⤼<span class="txt"> Sin entrar</span></button>
       <button data-a="salir" title="Ir al final de esta llamada; otra vez: volver al test (↑)"${dentro ? '' : ' hidden'}>⤴<span class="txt">${dentro && finDeLlamada(i) !== i ? ' Terminar la llamada' : ' Volver al test'}</span></button>
       <button data-a="fin" title="Al final">⏭</button>
       <label class="entrar-siempre" title="Siguiente ▶ entra a tu función en vez de pasarla de largo"><input type="checkbox" id="entrar-siempre"${entrarSiempre ? ' checked' : ''}> entrar<span class="txt"> a mi función</span></label>

@@ -3,6 +3,7 @@
 // desde head, tail y current (siguiendo next y prev). Revisa cada puntero antes de
 // usarlo, para no caerse con punteros basura.
 #include <stdint.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include "list.h"
 
@@ -133,7 +134,13 @@ static void __volcarCon(const char * marca, int linea, List * L, int nv, const c
 // Después de cada línea del test.
 void __volcar(int linea, List * L) { __volcarCon("VIS", linea, L, 0, 0, 0); }
 
-// Dentro de la función del estudiante (línea de list.c), con sus variables Node *.
-void __volcarf(int linea, List * L, int nv, const char ** nombres, void ** ptrs) {
-    __volcarCon("VISF", linea, L, nv, nombres, ptrs);
+// Dentro de una función del estudiante (línea de list.c; negativa: al evaluar una condición),
+// con sus variables Node *: __volcarv(linea, L, n, "nombre1", ptr1, "nombre2", ptr2, ...).
+void __volcarv(int linea, List * L, int nv, ...) {
+    const char * nombres[16]; void * ptrs[16];
+    va_list a;
+    va_start(a, nv);
+    for (int k = 0; k < nv && k < 16; k++) { nombres[k] = va_arg(a, const char *); ptrs[k] = va_arg(a, void *); }
+    va_end(a);
+    __volcarCon("VISF", linea, L, nv < 16 ? nv : 16, nombres, ptrs);
 }
