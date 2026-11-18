@@ -38,7 +38,8 @@ code, pre { font-family: var(--mono); }
 header { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-bottom: 1px solid var(--borde); background: var(--panel); flex-wrap: wrap; }
 header h1 { font-size: 17px; margin: 0; white-space: nowrap; }
 header h1 span { color: var(--suave); font-weight: 400; }
-header select, .asistente select.sel-funcion { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--borde); background: var(--panel); color: var(--texto); max-width: 260px; }
+header select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--borde); background: var(--panel); color: var(--texto); max-width: 260px; }
+#funcion { font-family: var(--mono); font-size: 14px; }
 .acciones { display: flex; gap: 6px; flex-wrap: wrap; }
 .titulo-panel { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .titulo-panel .acciones button { font-weight: 400; padding: 3px 10px; }
@@ -58,9 +59,6 @@ main#codigo.sin-izq .pasos, main#codigo.sin-der .panel { overflow: hidden; paddi
 .pasos h2 { font-size: 16px; margin: 0 0 6px; }
 .pasos h3 { font-size: 13px; margin: 16px 0 6px; color: var(--suave); text-transform: uppercase; letter-spacing: .04em; }
 .descripcion { font-size: 13px; color: var(--suave); margin: 0 0 10px; }
-#lista-pasos { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 3px; }
-#lista-pasos button { width: 100%; text-align: left; display: flex; justify-content: space-between; gap: 6px; border-color: transparent; }
-#lista-pasos button.activo { border-color: var(--acento); background: color-mix(in srgb, var(--acento) 8%, var(--panel)); }
 .enunciado { margin-top: 10px; font-size: 14px; border-left: 3px solid var(--acento); padding: 2px 0 2px 10px; }
 .enunciado p { margin: 0 0 8px; }
 .enunciado code, .funciones code { background: color-mix(in srgb, var(--texto) 7%, transparent); padding: 0 3px; border-radius: 3px; font-size: 13px; }
@@ -96,7 +94,6 @@ main#codigo.sin-izq .pasos, main#codigo.sin-der .panel { overflow: hidden; paddi
 .asistente { border-top: 1px solid var(--borde); background: var(--panel); padding: 6px 10px 8px; display: flex; flex-direction: column; gap: 6px;
   max-height: 40%; overflow-y: auto; font-size: 13px; }
 .asistente .fila { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.asistente .rotulo { color: var(--suave); }
 .asistente select { font: inherit; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--borde); background: var(--fondo); color: var(--texto); }
 .asistente .vars code { font-family: var(--mono); background: color-mix(in srgb, #f5c400 30%, var(--panel)); color: var(--texto); border-radius: 3px; padding: 1px 5px; margin-right: 2px; }
 .asistente .cats { gap: 2px; border-bottom: 1px solid var(--borde); }
@@ -109,6 +106,7 @@ main#codigo.sin-izq .pasos, main#codigo.sin-der .panel { overflow: hidden; paddi
 .asistente .chip.pieza { border-color: var(--acento); color: var(--acento); }
 .asistente .vista { font-family: var(--mono); font-size: var(--letra, 14px); padding: 3px 8px; border: 1px dashed var(--acento); border-radius: 4px; }
 .asistente .vista b { color: var(--acento); }
+.asistente .fn-actual { font-family: var(--mono); }
 .asistente .linea-actual { padding-bottom: 6px; border-bottom: 1px dashed var(--borde); margin-bottom: 4px; }
 .asistente .linea-actual code { font-family: var(--mono); font-size: calc(var(--letra, 14px) - 1px); background: color-mix(in srgb, var(--texto) 6%, transparent); padding: 1px 6px; border-radius: 4px; white-space: pre-wrap; }
 .asistente .linea-actual button { padding: 2px 8px; font-size: 13px; }

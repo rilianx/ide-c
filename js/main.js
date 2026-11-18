@@ -1,11 +1,11 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181241';
-import { Runner } from './runner.js?v=202611181241';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181241';
-import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181241';
-import { Asistente } from './asistente.js?v=202611181241';
-import { activarDivisores } from './divisores.js?v=202611181241';
-import { correrTests, htmlResultados } from './tests.js?v=202611181241';
+import { Editor } from './editor.js?v=202611181245';
+import { Runner } from './runner.js?v=202611181245';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181245';
+import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181245';
+import { Asistente } from './asistente.js?v=202611181245';
+import { activarDivisores } from './divisores.js?v=202611181245';
+import { correrTests, htmlResultados } from './tests.js?v=202611181245';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -21,15 +21,17 @@ let ocupado = false;
 const runner = new Runner();
 runner.listo.then(() => estado('Compilador listo.'), e => estado('No se pudo cargar el compilador: ' + e.message, true));
 
+let tSelector = null;
 const editor = new Editor($('editor'), $('pestanas'), {
   alCambiar: (nombre, texto) => {
     archivos[nombre] = texto;
     guardar(E.ej, archivos);
+    if (nombre === E.ej.alumno) { clearTimeout(tSelector); tSelector = setTimeout(dibujarPasos, 300); }
   },
 });
 const asistente = new Asistente($('asistente'), editor, () => ({ ej: E.ej, archivos }), {
   // al entrar a una función con el cursor, se elige su paso
-  alCambiarFuncion: f => { const k = E.ej.pasos.findIndex(p => p.funciones.includes(f)); if (k >= 0 && k !== paso) elegirPaso(k, false); },
+  alCambiarFuncion: f => { const k = E.ej.pasos.findIndex(p => p.funciones.includes(f)); if (k >= 0 && k !== paso) elegirPaso(k, false); else dibujarPasos(); },
 });
 activarDivisores(document.getElementById('codigo'), () => editor.refrescar());
 
@@ -73,18 +75,25 @@ async function abrirEjercicio(id) {
   asistente.dibujar();
 }
 
+// El selector de arriba: todas las funciones de los pasos, con su estado.
+// Elegir una lleva a su paso; si aún no está en el archivo, se crea con su plantilla.
 function dibujarPasos() {
-  const ol = $('lista-pasos'); ol.innerHTML = '';
-  E.ej.pasos.forEach((p, k) => {
-    const li = document.createElement('li'), b = document.createElement('button');
-    b.className = k === paso ? 'activo' : '';
-    b.innerHTML = `<span>${esc(p.titulo)}</span><span>${estadoPasos[k] === 'ok' ? '✅' : estadoPasos[k] === 'falla' ? '❌' : ''}</span>`;
-    b.onclick = () => elegirPaso(k);
-    li.appendChild(b); ol.appendChild(li);
-  });
+  const texto = archivos[E.ej.alumno] ?? '';
+  const enArchivo = new Set(funcionesDefinidas(texto, E.ej.funciones));
+  const propias = new Set(funcionesPropias(E.ej, texto));
+  const actual = asistente.fnAnterior && E.ej.pasos[paso].funciones.includes(asistente.fnAnterior) ? asistente.fnAnterior : E.ej.pasos[paso].funciones[0];
+  $('funcion').innerHTML = E.ej.pasos.flatMap((p, k) => p.funciones.map(f => {
+    const marca = estadoPasos[k] === 'ok' ? ' ✅' : estadoPasos[k] === 'falla' ? ' ❌' : '';
+    const nota = !enArchivo.has(f) ? '  + crear' : !propias.has(f) ? '  (vacía)' : '';
+    return `<option value="${f}"${f === actual ? ' selected' : ''}>${k + 1}. ${f}${marca}${nota}</option>`;
+  })).join('');
 }
+$('funcion').onchange = () => {
+  const f = $('funcion').value, k = E.ej.pasos.findIndex(p => p.funciones.includes(f));
+  if (k >= 0) elegirPaso(k, true, f);
+};
 
-function elegirPaso(k, conFoco = true) {
+function elegirPaso(k, conFoco = true, fn = null) {
   paso = k;
   const p = E.ej.pasos[k];
   const faltan = p.funciones.filter(f => !funcionesDefinidas(archivos[E.ej.alumno], [f]).length);
@@ -98,7 +107,7 @@ function elegirPaso(k, conFoco = true) {
     elegirPaso(k, false);
   };
   dibujarPasos();
-  if (conFoco && !faltan.length) asistente.irAFuncion(p.funciones[0]);
+  if (conFoco) { asistente.irAFuncion(fn ?? p.funciones[0]); if (faltan.length) elegirPaso(k, false); }
 }
 
 // ---------- Mensajes del compilador ----------
