@@ -268,3 +268,4 @@ svg.memoria .etiqueta.retorno { fill: #d9f2dd; stroke: #1a7f37; }
 .res-bien { color: #1a7f37; font-weight: 600; }
 .res-mal { color: var(--mal); font-weight: 600; }
 #vis-cuadros.desactualizado { opacity: .45; }
+.vis-cabecera .auto { font-size: 13px; color: var(--suave); display: inline-flex; gap: 3px; align-items: center; white-space: nowrap; }

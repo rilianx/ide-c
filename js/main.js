@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181819';
-import { Runner } from './runner.js?v=202611181819';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181819';
-import { traducirMensaje } from './mensajes.js?v=202611181819';
-import { svgLista, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611181819';
-import { armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181819';
-import { Asistente } from './asistente.js?v=202611181819';
-import { activarDivisores } from './divisores.js?v=202611181819';
-import { correrTests, htmlResultados } from './tests.js?v=202611181819';
+import { Editor } from './editor.js?v=202611181820';
+import { Runner } from './runner.js?v=202611181820';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181820';
+import { traducirMensaje } from './mensajes.js?v=202611181820';
+import { svgLista, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611181820';
+import { armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181820';
+import { Asistente } from './asistente.js?v=202611181820';
+import { activarDivisores } from './divisores.js?v=202611181820';
+import { correrTests, htmlResultados } from './tests.js?v=202611181820';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -24,12 +24,16 @@ const runner = new Runner();
 runner.listo.then(() => estado('Compilador listo.'), e => estado('No se pudo cargar el compilador: ' + e.message, true));
 
 let tSelector = null, tVisual = null;
+// Avance automático (por defecto): al escribir se vuelve a ejecutar y se avanza hasta donde llega la
+// función. Sin él, se ejecuta con ↻ y se avanza a mano desde el comienzo.
+let avanceAuto = true;
+try { avanceAuto = localStorage.getItem('ide-c:auto') !== 'no'; } catch { /* sin almacenamiento */ }
 const editor = new Editor($('editor'), $('pestanas'), {
   alCambiar: (nombre, texto) => {
     archivos[nombre] = texto;
     guardar(E.ej, archivos);
     // vista en vivo: al dejar de escribir, se vuelve a ejecutar y avanza hasta donde llegue
-    if (nombre === E.ej.alumno && !$('vis-panel').hidden) { clearTimeout(tVisual); tVisual = setTimeout(() => dibujarVisual(true, 'auto'), 900); }
+    if (nombre === E.ej.alumno && !$('vis-panel').hidden && avanceAuto) { clearTimeout(tVisual); tVisual = setTimeout(() => dibujarVisual(true, 'auto'), 900); }
     if (nombre === E.ej.alumno) { clearTimeout(tSelector); tSelector = setTimeout(dibujarPasos, 300); }
   },
 });
@@ -261,7 +265,7 @@ let visElegido = null;
 // Vista en vivo: el panel derecho ejecuta un test con el código actual y se para en la última línea
 // que alcanzó a correr la función del ejercicio (o en la que falló). Se vuelve a ejecutar sola al
 // escribir. posicion: 'auto' (eso), 'mantener' (el paso en que estaba) o 'inicio'.
-function abrirVisual(clave, posicion = 'auto') {
+function abrirVisual(clave, posicion = avanceAuto ? 'auto' : 'inicio') {
   if (!E.ej.visual) { estado('Este ejercicio aún no tiene visualización.', true); return; }
   const [k] = clave.split('.').map(Number);
   if (visElegido?.split('.')[0] !== String(k) || !$('vis-test-sel').options.length)
@@ -274,9 +278,17 @@ function abrirVisual(clave, posicion = 'auto') {
   dibujarVisual(true, posicion);
 }
 $('vis-test-sel').onchange = () => abrirVisual($('vis-test-sel').value);
+$('vis-auto').checked = avanceAuto;
+$('vis-auto').onchange = e => {
+  avanceAuto = e.target.checked;
+  try { localStorage.setItem('ide-c:auto', avanceAuto ? 'si' : 'no'); } catch { /* sin almacenamiento */ }
+  if (!avanceAuto) return;
+  if (vis && visDibujado?.test === visElegido && visDibujado.codigo === (archivos[E.ej.alumno] ?? '')) { vis.i = pasoAuto(); mostrarPaso(); }
+  else dibujarVisual(true, 'auto');
+};
 function cerrarVisual() { $('vis-panel').hidden = true; $('vista-tests').hidden = false; $('col-tests').classList.remove('visualizando'); editor.marcarEjecucion(null, null); }
 $('vis-volver').onclick = () => { cerrarVisual(); if (testsMostrados !== paso) mostrarTestsSinCorrer(); };
-$('vis-dibujar').onclick = () => dibujarVisual(false, 'auto');
+$('vis-dibujar').onclick = () => dibujarVisual(false, avanceAuto ? 'auto' : 'inicio');
 $('resultados').addEventListener('click', e => {
   const b = e.target.closest('.ver-vis');
   if (b) { e.preventDefault(); e.stopPropagation(); abrirVisual(b.dataset.vis); }
