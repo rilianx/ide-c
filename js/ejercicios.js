@@ -5,7 +5,7 @@
 const BASE = new URL('../ejercicios/', import.meta.url);
 
 async function texto(url) {
-  const r = await fetch(url);
+  const r = await fetch(url, { cache: 'no-cache' });   // siempre la versión publicada (revalida con el servidor)
   if (!r.ok) throw new Error(`No se pudo cargar ${url} (${r.status})`);
   return r.text();
 }
