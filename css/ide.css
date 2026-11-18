@@ -320,3 +320,17 @@ svg.memoria text.var { font-size: 14px; font-weight: 500; }
 .vivo .comparacion { font-size: 13px; margin: 2px 0; }
 .vivo .diagnostico { font-size: 12px; margin: 4px 0 0; }
 .vivo-barra { font-size: 12px; }
+
+/* ventana del celular: solo el dibujo, fondo según el resultado, con zoom */
+.vivo { position: relative; padding: 4px 6px; }
+.vivo.pasa { background: color-mix(in srgb, #1a7f37 9%, var(--panel)); border-bottom-color: #1a7f37; }
+.vivo.falla { background: color-mix(in srgb, #cf222e 8%, var(--panel)); border-bottom-color: #cf222e; }
+.vivo-cerrar { position: absolute; top: 3px; right: 4px; z-index: 2; padding: 0 7px; font-size: 13px; background: color-mix(in srgb, var(--panel) 80%, transparent); }
+.vivo-cuerpo { overflow: auto; touch-action: pan-y; }
+.vivo-zoom { transform-origin: 0 0; }
+.vivo-fila { display: flex; align-items: center; gap: 6px; }
+.vivo-fila > svg.memoria { flex: 1 1 auto; }
+.esperado-mini { flex: 0 0 38%; display: flex; flex-direction: column; align-items: flex-start; border-left: 1px dashed var(--borde); padding-left: 6px; }
+.esperado-mini .rot { font-size: 10px; color: var(--suave); text-transform: uppercase; }
+.esperado-mini svg.memoria { max-height: 12vh; }
+.esperado-mini .ret { font-size: 12px; }

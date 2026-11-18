@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611182056';
-import { Runner } from './runner.js?v=202611182056';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182056';
-import { traducirMensaje } from './mensajes.js?v=202611182056';
-import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado } from './visual.js?v=202611182056';
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182056';
-import { Asistente } from './asistente.js?v=202611182056';
-import { activarDivisores } from './divisores.js?v=202611182056';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182056';
+import { Editor } from './editor.js?v=202611182110';
+import { Runner } from './runner.js?v=202611182110';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182110';
+import { traducirMensaje } from './mensajes.js?v=202611182110';
+import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado, estadoDeLista } from './visual.js?v=202611182110';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182110';
+import { Asistente } from './asistente.js?v=202611182110';
+import { activarDivisores } from './divisores.js?v=202611182110';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182110';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -373,9 +373,16 @@ async function dibujarVisual(soloSiCambio = false, posicion = 'auto') {
       vis.salidaFinal = salida;
       vis.lugares = lugaresDe(cuadros.map(c => c.estado));   // cada nodo en un lugar fijo durante toda la ejecución
       if (posicion === 'auto') vis.i = pasoAuto();
+      if (irAEntrada) {   // deslizar en el celular: la línea de definición de la función (su entrada)
+        irAEntrada = false;
+        const fnsPaso = E.ej.pasos[k].funciones;
+        const j = cuadros.findIndex(c => c.dentro && !c.condicion && fnsPaso.includes(c.fn?.nombre) && c.linea === c.fn.cabecera);
+        if (j >= 0) { vis.i = j; const l = cuadros[j].fn.cabecera - 1; editor.cm.setCursor({ line: l, ch: editor.cm.getLine(l).length }); }
+      }
       mostrarPaso();
       visDibujado = { test: visElegido, codigo: codigoAlumno };
       const pasa = !seCayo && mismaSalida(test.esperado, salida);
+      vis.pasa = pasa;
       resultadoVivo(seCayo ? '<span class="res-mal">💥 El test se cae (ver la línea marcada)</span>'
         : pasa ? '<span class="res-bien">✅ Este test pasa</span>' : (test.salida ? '<span class="res-mal">❌ Todavía no: mira lo marcado en rojo al final</span>' : '<span class="res-mal">❌ Todavía no: compara Esperado y Obtenido</span>'));
     }
@@ -426,9 +433,50 @@ function resultadoVivo(html) {
 function mostrarVivo() { $('vivo').hidden = vivoCerrado || !vis || $('vis-panel').hidden; $('vivo-abrir').hidden = !vivoCerrado; }
 $('vivo-cerrar').onclick = () => { vivoCerrado = true; mostrarVivo(); };
 $('vivo-abrir').onclick = () => { vivoCerrado = false; mostrarVivo(); };
-$('vivo-atras').onclick = () => mover('atras');
-$('vivo-test').onclick = () => $('vis-siguiente-test').click();
-$('vivo-sig').onclick = () => mover('siguiente');
+// Gestos en el dibujo: dos dedos acercan/alejan, doble toque vuelve al tamaño normal y deslizar
+// hacia el lado cambia de test (y deja el cursor en la definición de la función: la entrada).
+{
+  const caja = $('vivo-cuerpo'), dedos = new Map();
+  let zoom = 1, inicio = null, pellizco = null, ultimoToque = 0;
+  const aplicarZoom = () => { $('vivo-zoom').style.transform = `scale(${zoom})`; $('vivo-zoom').style.width = `${100 / zoom}%`; };
+  caja.addEventListener('pointerdown', e => {
+    dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (dedos.size === 1) inicio = { x: e.clientX, y: e.clientY, t: Date.now() };
+    if (dedos.size === 2) { const [a, b] = [...dedos.values()]; pellizco = { d: Math.hypot(a.x - b.x, a.y - b.y), z: zoom }; inicio = null; }
+  });
+  caja.addEventListener('pointermove', e => {
+    if (!dedos.has(e.pointerId)) return;
+    dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pellizco && dedos.size === 2) {
+      const [a, b] = [...dedos.values()];
+      zoom = Math.min(3, Math.max(1, pellizco.z * Math.hypot(a.x - b.x, a.y - b.y) / pellizco.d));
+      aplicarZoom();
+    }
+  });
+  const soltar = e => {
+    dedos.delete(e.pointerId);
+    if (dedos.size < 2) pellizco = null;
+    if (!inicio || dedos.size) return;
+    const dx = e.clientX - inicio.x, dy = e.clientY - inicio.y;
+    if (zoom === 1 && Math.abs(dx) > 50 && Math.abs(dx) > 2 * Math.abs(dy)) cambiarTest(dx < 0 ? 1 : -1);
+    else if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {   // toque: doble toque = tamaño normal
+      if (Date.now() - ultimoToque < 350) { zoom = zoom > 1 ? 1 : 2; aplicarZoom(); }
+      ultimoToque = Date.now();
+    }
+    inicio = null;
+  };
+  caja.addEventListener('pointerup', soltar);
+  caja.addEventListener('pointercancel', soltar);
+}
+// Pasa al test siguiente (+1) o anterior (−1) y se para en la entrada de la función del ejercicio.
+function cambiarTest(dir) {
+  const s = $('vis-test-sel'), n = s.options.length;
+  if (!n) return;
+  s.selectedIndex = (s.selectedIndex + dir + n) % n;
+  irAEntrada = true;
+  abrirVisual(s.value);
+}
+let irAEntrada = false;
 
 // Con avance automático: se corren todos los tests de la función y se muestra el primero que falla.
 async function ejecutarEnVivo() {
@@ -574,7 +622,13 @@ function mostrarPaso() {
   const d = describirTest(vis.test);
   $('vivo-info').innerHTML = `${esc(vis.test.nombre)} · ${quePaso}`;
   $('vis-test-desc').innerHTML = htmlTest(vis.test);
-  $('vivo-cuerpo').innerHTML = dibujoFinal + (comparacion ? htmlComparacion(comparacion) : '') + (c?.error ? htmlDiagnostico(c, dentro) : '') + (c && !c.error ? htmlVariables(c.estado) : '');
+  // celular: solo el dibujo; en la línea de definición de la función, también la salida esperada
+  const esEntrada = c?.dentro && !c.condicion && !c.error && c.linea === c.fn?.cabecera;
+  const sal = vis.test.salida;
+  const esperadoMini = esEntrada && sal ? `<div class="esperado-mini"><span class="rot">se espera</span>${svgLista(estadoDeLista(sal.lista, 'current' in sal ? sal.current : undefined, true), c.fn.lista, { sinDirecciones: true, escala: 0.5, porFila: 5 })}${(sal.retornos ?? []).map(r => `<span class="ret">↩ ${esc(r === null ? 'NULL' : r)}</span>`).join(' ')}</div>` : '';
+  $('vivo-zoom').innerHTML = `<div class="vivo-fila">${dibujoFinal}${esperadoMini}</div>`;
+  $('vivo').classList.toggle('pasa', !!vis.pasa);
+  $('vivo').classList.toggle('falla', !vis.pasa);
   mostrarVivo();
 }
 document.addEventListener('keydown', e => {
