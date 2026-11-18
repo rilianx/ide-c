@@ -95,15 +95,16 @@ export function funcionesPropias(ej, texto) {
   });
 }
 
-// El archivo del estudiante tal como se compila: las plantillas sin tocar se renombran
-// (__plantilla_f) para que no choquen con la versión del curso. Las líneas no cambian.
+// El archivo del estudiante tal como se compila: las plantillas sin tocar se dejan en blanco
+// para que no choquen con la versión del curso. Las líneas no cambian.
 function sinPlantillas(ej, texto) {
   const propias = new Set(funcionesPropias(ej, texto));
   const sobran = funcionesDelArchivo(texto).filter(f => ej.funciones.includes(f.nombre) && !propias.has(f.nombre));
   for (const f of sobran.reverse()) {
     const antes = texto.slice(0, f.cuerpo);
     const k = antes.lastIndexOf(f.nombre, antes.lastIndexOf('('));
-    texto = texto.slice(0, k) + '__plantilla_' + texto.slice(k);
+    const ini = texto.lastIndexOf('\n', k) + 1, fin = f.fin + 1;
+    texto = texto.slice(0, ini) + texto.slice(ini, fin).replace(/[^\n]/g, ' ') + texto.slice(fin);
   }
   return texto;
 }

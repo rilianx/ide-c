@@ -105,11 +105,16 @@ main#codigo.sin-izq .pasos, main#codigo.sin-der .panel { overflow: hidden; paddi
 .asistente .chip.pieza { border-color: var(--acento); color: var(--acento); }
 .asistente .vista { font-family: var(--mono); font-size: var(--letra, 14px); padding: 3px 8px; border: 1px dashed var(--acento); border-radius: 4px; }
 .asistente .vista b { color: var(--acento); }
+.asistente .linea-actual { padding-bottom: 6px; border-bottom: 1px dashed var(--borde); margin-bottom: 4px; }
+.asistente .linea-actual code { font-family: var(--mono); font-size: calc(var(--letra, 14px) - 1px); background: color-mix(in srgb, var(--texto) 6%, transparent); padding: 1px 6px; border-radius: 4px; white-space: pre-wrap; }
+.asistente .linea-actual button { padding: 2px 8px; font-size: 13px; }
+.asistente .lleno { cursor: pointer; border-bottom: 2px dotted var(--acento); }
 .asistente .hueco { display: inline-block; min-width: 1.4em; text-align: center; border-bottom: 2px solid var(--borde); color: var(--suave); }
 .asistente .hueco.actual { border-color: var(--acento); background: color-mix(in srgb, var(--acento) 14%, transparent); }
 .asistente .cancelar { padding: 1px 8px; }
 .nota { color: var(--suave); font-size: 13px; margin: 0; }
 .panel { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: var(--panel); }
+#copiar-reporte { float: right; padding: 1px 8px; font-weight: 400; }
 .titulo-panel { padding: 7px 12px; border-bottom: 1px solid var(--borde); font-weight: 600; }
 .panel-cuerpo { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
 .panel-cuerpo label { font-size: 13px; color: var(--suave); }

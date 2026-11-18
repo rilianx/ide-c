@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IDE C · Estructuras de Datos</title>
 <link rel="stylesheet" href="vendor/codemirror/codemirror.css">
-<link rel="stylesheet" href="css/ide.css?v=202611181219">
+<link rel="stylesheet" href="css/ide.css?v=202611181224">
 <script src="vendor/codemirror/codemirror.js"></script>
 <script src="vendor/codemirror/clike.js"></script>
 <script src="vendor/codemirror/matchbrackets.js"></script>
@@ -20,7 +20,7 @@
   addEventListener('error', e => errorInicio(e.message || 'no se pudo cargar ' + (e.target && (e.target.src || e.target.href) || 'un archivo')), true);
   addEventListener('unhandledrejection', e => errorInicio(String(e.reason && e.reason.message || e.reason)));
 </script>
-<script type="module" src="js/main.js?v=202611181219"></script>
+<script type="module" src="js/main.js?v=202611181224"></script>
 </head>
 <body>
 <header>
@@ -66,7 +66,7 @@
   <div class="divisor" data-col="der" title="Arrastra para cambiar el ancho (doble clic: ocultar/mostrar)"></div>
 
   <section class="panel" id="col-tests">
-    <div class="titulo-panel">Tests <span id="resumen-tests"></span></div>
+    <div class="titulo-panel">Tests <span id="resumen-tests"></span><button id="copiar-reporte" class="secundario" title="Copia tu código y los resultados, para pedir ayuda" hidden>📋 Copiar reporte</button></div>
     <div id="panel-tests" class="panel-cuerpo">
       <div id="compilacion-tests"></div>
       <div id="resultados"><p class="nota">▶ Probar paso compila list.c y corre los tests del paso elegido. Cada test usa solo la interfaz (list.h) y compara lo que imprime con lo esperado.</p></div>

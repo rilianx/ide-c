@@ -81,7 +81,7 @@
         }
       ],
       "plantillas": {
-        "createList": "List * createList(void) {\n    return NULL;\n}\n"
+        "createList": "List * createList(void) {\n\n}\n"
       }
     },
     {
@@ -119,8 +119,8 @@
         }
       ],
       "plantillas": {
-        "firstList": "void * firstList(List * list) {\n    return NULL;\n}\n",
-        "nextList": "void * nextList(List * list) {\n    return NULL;\n}\n"
+        "firstList": "void * firstList(List * list) {\n\n}\n",
+        "nextList": "void * nextList(List * list) {\n\n}\n"
       }
     },
     {
@@ -158,8 +158,8 @@
         }
       ],
       "plantillas": {
-        "lastList": "void * lastList(List * list) {\n    return NULL;\n}\n",
-        "prevList": "void * prevList(List * list) {\n    return NULL;\n}\n"
+        "lastList": "void * lastList(List * list) {\n\n}\n",
+        "prevList": "void * prevList(List * list) {\n\n}\n"
       }
     },
     {
@@ -191,7 +191,7 @@
         }
       ],
       "plantillas": {
-        "pushFront": "void pushFront(List * list, void * data) {\n}\n"
+        "pushFront": "void pushFront(List * list, void * data) {\n\n}\n"
       }
     },
     {
@@ -223,7 +223,7 @@
         }
       ],
       "plantillas": {
-        "pushCurrent": "void pushCurrent(List * list, void * data) {\n}\n"
+        "pushCurrent": "void pushCurrent(List * list, void * data) {\n\n}\n"
       }
     },
     {
@@ -260,7 +260,7 @@
         }
       ],
       "plantillas": {
-        "popCurrent": "void * popCurrent(List * list) {\n    return NULL;\n}\n"
+        "popCurrent": "void * popCurrent(List * list) {\n\n}\n"
       }
     }
   ]

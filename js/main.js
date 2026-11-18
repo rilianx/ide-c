@@ -1,11 +1,11 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181219';
-import { Runner } from './runner.js?v=202611181219';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181219';
-import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181219';
-import { Asistente } from './asistente.js?v=202611181219';
-import { activarDivisores } from './divisores.js?v=202611181219';
-import { correrTests, htmlResultados } from './tests.js?v=202611181219';
+import { Editor } from './editor.js?v=202611181224';
+import { Runner } from './runner.js?v=202611181224';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado } from './ejercicios.js?v=202611181224';
+import { agregarPlantilla, funcionesDefinidas, funcionesPropias } from './proyecto.js?v=202611181224';
+import { Asistente } from './asistente.js?v=202611181224';
+import { activarDivisores } from './divisores.js?v=202611181224';
+import { correrTests, htmlResultados } from './tests.js?v=202611181224';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -151,6 +151,8 @@ async function probar(todos) {
   $('compilacion-tests').innerHTML = '';
   estado('Compilando y probando…');
   const dibujar = res => {
+    ultimo = { tests, res, codigo: archivos[E.ej.alumno] };
+    $('copiar-reporte').hidden = false;
     $('resultados').innerHTML = htmlResultados(tests, res.map(r => ({ ...r, error: r.error && traducir(r.error) })));
     const ok = res.filter(r => r.estado === 'ok').length;
     $('resumen-tests').textContent = `${ok}/${tests.length}`;
@@ -172,6 +174,28 @@ async function probar(todos) {
   }
   ocupar(false);
 }
+
+// Reporte en texto (código + resultados), para pedir ayuda.
+let ultimo = null;
+function reporte() {
+  const { tests, res, codigo } = ultimo;
+  const marca = { ok: 'OK', falla: 'FALLA', error: 'ERROR', pendiente: 'PENDIENTE', 'sin-compilar': 'NO COMPILÓ' };
+  const partes = tests.map((t, i) => {
+    const r = res[i] ?? {};
+    let s = `[${marca[r.estado] ?? r.estado}] ${t.nombre}`;
+    if (r.estado === 'falla' || r.estado === 'error')
+      s += `\n  código:\n${t.codigo.replace(/^/gm, '    ')}\n  esperado:\n${t.esperado.replace(/^/gm, '    ')}\n  obtenido:\n${(r.obtenido || '(nada)').replace(/^/gm, '    ')}` + (r.error ? `\n  ${traducir(r.error)}` : '');
+    return s;
+  });
+  const comp = $('compilacion-tests').innerText.trim();
+  return `${E.ej.titulo ?? E.ej.id}\n\n==== ${E.ej.alumno} ====\n${codigo}\n\n` + (comp ? `==== Compilador ====\n${comp}\n\n` : '') + `==== Tests ====\n${partes.join('\n')}\n`;
+}
+$('copiar-reporte').onclick = async () => {
+  if (!ultimo) return;
+  const texto = reporte();
+  try { await navigator.clipboard.writeText(texto); estado('Reporte copiado: pégalo en un mensaje o correo.'); }
+  catch { prompt('Copia el reporte:', texto); }
+};
 
 // ---------- Paneles, vistas y botones ----------
 
