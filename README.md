@@ -4,7 +4,7 @@ Un IDE en el navegador para hacer los labs del curso: archivos `.h`/`.c`, un asi
 
 ## Cómo funciona un ejercicio
 
-- La app trae la **implementación completa** de la estructura, oculta (`oculto/list_ref.c`).
+- La app trae la **implementación completa** de la estructura, oculta (`oculto/list_ref.c.enc`, cifrada).
 - El estudiante escribe **una función a la vez** en `list.c`. Cada función que define reemplaza a la del curso; las que no escribió usan la referencia. Así cada función se prueba por separado.
 - Los **tests usan solo la interfaz** (`list.h`): cada test es un trozo de C que llama a la interfaz e imprime algo, y se compara su salida con la esperada.
 - **▶ Probar actual** compila `list.c` + la referencia y corre los tests de la función elegida; **▶▶ Probar todas**, los de todas las funciones que el estudiante ya escribió.
@@ -72,8 +72,9 @@ Pide una **contraseña**: la solución legible está en `oculto/solucion.enc`, c
 
 ```
 node herramientas/cifrar.mjs descifrar ejercicios/lab2-lista CONTRASEÑA   # crea fuente/list_ref.c
-# editar fuente/list_ref.c y comprobar: node herramientas/probar-nativo.mjs ejercicios/lab2-lista
+# editar fuente/list_ref.c
 node herramientas/cifrar.mjs cifrar ejercicios/lab2-lista CONTRASEÑA      # vuelve a crear los .enc
+node herramientas/probar-nativo.mjs ejercicios/lab2-lista                 # comprobar: deben pasar todos
 ```
 
 Para cambiar la contraseña: descifrar con la antigua y cifrar con la nueva.
