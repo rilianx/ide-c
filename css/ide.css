@@ -274,7 +274,7 @@ svg.memoria .etiqueta.retorno { fill: #d9f2dd; stroke: #1a7f37; }
 .vis-cabecera .auto { font-size: 13px; color: var(--suave); display: inline-flex; gap: 3px; align-items: center; white-space: nowrap; }
 
 /* ventana de ejecución sobre el editor (solo en pantallas angostas) */
-.vivo { border-bottom: 2px solid var(--acento); background: var(--panel); max-height: 42vh; overflow: auto; padding: 4px 8px 6px; flex: none; box-shadow: 0 4px 10px rgb(0 0 0 / .12); }
+.vivo { border-bottom: 2px solid var(--acento); background: var(--panel); max-height: 30vh; overflow: auto; padding: 4px 8px 6px; flex: none; box-shadow: 0 4px 10px rgb(0 0 0 / .12); }
 .vivo-barra { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 .vivo-barra #vivo-res { flex: 1; min-width: 0; }
 .vivo-ctl { display: inline-flex; gap: 3px; }
@@ -313,3 +313,10 @@ svg.memoria .dato { font-size: 21px; font-weight: 400; }
 svg.memoria .campo { font-size: 13px; }
 svg.memoria .nombre { font-size: 17px; font-weight: 500; }
 svg.memoria text.var { font-size: 14px; font-weight: 500; }
+
+/* ventana de ejecución (celular): más chica */
+.vivo svg.memoria { max-height: 17vh; width: auto; max-width: 100%; }
+.vivo .tabla-vars, .vivo .retorno { font-size: 12px; margin: 2px 0; }
+.vivo .comparacion { font-size: 13px; margin: 2px 0; }
+.vivo .diagnostico { font-size: 12px; margin: 4px 0 0; }
+.vivo-barra { font-size: 12px; }

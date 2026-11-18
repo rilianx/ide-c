@@ -1,8 +1,8 @@
 // Tests: cada uno es un trozo de C que usa solo la interfaz (.h) e imprime algo;
 // se compara su salida con la esperada. Si un test se cuelga (ciclo infinito),
 // se detiene y se siguen corriendo los que faltan.
-import { svgLista, estadoDeLista } from './visual.js?v=202611182045';
-import { armarTests, mismaSalida, mensajes, describirTest } from './proyecto.js?v=202611182045';
+import { svgLista, estadoDeLista } from './visual.js?v=202611182056';
+import { armarTests, mismaSalida, mensajes, describirTest } from './proyecto.js?v=202611182056';
 
 // tests: [{nombre, codigo, esperado, paso}]; alActualizar(resultados) se llama a medida que avanzan.
 // Devuelve {compilacion, resultados} con resultados[i] = {estado, obtenido, error}.

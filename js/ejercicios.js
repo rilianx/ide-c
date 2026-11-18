@@ -2,7 +2,7 @@
 // ejercicio.json, sus archivos visibles y los ocultos (referencia y ayudas).
 // Lo que escribe el estudiante se guarda en el navegador (localStorage), por ejercicio.
 
-import { descifrar, CLAVE_INTERNA } from './cifrado.js?v=202611182045';
+import { descifrar, CLAVE_INTERNA } from './cifrado.js?v=202611182056';
 
 const BASE = new URL('../ejercicios/', import.meta.url);
 

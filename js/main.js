@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611182045';
-import { Runner } from './runner.js?v=202611182045';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182045';
-import { traducirMensaje } from './mensajes.js?v=202611182045';
-import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado } from './visual.js?v=202611182045';
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182045';
-import { Asistente } from './asistente.js?v=202611182045';
-import { activarDivisores } from './divisores.js?v=202611182045';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182045';
+import { Editor } from './editor.js?v=202611182056';
+import { Runner } from './runner.js?v=202611182056';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182056';
+import { traducirMensaje } from './mensajes.js?v=202611182056';
+import { svgLista, lugaresDe, diagnosticar, htmlVariables, compararConEsperado } from './visual.js?v=202611182056';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182056';
+import { Asistente } from './asistente.js?v=202611182056';
+import { activarDivisores } from './divisores.js?v=202611182056';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182056';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -427,6 +427,7 @@ function mostrarVivo() { $('vivo').hidden = vivoCerrado || !vis || $('vis-panel'
 $('vivo-cerrar').onclick = () => { vivoCerrado = true; mostrarVivo(); };
 $('vivo-abrir').onclick = () => { vivoCerrado = false; mostrarVivo(); };
 $('vivo-atras').onclick = () => mover('atras');
+$('vivo-test').onclick = () => $('vis-siguiente-test').click();
 $('vivo-sig').onclick = () => mover('siguiente');
 
 // Con avance automático: se corren todos los tests de la función y se muestra el primero que falla.
@@ -571,7 +572,7 @@ function mostrarPaso() {
   editor.marcarEjecucion(E.ej.alumno, dentro ? c.linea : null);
   // la ventana de ejecución sobre el editor (celular): el resultado, el paso y el dibujo
   const d = describirTest(vis.test);
-  $('vivo-info').innerHTML = `${esc(vis.test.nombre)}${d ? ` <span class="decl">(${esc(d.entrada)} → ${esc(d.llamadas)})</span>` : ''} · ${quePaso}`;
+  $('vivo-info').innerHTML = `${esc(vis.test.nombre)} · ${quePaso}`;
   $('vis-test-desc').innerHTML = htmlTest(vis.test);
   $('vivo-cuerpo').innerHTML = dibujoFinal + (comparacion ? htmlComparacion(comparacion) : '') + (c?.error ? htmlDiagnostico(c, dentro) : '') + (c && !c.error ? htmlVariables(c.estado) : '');
   mostrarVivo();
@@ -644,9 +645,8 @@ function irPestana(p) {
 document.querySelectorAll('#pestanas-movil button').forEach(b => b.onclick = () => irPestana(b.dataset.p));
 let pestanaInicial = 'pasos';
 try { pestanaInicial = localStorage.getItem('ide-c:pestana') || 'pasos'; } catch { /* sin almacenamiento */ }
+if (!['pasos', 'centro'].includes(pestanaInicial)) pestanaInicial = 'centro';   // ya no hay pestaña de ejecución: está en la ventana
 irPestana(pestanaInicial);
-new MutationObserver(() => { $('resumen-movil').textContent = $('resumen-tests').textContent; })
-  .observe($('resumen-tests'), { childList: true, characterData: true, subtree: true });
 
 // ---------- Inicio ----------
 
