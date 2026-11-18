@@ -1,13 +1,13 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611181844';
-import { Runner } from './runner.js?v=202611181844';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181844';
-import { traducirMensaje } from './mensajes.js?v=202611181844';
-import { svgLista, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611181844';
-import { armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181844';
-import { Asistente } from './asistente.js?v=202611181844';
-import { activarDivisores } from './divisores.js?v=202611181844';
-import { correrTests, htmlResultados } from './tests.js?v=202611181844';
+import { Editor } from './editor.js?v=202611181900';
+import { Runner } from './runner.js?v=202611181900';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611181900';
+import { traducirMensaje } from './mensajes.js?v=202611181900';
+import { svgLista, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611181900';
+import { armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611181900';
+import { Asistente } from './asistente.js?v=202611181900';
+import { activarDivisores } from './divisores.js?v=202611181900';
+import { correrTests, htmlResultados } from './tests.js?v=202611181900';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -33,7 +33,7 @@ const editor = new Editor($('editor'), $('pestanas'), {
     archivos[nombre] = texto;
     guardar(E.ej, archivos);
     // vista en vivo: al dejar de escribir, se vuelve a ejecutar y avanza hasta donde llegue
-    if (nombre === E.ej.alumno && !$('vis-panel').hidden && avanceAuto) { clearTimeout(tVisual); tVisual = setTimeout(() => dibujarVisual(true, 'auto'), 900); }
+    if (nombre === E.ej.alumno && !$('vis-panel').hidden && avanceAuto) { clearTimeout(tVisual); tVisual = setTimeout(ejecutarEnVivo, 900); }
     if (nombre === E.ej.alumno) { clearTimeout(tSelector); tSelector = setTimeout(dibujarPasos, 300); }
   },
 });
@@ -138,7 +138,9 @@ function elegirPaso(k, conFoco = true, fn = null) {
   };
   dibujarPasos();
   // al elegir otra función: la vista en vivo con su primer test
-  if (E.ej.visual) { if (!visElegido || +visElegido.split('.')[0] !== k || $('vis-panel').hidden) abrirVisual(`${k}.0`); }
+  if (E.ej.visual) {
+    if (!visElegido || +visElegido.split('.')[0] !== k || $('vis-panel').hidden) { abrirVisual(`${k}.0`, avanceAuto ? 'auto' : 'inicio', !avanceAuto); if (avanceAuto) ejecutarEnVivo(); }
+  }
   else if (testsMostrados !== k) mostrarTestsSinCorrer();
   if (conFoco) { asistente.irAFuncion(fn ?? p.funciones[0]); if (faltan.length) elegirPaso(k, false); }
 }
@@ -268,7 +270,7 @@ let visElegido = null;
 // Vista en vivo: el panel derecho ejecuta un test con el código actual y se para en la última línea
 // que alcanzó a correr la función del ejercicio (o en la que falló). Se vuelve a ejecutar sola al
 // escribir. posicion: 'auto' (eso), 'mantener' (el paso en que estaba) o 'inicio'.
-function abrirVisual(clave, posicion = avanceAuto ? 'auto' : 'inicio') {
+function abrirVisual(clave, posicion = avanceAuto ? 'auto' : 'inicio', ejecutar = true) {
   if (!E.ej.visual) { estado('Este ejercicio aún no tiene visualización.', true); return; }
   const [k] = clave.split('.').map(Number);
   if (visElegido?.split('.')[0] !== String(k) || !$('vis-test-sel').options.length)
@@ -278,7 +280,7 @@ function abrirVisual(clave, posicion = avanceAuto ? 'auto' : 'inicio') {
   $('vista-tests').hidden = true;
   $('vis-panel').hidden = false;
   $('col-tests').classList.add('visualizando');
-  dibujarVisual(true, posicion);
+  if (ejecutar) dibujarVisual(true, posicion);
 }
 $('vis-test-sel').onchange = () => abrirVisual($('vis-test-sel').value);
 $('vis-siguiente-test').onclick = () => {   // al siguiente test de la función (después del último, vuelve al primero)
@@ -294,7 +296,7 @@ $('vis-auto').onchange = e => {
   if (vis && visDibujado?.test === visElegido && visDibujado.codigo === (archivos[E.ej.alumno] ?? '')) { vis.i = pasoAuto(); mostrarPaso(); }
   else dibujarVisual(true, 'auto');
 };
-function cerrarVisual() { $('vis-panel').hidden = true; $('vista-tests').hidden = false; $('col-tests').classList.remove('visualizando'); editor.marcarEjecucion(null, null); }
+function cerrarVisual() { $('vis-panel').hidden = true; $('vista-tests').hidden = false; $('col-tests').classList.remove('visualizando'); editor.marcarEjecucion(null, null); mostrarVivo(); }
 $('vis-volver').onclick = () => { cerrarVisual(); if (testsMostrados !== paso) mostrarTestsSinCorrer(); };
 $('vis-dibujar').onclick = () => dibujarVisual(false, avanceAuto ? 'auto' : 'inicio');
 $('resultados').addEventListener('click', e => {
@@ -324,7 +326,7 @@ async function dibujarVisual(soloSiCambio = false, posicion = 'auto') {
   const detalle = fns.length ? fns.map(f => f.nombre) : null;
   const delPaso = E.ej.pasos[k].funciones.filter(f => propias.has(f));
   ocupar(true);
-  $('vis-resultado').innerHTML = '<span class="nota">Ejecutando…</span>';
+  resultadoVivo('<span class="nota">Ejecutando…</span>');
   const caja = $('vis-cuadros');
   try {
     let r = await runner.ejecutar(armarVisual(E.ej, archivos, E.ocultos, test, detalle));
@@ -341,7 +343,7 @@ async function dibujarVisual(soloSiCambio = false, posicion = 'auto') {
     if (!r.compilado?.ok) {   // no compila (por ejemplo, a medio escribir): se deja el último dibujo, atenuado
       mostrarCompilacion($('vis-compilacion'), mensajesDe(r), false);
       caja.classList.add('desactualizado');
-      $('vis-resultado').innerHTML = '<span class="res-mal">⚠ No compila: revisa el mensaje.</span>';
+      resultadoVivo('<span class="res-mal">⚠ No compila: revisa el mensaje.</span>');
       visDibujado = { test: visElegido, codigo: codigoAlumno };
     } else {
       $('vis-compilacion').innerHTML = '';
@@ -373,15 +375,15 @@ async function dibujarVisual(soloSiCambio = false, posicion = 'auto') {
       mostrarPaso();
       visDibujado = { test: visElegido, codigo: codigoAlumno };
       const pasa = !seCayo && mismaSalida(test.esperado, salida);
-      $('vis-resultado').innerHTML = seCayo ? '<span class="res-mal">💥 El test se cae (ver la línea marcada)</span>'
-        : pasa ? '<span class="res-bien">✅ Este test pasa</span>' : '<span class="res-mal">❌ Todavía no: compara Esperado y Obtenido</span>';
+      resultadoVivo(seCayo ? '<span class="res-mal">💥 El test se cae (ver la línea marcada)</span>'
+        : pasa ? '<span class="res-bien">✅ Este test pasa</span>' : '<span class="res-mal">❌ Todavía no: compara Esperado y Obtenido</span>');
     }
   } catch (e) {
     estado('No se pudo ejecutar: ' + e.message, true);
-    $('vis-resultado').innerHTML = '';
+    resultadoVivo('');
   }
   ocupar(false);
-  if (visPendiente) { const p = visPendiente; visPendiente = null; dibujarVisual(...p); }
+  if (visPendiente) { const p = visPendiente; visPendiente = null; if (p[0] === 'vivo') ejecutarEnVivo(); else dibujarVisual(...p); }
 }
 
 // Dónde pararse: en la línea que falló; si no, al final de la primera llamada a la función del
@@ -394,6 +396,66 @@ function pasoAuto() {
   const re = new RegExp(`\\b(${fnsPaso.join('|')})\\s*\\(`);
   const t = C.findIndex(c => !c.dentro && re.test(vis.lineasTest[c.linea - 1] ?? ''));
   return t >= 0 ? t : C.length - 1;
+}
+
+// ---------- Tocar una línea de la función: la ejecución vuelve (o va) a ese momento ----------
+let tLinea = null;
+editor.cm.on('cursorActivity', () => {
+  clearTimeout(tLinea);
+  tLinea = setTimeout(() => {
+    if (!vis || $('vis-panel').hidden || editor.actual !== E.ej.alumno || ocupado) return;
+    const linea = editor.cm.getCursor().line + 1, act = vis.cuadros[vis.i];
+    if (act?.dentro && act.linea === linea) return;
+    const candidatos = vis.cuadros.map((c, k) => [c, k]).filter(([c]) => c.dentro && !c.error && c.linea === linea && !c.condicion || c.dentro && c.condicion && c.linea === linea);
+    if (!candidatos.length) return;
+    // de preferencia en la misma llamada que se está viendo
+    const misma = candidatos.find(([c]) => act?.dentro && c.fn === act.fn && c.llamada === act.llamada);
+    vis.i = (misma ?? candidatos[0])[1];
+    mostrarPaso();
+  }, 250);
+});
+
+// ---------- Ventana de ejecución en la pestaña Código (celular) ----------
+let vivoCerrado = false, resumenVivo = '';
+// El resultado del test, en el panel y en la ventana sobre el editor.
+function resultadoVivo(html) {
+  $('vis-resultado').innerHTML = html;
+  $('vivo-res').innerHTML = html + (resumenVivo ? ` <span class="nota">· ${esc(resumenVivo)}</span>` : '');
+}
+function mostrarVivo() { $('vivo').hidden = vivoCerrado || !vis || $('vis-panel').hidden; $('vivo-abrir').hidden = !vivoCerrado; }
+$('vivo-cerrar').onclick = () => { vivoCerrado = true; mostrarVivo(); };
+$('vivo-abrir').onclick = () => { vivoCerrado = false; mostrarVivo(); };
+$('vivo-atras').onclick = () => mover('atras');
+$('vivo-sig').onclick = () => mover('siguiente');
+
+// Con avance automático: se corren todos los tests de la función y se muestra el primero que falla.
+async function ejecutarEnVivo() {
+  if (ocupado) { visPendiente = ['vivo']; return; }
+  const k = paso, tests = E.ej.pasos[k].tests.map((t, idx) => ({ ...t, paso: k, idx }));
+  ocupar(true);
+  let res = null;
+  try { res = (await correrTests(runner, E.ej, archivos, E.ocultos, tests)).resultados; } catch { /* se ve al dibujar */ }
+  ocupar(false);
+  if (res && !res.some(r => r.estado === 'sin-compilar')) {
+    const ok = res.filter(r => r.estado === 'ok').length;
+    resumenVivo = `${ok}/${tests.length} tests pasan`;
+    estadoPasos[k] = ok === tests.length ? 'ok' : 'falla';
+    dibujarPasos();
+    const f = res.findIndex(r => r.estado !== 'ok');
+    if (f >= 0 && `${k}.${f}` !== visElegido) { visElegido = `${k}.${f}`; $('vis-test-sel').value = visElegido; }
+  } else resumenVivo = '';
+  dibujarVisual(false, 'auto');
+}
+
+// Explicación de un paso con error (la línea y qué puntero no se podía seguir).
+function htmlDiagnostico(c, dentro) {
+  const codigoLinea = dentro ? vis.lineasAlumno[c.linea - 1] : vis.lineasTest[c.linea - 1];
+  let diag = diagnosticar(codigoLinea ?? '', c.estado, dentro ? c.fn.lista : E.ej.visual.variable);
+  if (!diag && !dentro) {   // ¿la línea del test llama a una función tuya? el error pudo ser adentro
+    const llamada = vis.fns.find(f => new RegExp(`\\b${f.nombre}\\s*\\(`).test(codigoLinea ?? ''));
+    if (llamada) diag = `el error ocurrió dentro de tu <code>${esc(llamada.nombre)}</code>, llamada desde esta línea (revisa los punteros que sigue con <code>-></code>).`;
+  }
+  return `<p class="diagnostico">💥 En <code>${esc((codigoLinea ?? '').trim().replace(/;$/, ''))}</code>${diag ? ': ' + diag : '.'}</p>`;
 }
 
 // ---------- Paso a paso ----------
@@ -471,15 +533,7 @@ function mostrarPaso() {
       <div class="paso-codigo">${codigo}</div>
       <div class="paso-dibujo">${dibujo}${c && !c.error ? htmlVariables(c.estado) : ''}
         ${ultimo && vis.error ? `<p class="error-ej">${esc(vis.error)}</p>` : ''}
-        ${c?.error ? (() => {
-          const codigoLinea = dentro ? vis.lineasAlumno[c.linea - 1] : vis.lineasTest[c.linea - 1];
-          let diag = diagnosticar(codigoLinea ?? '', c.estado, dentro ? c.fn.lista : E.ej.visual.variable);
-          if (!diag && !dentro) {   // ¿la línea del test llama a una función tuya? el error pudo ser adentro
-            const llamada = vis.fns.find(f => new RegExp(`\\b${f.nombre}\\s*\\(`).test(codigoLinea ?? ''));
-            if (llamada) diag = `el error ocurrió dentro de tu <code>${esc(llamada.nombre)}</code>, llamada desde esta línea (revisa los punteros que sigue con <code>-></code>).`;
-          }
-          return `<p class="diagnostico">💥 En <code>${esc((codigoLinea ?? '').trim().replace(/;$/, ''))}</code>${diag ? ': ' + diag : '.'}</p>`;
-        })() : ''}
+        ${c?.error ? htmlDiagnostico(c, dentro) : ''}
         <div class="salidas vis-salidas">
           <div><h4>Esperado</h4><pre class="vis-salida">${esc(vis.test.esperado)}</pre></div>
           <div><h4>${ultimo ? 'Obtenido' : 'Impreso hasta aquí'}${ultimo ? (mismaSalida(vis.test.esperado, salida) ? ' ✅' : ' ❌') : ''}</h4><pre class="vis-salida${ultimo && !mismaSalida(vis.test.esperado, salida) ? ' distinta' : ''}">${esc(salida) || '<span class="vacio">(nada)</span>'}</pre></div>
@@ -496,6 +550,10 @@ function mostrarPaso() {
   };
   // en el editor del centro se marca la línea de la función que se está ejecutando
   editor.marcarEjecucion(E.ej.alumno, dentro ? c.linea : null);
+  // la ventana de ejecución sobre el editor (celular): el resultado, el paso y el dibujo
+  $('vivo-info').innerHTML = `${esc(vis.test.nombre)} · ${quePaso}`;
+  $('vivo-cuerpo').innerHTML = dibujo + (c?.error ? htmlDiagnostico(c, dentro) : '') + (c && !c.error ? htmlVariables(c.estado) : '');
+  mostrarVivo();
 }
 document.addEventListener('keydown', e => {
   if ($('vis-panel').hidden || !vis || /^(SELECT|INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) return;

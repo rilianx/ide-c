@@ -272,3 +272,14 @@ svg.memoria .etiqueta.retorno { fill: #d9f2dd; stroke: #1a7f37; }
 .res-mal { color: var(--mal); font-weight: 600; }
 #vis-cuadros.desactualizado { opacity: .45; }
 .vis-cabecera .auto { font-size: 13px; color: var(--suave); display: inline-flex; gap: 3px; align-items: center; white-space: nowrap; }
+
+/* ventana de ejecución sobre el editor (solo en pantallas angostas) */
+.vivo { border-bottom: 2px solid var(--acento); background: var(--panel); max-height: 42vh; overflow: auto; padding: 4px 8px 6px; flex: none; box-shadow: 0 4px 10px rgb(0 0 0 / .12); }
+.vivo-barra { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.vivo-barra #vivo-res { flex: 1; min-width: 0; }
+.vivo-ctl { display: inline-flex; gap: 3px; }
+.vivo-ctl button { padding: 1px 9px; }
+.vivo-info { font-size: 12px; color: var(--suave); margin: 2px 0; }
+.vivo svg.memoria { margin-top: 2px; }
+#vivo-abrir[hidden] { display: none; }
+@media (min-width: 1001px) { .vivo, #vivo-abrir { display: none !important; } }

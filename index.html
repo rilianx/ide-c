@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IDE C · Estructuras de Datos</title>
 <link rel="stylesheet" href="vendor/codemirror/codemirror.css">
-<link rel="stylesheet" href="css/ide.css?v=202611181844">
+<link rel="stylesheet" href="css/ide.css?v=202611181900">
 <script src="vendor/codemirror/codemirror.js"></script>
 <script src="vendor/codemirror/clike.js"></script>
 <script src="vendor/codemirror/matchbrackets.js"></script>
@@ -20,7 +20,7 @@
   addEventListener('error', e => errorInicio(e.message || 'no se pudo cargar ' + (e.target && (e.target.src || e.target.href) || 'un archivo')), true);
   addEventListener('unhandledrejection', e => errorInicio(String(e.reason && e.reason.message || e.reason)));
 </script>
-<script type="module" src="js/main.js?v=202611181844"></script>
+<script type="module" src="js/main.js?v=202611181900"></script>
 </head>
 <body>
 <header>
@@ -55,7 +55,13 @@
         <button id="letra-mas" title="Letra más grande">A+</button>
         <button id="ajustar" title="Ajustar líneas largas al ancho (wrap)">↩</button>
         <button id="teclado" title="Teclado: si está apagado, tocar el editor solo mueve el cursor (para usar los comandos)">⌨</button>
+        <button id="vivo-abrir" title="Ver la ejecución">👁</button>
       </div>
+    </div>
+    <div id="vivo" class="vivo" hidden>
+      <div class="vivo-barra"><span id="vivo-res"></span><span class="vivo-ctl"><button id="vivo-atras" title="Paso anterior">◀</button><button id="vivo-sig" title="Paso siguiente">▶</button><button id="vivo-cerrar" title="Cerrar">✕</button></span></div>
+      <div id="vivo-info" class="vivo-info"></div>
+      <div id="vivo-cuerpo"></div>
     </div>
     <div id="editor" class="editor"></div>
     <div id="asistente" class="asistente"></div>
