@@ -261,3 +261,10 @@ svg.memoria .etiqueta.retorno { fill: #d9f2dd; stroke: #1a7f37; }
 .tabla-vars th { text-align: left; color: var(--suave); font-weight: 600; padding: 2px 10px 2px 0; }
 .tabla-vars td { padding: 2px 10px 2px 0; border-top: 1px solid var(--borde); }
 .tabla-vars code { font-family: var(--mono); background: color-mix(in srgb, #f5c400 22%, var(--panel)); padding: 0 5px; border-radius: 3px; }
+
+/* vista en vivo */
+.vis-cabecera select { flex: 1; min-width: 0; font: inherit; font-size: 13px; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--borde); background: var(--panel); color: var(--texto); }
+.vis-resultado { font-size: 14px; margin: 2px 0 4px; min-height: 1.4em; }
+.res-bien { color: #1a7f37; font-weight: 600; }
+.res-mal { color: var(--mal); font-weight: 600; }
+#vis-cuadros.desactualizado { opacity: .45; }
