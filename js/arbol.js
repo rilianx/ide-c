@@ -1,7 +1,7 @@
 // Modelo «árbol binario de búsqueda» (Lab 4): tests declarativos y dibujo estático de un TreeMap.
 // Cada nodo es una caja [clave / left | right] en la columna de su clave (de menor a mayor, fija durante
 // toda la ejecución) y en la fila de su profundidad; los que no cuelgan de root van abajo, aparte.
-import { svgEnteros } from './visual.js?v=202611191745';
+import { svgEnteros } from './visual.js?v=202611191758';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');
@@ -225,6 +225,8 @@ export function svgArbol(estado, nombre, opciones = {}) {
   const nulo = (x, y, w, h, marca = '') => s.push(`<line x1="${x + 4}" y1="${y + h - 3}" x2="${x + w - 4}" y2="${y + 3}" class="nulo ${marca}"/>`);
   const toque = (x, y, w, h, cands) => {
     cands = [...new Set(cands.filter(Boolean))];
+    while (cands[0] === '¦') cands.shift();
+    while (cands.at(-1) === '¦') cands.pop();
     if (cands.length) zonas.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" class="toque" data-expr="${esc(cands.join('|'))}"/>`);
   };
   const llega = (i, x, y, clase, marca = '') => {   // flecha desde (x, y) hasta arriba del nodo i
@@ -270,6 +272,8 @@ export function svgArbol(estado, nombre, opciones = {}) {
   if (ok) { agregar(A.root, `${nombre}->root`); agregar(A.current, `${nombre}->current`); }
   for (const [i, es] of [...nombresDe]) for (const e of [...es]) { agregar(ns[i]?.left, `${e}->left`); agregar(ns[i]?.right, `${e}->right`); agregar(ns[i]?.parent, `${e}->parent`); }
 
+  // las formas de nombrar a lo que apunta un puntero (las variables primero)
+  const alias = (i, expr) => { const xs = nombresDe.get(i) ?? []; return [...xs.filter(x => /^\w+$/.test(x)), expr, ...xs.filter(x => !/^\w+$/.test(x) && x !== expr)]; };
   // Los nodos
   ns.forEach((n, i) => {
     const { x, y } = pos.get(i), mk = marcas.nodos?.get(i) ?? '';
@@ -294,9 +298,10 @@ export function svgArbol(estado, nombre, opciones = {}) {
       s.push(`<path d="M${x + 6},${y} C${x + 6},${y - 26} ${p.x + NW / 2 + (p.x < x ? 14 : -14)},${p.y + NH + 24} ${p.x + NW / 2 + (p.x < x ? 14 : -14)},${p.y + NH + 1}" class="flecha parent${malo ? ' mal' : ''}" marker-end="url(#punta-${malo ? 'mal' : 'parent'})"/>`);
     } else if (malo) s.push(`<text x="${x}" y="${y - 4}" class="nota-svg mal-texto">parent = ${n.parent === null ? 'NULL' : '?'} ✗</text>`);
     const es = nombresDe.get(i) ?? [];
-    toque(x, y, NW, KH, [...es, ...es.map(e => `${e}->pair`), ...es.map(e => `${e}->pair->key`)]);   // el nodo (o su par, o su clave si el hueco pide eso)
-    toque(x, y + KH, NW / 2, PH, [...es.map(e => `${e}->left`), ...es]);
-    toque(x + NW / 2, y + KH, NW / 2, PH, [...es.map(e => `${e}->right`), ...es]);
+    // el nodo (todas sus formas); de respaldo, su par o su clave (si el hueco pide eso)
+    toque(x, y, NW, KH, [...es, '¦', ...es.map(e => `${e}->pair`), ...es.map(e => `${e}->pair->key`)]);
+    toque(x, y + KH, NW / 2, PH, [...(es.length ? alias(n.left, `${es[0]}->left`) : []), '¦', ...es]);
+    toque(x + NW / 2, y + KH, NW / 2, PH, [...(es.length ? alias(n.right, `${es[0]}->right`) : []), '¦', ...es]);
   });
   // etiquetas de variables bajo su nodo
   for (const [i, nombres] of porNodo) {
@@ -308,7 +313,7 @@ export function svgArbol(estado, nombre, opciones = {}) {
   }
   if (ok) {
     toque(XL, YM, CW, 16, [nombre]);
-    ['root', 'current'].forEach((c, k) => toque(XL, YC + k * FH, CW, FH, [`${nombre}->${c}`]));
+    ['root', 'current'].forEach((c, k) => toque(XL, YC + k * FH, CW, FH, alias(A[c], `${nombre}->${c}`)));
   }
   if (sueltas.length) s.push(`<text x="${XL}" y="${alto - 8 - (esp?.texto ? 20 : 0)}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
   if (esp?.texto) s.push(`<text x="${XL}" y="${alto - 8}" class="esperado">${esc(esp.texto)}</text>`);

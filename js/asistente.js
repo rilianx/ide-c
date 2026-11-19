@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611191745';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611191758';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -268,6 +268,19 @@ function nombreLogico(texto, extra = {}) {
   return null;
 }
 export const NOMBRES_SUGERIDOS = ['aux', 'actual', 'anterior', 'siguiente', 'nuevo', 'izq', 'der', 'padre', 'par', 'pos', 'i'];
+
+// Las expresiones de una parte del dibujo vienen en grupos separados por «¦»: primero las formas de nombrar
+// eso mismo (alias: aux, list->current…); después, las de respaldo. Se usa el primer grupo que tenga alguna
+// que sirva (con `sirve(texto)` → la pieza o expresión, o undefined).
+function primerGrupo(cands, sirve) {
+  const grupos = [[]];
+  for (const c of cands) if (c === '¦') grupos.push([]); else grupos.at(-1).push(c);
+  for (const g of grupos) {
+    const ok = [...new Map(g.map(sirve).filter(Boolean).map(x => [x.texto, x])).values()];
+    if (ok.length) return ok;
+  }
+  return [];
+}
 
 // ¿La línea es una de las plantillas? → {plantilla, textos de sus huecos}. Se compara con la
 // primera línea que arma la plantilla, sin importar los espacios.
@@ -545,10 +558,8 @@ export class Asistente {
       if (ctx.linea && !ctx.linea.texto.trim()) return this.tocarSinHueco(cands, elegida);
     }
     if (!this.armando || !this.piezasActuales?.length) return 'sin-hueco';
-    const ps = [...new Map(cands.map(c => this.piezasActuales.find(x => x.texto === c)).filter(Boolean).map(p => [p.texto, p])).values()];
-    if (!ps.length) return 'no-sirve';
-    const fin = x => /(->\s*\w+|\[[^\]]*\]|^\w+)$/.exec(x.texto)?.[1];   // solo las que terminan igual (->right)
-    const iguales = ps.filter(x => fin(x) === fin(ps[0]));
+    const iguales = primerGrupo(cands, c => this.piezasActuales.find(x => x.texto === c));   // los alias que sirven
+    if (!iguales.length) return 'no-sirve';
     if (iguales.length > 1 && !elegida) return { elegir: iguales.slice(0, 3).map(p => p.texto) };
     this.elegir(iguales[0]);
     return 'ok';
@@ -561,14 +572,16 @@ export class Asistente {
     const b = this.borrador, ctx = this.contexto(), cm = this.editor.cm;
     const varsAntes = ctx.vars.filter(v => !(b.tipo === 'var' && new RegExp(`\\b${v.nombre}\\s*=`).test(cm.getLine(b.linea))));
     const exprs = expresiones(varsAntes, ctx.est);
-    const posibles = [...new Map(cands.map(c => exprs.find(x => x.texto === c)).filter(Boolean).map(e => [e.texto, e])).values()];
+    const objetivo0 = b.tipo === 'var' ? b.primero : b.izq;
+    const calza0 = x => mismo(x, objetivo0) || (x.ptr && objetivo0.ptr && x.base === objetivo0.base);
+    // de preferencia el grupo que calza con lo primero (para asignar); si no, el primero que tenga algo
+    const posibles = primerGrupo(cands, c => { const x = exprs.find(y => y.texto === c); return x && calza0(x) && x.texto !== objetivo0.texto ? x : undefined; }).length
+      ? primerGrupo(cands, c => { const x = exprs.find(y => y.texto === c); return x && calza0(x) && x.texto !== objetivo0.texto ? x : undefined; })
+      : primerGrupo(cands, c => exprs.find(y => y.texto === c));
     if (!posibles.length) return 'no-sirve';
     const objetivo = b.tipo === 'var' ? b.primero : b.izq;   // con qué tiene que calzar para asignar
     const calza = x => mismo(x, objetivo) || (x.ptr && objetivo.ptr && x.base === objetivo.base);
-    const ultimo = x => /(->\s*\w+|\[[^\]]*\]|^\w+)$/.exec(x.texto)?.[1];   // el último tramo: ->left, [pos], aux
-    let opciones = posibles.filter(calza).filter(x => x.texto !== objetivo.texto);
-    if (!opciones.length) opciones = posibles;
-    opciones = opciones.filter(x => ultimo(x) === ultimo(opciones[0]));
+    const opciones = posibles;
     if (opciones.length > 1 && !elegida) return { elegir: opciones.slice(0, 3).map(e => e.texto) };   // varios alias: se escoge
     const e = opciones[0];
     const sangria = (cm.getLine(b.linea).match(/^\s*/) || [''])[0];
@@ -627,12 +640,8 @@ export class Asistente {
   tocarSinHueco(cands, elegida = false) {
     const ctx = this.contexto();
     if (ctx.fuera || !ctx.fn) return 'sin-hueco';
-    const posibles = [...new Map(cands.map(c => ctx.exprs.find(x => x.texto === c)).filter(Boolean).map(e => [e.texto, e])).values()];
-    if (!posibles.length) return 'no-sirve';
-    const mismos = posibles.filter(x => mismo(x, posibles[0]) && (/->/.test(x.texto) === /->/.test(posibles[0].texto) || x.texto.split('->').pop() === posibles[0].texto.split('->').pop() || !/->/.test(posibles[0].texto)));   // varias formas de lo mismo (aux, tree->root): se escoge
-    // varios alias de lo mismo (list->current, aux): se escoge cuál usar
-    const fin = x => /(->\s*\w+|\[[^\]]*\]|^\w+)$/.exec(x.texto)?.[1];
-    const alias = mismos.filter(x => x.texto === mismos[0].texto || (x.base === mismos[0].base && x.ptr === mismos[0].ptr && (fin(x) === fin(mismos[0]) || !/->|\[/.test(x.texto) || !/->|\[/.test(mismos[0].texto))));
+    const alias = primerGrupo(cands, c => ctx.exprs.find(x => x.texto === c));   // varias formas de lo mismo: se escoge cuál usar
+    if (!alias.length) return 'no-sirve';
     if (alias.length > 1 && !elegida) return { elegir: alias.slice(0, 3).map(e => e.texto) };
     const e = alias[0];
     this.insertar([this.declaracion(e, ctx.vars)]);

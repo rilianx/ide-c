@@ -2,7 +2,7 @@
 // (direccionamiento abierto): el HashMap con sus campos, el arreglo buckets con sus índices
 // y, debajo de cada casilla ocupada, el Pair [key | value]. Un par inválido (key NULL) va gris.
 
-import { svgEnteros } from './visual.js?v=202611191745';
+import { svgEnteros } from './visual.js?v=202611191758';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');
@@ -163,6 +163,8 @@ export function svgTabla(estado, nombre, opciones = {}) {
   const zonas = [];
   const toque = (x, y, w, h, cands) => {
     cands = [...new Set(cands.filter(Boolean))];
+    while (cands[0] === '¦') cands.shift();
+    while (cands.at(-1) === '¦') cands.pop();
     if (cands.length) zonas.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" class="toque" data-expr="${esc(cands.join('|'))}"/>`);
   };
   const conValor = v => vars.filter(x => 'valor' in x && x.valor === v && x.nombre !== 'return').map(x => x.nombre);
@@ -208,8 +210,8 @@ export function svgTabla(estado, nombre, opciones = {}) {
       : `<text x="${x + w / 2}" y="${y + 16}" class="clave${invalido ? ' nula' : ''}">${k == null ? 'NULL' : esc(k.length > 7 ? k.slice(0, 6) + '…' : k)}</text>`);
     s.push(`<text x="${x + w / 2}" y="${y + PH + 16}" class="valor">${p.valor === '?' ? '?' : p.valor === null ? 'NULL' : esc(p.valor)}</text>`);
     const base = [...apuntanA(i), ...(enTabla.has(i) ? casillaExprs(enTabla.get(i)) : [])];
-    toque(x, y, w, PH, [...base.map(c => `${c}->key`), ...base]);
-    toque(x, y + PH, w, PH, [...base.map(c => `${c}->value`), ...base]);
+    toque(x, y, w, PH, [...base.map(c => `${c}->key`), '¦', ...base]);
+    toque(x, y + PH, w, PH, [...base.map(c => `${c}->value`), '¦', ...base]);
     const ns = porPar.get(i);
     if (ns) {
       const cx = x + w / 2, ty = y + 2 * PH + 18, wt = Math.max(30, ns.join(', ').length * 8 + 12);

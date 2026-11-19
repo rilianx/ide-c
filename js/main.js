@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611191745';
-import { Runner } from './runner.js?v=202611191745';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191745';
-import { traducirMensaje } from './mensajes.js?v=202611191745';
-import { modeloDe } from './modelos.js?v=202611191745';
+import { Editor } from './editor.js?v=202611191758';
+import { Runner } from './runner.js?v=202611191758';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191758';
+import { traducirMensaje } from './mensajes.js?v=202611191758';
+import { modeloDe } from './modelos.js?v=202611191758';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191745';
-import { Asistente, NOMBRES_SUGERIDOS } from './asistente.js?v=202611191745';
-import { activarDivisores } from './divisores.js?v=202611191745';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191745';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191758';
+import { Asistente, NOMBRES_SUGERIDOS } from './asistente.js?v=202611191758';
+import { activarDivisores } from './divisores.js?v=202611191758';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191758';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -95,11 +95,11 @@ rotulo.className = 'rotulo-dibujo'; rotulo.hidden = true;
 document.body.append(rotulo);
 const tramosDe = x => x.match(/^[A-Za-z_]\w*|->\s*[A-Za-z_]\w*|\[[^\[\]]*\]/g) ?? [x];
 function mostrarCamino(t, x, y) {
-  const cands = t.dataset.expr.split('|');   // (como en el dibujo; el camino se busca en él)
+  const todas = t.dataset.expr.split('|'), corte = todas.indexOf('¦');
+  const cands = corte < 0 ? todas : todas.slice(0, corte);   // los alias (no las de respaldo); como en el dibujo
   const estructura = vis?.cuadros[vis.i]?.dentro ? vis.cuadros[vis.i].fn?.lista : E.ej.visual.variable;
   // la principal: la que parte de la estructura (L->…), si hay; y otras del mismo tipo de final (aux->data)
-  const fin = tramosDe(cands[0]).at(-1);
-  const delMismo = cands.filter(c => tramosDe(c).at(-1) === fin);
+  const delMismo = cands;
   const principal = delMismo.find(c => c.startsWith(estructura + '->') || c === estructura) ?? delMismo[0];
   const otras = delMismo.filter(c => c !== principal).slice(0, 2);
   const editando = asistente.armando?.editando >= 0;   // con una parte de la línea elegida: tocar la reemplaza
@@ -558,6 +558,7 @@ async function dibujarVisual(soloSiCambio = false, posicion = 'auto') {
       vis.sinEscribir = !delPaso.length;
       vis.lugares = MOD().lugares(cuadros.map(c => c.estado));   // cada nodo en un lugar fijo durante toda la ejecución
       if (posicion === 'auto') vis.i = pasoAuto();
+      if (posicion === 'cursor') vis.i = pasoCursor() ?? pasoAuto();
       if (irAEntrada) {   // deslizar en el celular: la línea de definición de la función (su entrada)
         irAEntrada = false;
         const fnsPaso = E.ej.pasos[k].funciones;
@@ -590,6 +591,24 @@ function pasoAuto() {
   const re = new RegExp(`\\b(${fnsPaso.join('|')})\\s*\\(`);
   const t = C.findIndex(c => !c.dentro && re.test(vis.lineasTest[c.linea - 1] ?? ''));
   return t >= 0 ? t : C.length - 1;
+}
+
+// Después de editar: el momento justo después de la línea donde está el cursor (en la primera llamada),
+// para ver ahí lo recién escrito (una variable declarada dentro de un ciclo ya no existe al final).
+function pasoCursor() {
+  if (editor.actual !== E.ej.alumno) return null;
+  const linea = editor.cm.getCursor().line + 1, C = vis.cuadros, fnsPaso = E.ej.pasos[vis.paso].funciones;
+  if (C.at(-1)?.error) return null;
+  const j0 = C.findIndex(c => c.dentro && fnsPaso.includes(c.fn?.nombre));
+  if (j0 < 0) return null;
+  const fn = C[j0].fn;
+  if (linea <= fn.cabecera || linea > fn.fin) return null;
+  // la primera vez que se pasa por esa línea o, si no se alcanza, por una posterior; si no, por una anterior
+  const enLlamada = C.map((c, k) => [c, k]).filter(([c]) => c.dentro && !c.condicion && !c.error && c.fn === fn && c.llamada === C[j0].llamada);
+  const sig = enLlamada.filter(([c]) => c.linea >= linea).sort((a, b) => a[0].linea - b[0].linea || a[1] - b[1])[0];
+  if (sig) return sig[1];
+  const ant = enLlamada.filter(([c]) => c.linea < linea);
+  return ant.length ? ant.at(-1)[1] : null;
 }
 
 // ---------- Tocar una línea de la función: la ejecución vuelve (o va) a ese momento ----------
@@ -737,7 +756,7 @@ async function ejecutarEnVivo() {
     estadosVivo = escrita ? { paso: k, estados: res.map(r => r.estado) } : null;
   } else { resumenVivo = ''; estadosVivo = null; }
   pintarTestsVivo();
-  dibujarVisual(false, 'auto');
+  dibujarVisual(false, 'cursor');
 }
 
 // Resultado de la comparación con lo esperado: lo que retornó (verde/rojo) y qué no coincide.

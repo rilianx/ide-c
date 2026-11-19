@@ -237,6 +237,8 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   // Zonas para tocar: cada parte del dibujo con las expresiones que la nombran (para elegir piezas del asistente)
   const toque = (x, y, w, h, cands) => {
     cands = [...new Set(cands.filter(Boolean))];
+    while (cands[0] === '¦') cands.shift();
+    while (cands.at(-1) === '¦') cands.pop();
     if (cands.length) s.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" class="toque" data-expr="${esc(cands.join('|'))}"/>`);
   };
   const nombresDe = new Map();   // nodo → expresiones que llegan a él (variables, campos de la List y un paso más)
@@ -244,15 +246,18 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   for (const v of vars) if (Number.isInteger(v.ptr) && v.nombre !== 'return') agregar(v.ptr, v.nombre);
   if (!L.sinLista) for (const c of ['head', 'tail', 'current']) agregar(L[c], `${nombre}->${c}`);
   for (const [i, es] of [...nombresDe]) for (const e of [...es]) { agregar(nodos[i]?.next, `${e}->next`); agregar(nodos[i]?.prev, `${e}->prev`); }
+  // las formas de nombrar a lo que apunta un puntero (las variables primero): tocar el puntero ofrece todas.
+  // «¦» separa las de respaldo (el nodo de donde sale), que sirven solo si ninguna de antes calza.
+  const alias = (i, expr) => { const ns = nombresDe.get(i) ?? []; return [...ns.filter(x => /^\w+$/.test(x)), expr, ...ns.filter(x => !/^\w+$/.test(x) && x !== expr)]; };
   if (!L.sinLista) {
     toque(X0 - 56, YL, 54, AL + 6, [nombre]);
-    ['head', 'tail', 'current'].forEach((c, k) => toque(X0 + k * CL, YL, CL, AL + 6, [`${nombre}->${c}`]));
+    ['head', 'tail', 'current'].forEach((c, k) => toque(X0 + k * CL, YL, CL, AL + 6, alias(L[c], `${nombre}->${c}`)));
   }
   nodos.forEach((n, i) => {
     const { x, y } = pos.get(i), es = nombresDe.get(i) ?? [];
-    toque(x, y, CP, AL, [...es.map(e => `${e}->prev`), ...es]);
-    toque(x + CP, y, CD, AL, [...es.map(e => `${e}->data`), ...es]);
-    toque(x + CP + CD, y, CN, AL, [...es.map(e => `${e}->next`), ...es]);
+    toque(x, y, CP, AL, [...(es.length ? alias(n.prev, `${es[0]}->prev`) : []), '¦', ...es]);
+    toque(x + CP, y, CD, AL, [...es.map(e => `${e}->data`), '¦', ...es]);
+    toque(x + CP + CD, y, CN, AL, [...(es.length ? alias(n.next, `${es[0]}->next`) : []), '¦', ...es]);
     if (!opciones.sinDirecciones) toque(x, y + AL + 3, AN, 15, es);   // la dirección (0x1be0) también es el nodo
   });
   for (const [i, ns] of porNodo) {
