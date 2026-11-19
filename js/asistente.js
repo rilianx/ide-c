@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190144';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190149';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -174,8 +174,10 @@ function reconocer(linea, todas) {
 export class Asistente {
   // caja: elemento del panel; editor: Editor; obtener(): {ej, archivos}; alAgregar(): avisa que cambió list.c
   // alCambiarFuncion(nombre): el cursor entró a otra función (para elegir su paso)
-  constructor(caja, editor, obtener, { alCambiarFuncion } = {}) {
+  // alPiezas(textos): las piezas que se pueden elegir ahora (para marcarlas en el dibujo); [] si no hay hueco
+  constructor(caja, editor, obtener, { alCambiarFuncion, alPiezas } = {}) {
     this.alCambiarFuncion = alCambiarFuncion;
+    this.alPiezas = alPiezas;
     this.caja = caja;
     this.editor = editor;
     this.obtener = obtener;
@@ -291,6 +293,8 @@ export class Asistente {
       html += `<div class="chips">${this.plantillasActuales.map((p, i) => `<button class="chip ${p.clase ?? ''}" data-p="${i}">${esc(p.etiqueta)}</button>`).join('')}</div>`;
     }
     this.caja.innerHTML = html;
+    if (!this.armando) this.piezasActuales = null;
+    this.alPiezas?.(this.piezasActuales?.map(p => p.texto) ?? []);
 
     this.caja.querySelectorAll('.cat').forEach(b => b.onclick = () => { this.cat = b.dataset.cat; this.dibujar(); });
     this.caja.querySelectorAll('[data-p]').forEach(b => b.onclick = () => this.empezar(this.plantillasActuales[+b.dataset.p]));
@@ -351,6 +355,16 @@ export class Asistente {
     }
     this.insertar(plantilla.armar(valores), plantilla.dentro, plantilla.sinoDe);
     this.dibujar();
+  }
+
+  // Se tocó una parte del dibujo: cands son las expresiones que la nombran (de la más precisa a la menos).
+  // Si hay un hueco esperando y alguna sirve, se elige. → 'ok' | 'sin-hueco' | 'no-sirve'
+  tocar(cands) {
+    if (!this.armando || !this.piezasActuales?.length) return 'sin-hueco';
+    const p = cands.map(c => this.piezasActuales.find(x => x.texto === c)).find(Boolean);
+    if (!p) return 'no-sirve';
+    this.elegir(p);
+    return 'ok';
   }
 
   // Abre la línea actual como plantilla con sus partes ya puestas; se toca la que se quiere cambiar.

@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611190144';
-import { Runner } from './runner.js?v=202611190144';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611190144';
-import { traducirMensaje } from './mensajes.js?v=202611190144';
-import { modeloDe } from './modelos.js?v=202611190144';
+import { Editor } from './editor.js?v=202611190149';
+import { Runner } from './runner.js?v=202611190149';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611190149';
+import { traducirMensaje } from './mensajes.js?v=202611190149';
+import { modeloDe } from './modelos.js?v=202611190149';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611190144';
-import { Asistente } from './asistente.js?v=202611190144';
-import { activarDivisores } from './divisores.js?v=202611190144';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611190144';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611190149';
+import { Asistente } from './asistente.js?v=202611190149';
+import { activarDivisores } from './divisores.js?v=202611190149';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611190149';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -41,6 +41,26 @@ const editor = new Editor($('editor'), $('pestanas'), {
 const asistente = new Asistente($('asistente'), editor, () => ({ ej: E.ej, archivos, ocultos: E.ocultos }), {
   // al entrar a una función con el cursor, se elige su paso
   alCambiarFuncion: f => { const k = E.ej.pasos.findIndex(p => p.funciones.includes(f)); if (k >= 0 && k !== paso) elegirPaso(k, false); else dibujarPasos(); },
+  alPiezas: textos => { elegibles = new Set(textos); marcarElegibles(); },
+});
+
+// ---------- Tocar el dibujo para elegir una pieza ----------
+// Cada parte del dibujo (.toque) trae las expresiones que la nombran (map->capacity, aux->next…). Si el
+// asistente espera una pieza, las partes que sirven se marcan, y tocar una la elige.
+let elegibles = new Set();
+function marcarElegibles() {
+  for (const t of document.querySelectorAll('#vivo-zoom .toque, #vis-cuadros .toque'))
+    t.classList.toggle('elegible', t.dataset.expr.split('|').some(c => elegibles.has(c)));
+}
+for (const id of ['vivo-zoom', 'vis-cuadros']) new MutationObserver(marcarElegibles).observe(document.getElementById(id), { childList: true });
+document.addEventListener('click', e => {
+  const t = e.target.closest?.('#vivo-zoom .toque, #vis-cuadros .toque');
+  if (!t) return;
+  const cands = t.dataset.expr.split('|');
+  const r = asistente.tocar(cands);
+  t.classList.add('tocado'); setTimeout(() => t.classList.remove('tocado'), 400);
+  if (r === 'sin-hueco') estado(`Esto es ${cands[0]}. Para usarlo, elige un comando abajo y después toca el dibujo.`);
+  else if (r === 'no-sirve') estado(`${cands[0]} no sirve en este hueco (es de otro tipo).`, true);
 });
 activarDivisores(document.getElementById('codigo'), () => { editor.refrescar(); setTimeout(remarcarEjecucion, 0); });   // (después: vis aún no existe al iniciar)
 
@@ -500,6 +520,17 @@ function mostrarVivo() { $('vivo').hidden = vivoCerrado || (!vis && !vivoMensaje
 let vivoMensaje = false;   // la ventana tiene algo que decir aunque no haya ejecución (no compila)
 // al cerrar la ventana, el editor deja de marcar la línea de la ejecución (queda el marcado de bloques)
 $('vivo-cerrar').onclick = () => { vivoCerrado = true; mostrarVivo(); editor.marcarEjecucion(null, null); };
+// ◀ ▶ en la ventana: un paso de la ejecución (también dentro de los ciclos), y el editor va a esa línea
+const pasoVivo = d => {
+  if (!vis || vivoMensaje) return;
+  const j = Math.max(0, Math.min(vis.cuadros.length - 1, vis.i + d));
+  if (j === vis.i) return;
+  vis.i = j; mostrarPaso();
+  const c = vis.cuadros[j];
+  if (c?.dentro) editor.cm.scrollIntoView({ line: c.linea - 1, ch: 0 }, 60);
+};
+$('vivo-atras').onclick = () => pasoVivo(-1);
+$('vivo-sig').onclick = () => pasoVivo(1);
 $('vivo-abrir').onclick = () => { vivoCerrado = false; mostrarVivo(); if (vis) mostrarPaso(); };
 // Gestos en el dibujo: dos dedos acercan/alejan, doble toque vuelve al tamaño normal y deslizar
 // hacia el lado cambia de test (y deja el cursor en la definición de la función: la entrada).
@@ -541,7 +572,7 @@ $('vivo-abrir').onclick = () => { vivoCerrado = false; mostrarVivo(); if (vis) m
     if (!inicio || dedos.size) return;
     const dx = e.clientX - inicio.x, dy = e.clientY - inicio.y;
     if (zoom === 1 && Math.abs(dx) > 50 && Math.abs(dx) > 2 * Math.abs(dy)) cambiarTest(dx < 0 ? 1 : -1);
-    else if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {   // toque: doble toque = tamaño normal
+    else if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && !e.target.closest?.('.toque.elegible')) {   // toque: doble toque = tamaño normal
       if (Date.now() - ultimoToque < 350) { zoom = zoom > 1 ? 1 : 2; aplicarZoom({ x: e.clientX, y: e.clientY }); }
       ultimoToque = Date.now();
     }

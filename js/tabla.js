@@ -2,7 +2,7 @@
 // (direccionamiento abierto): el HashMap con sus campos, el arreglo buckets con sus índices
 // y, debajo de cada casilla ocupada, el Pair [key | value]. Un par inválido (key NULL) va gris.
 
-import { svgEnteros } from './visual.js?v=202611190144';
+import { svgEnteros } from './visual.js?v=202611190149';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');
@@ -144,6 +144,15 @@ export function svgTabla(estado, nombre, opciones = {}) {
   const flecha = (d, clase = 'next', marca = '') => s.push(`<path d="${d}" class="flecha ${clase} ${marca}" marker-end="url(#punta-${marca || clase})"/>`);
   const nulo = (x, y, w, h, marca = '') => s.push(`<line x1="${x + 4}" y1="${y + h - 4}" x2="${x + w - 4}" y2="${y + 4}" class="nulo ${marca}"/>`);
   const celdaXY = i => ({ x: X0 + (i % POR) * CW, y: YA + Math.floor(i / POR) * FILA + 16 + ARRIBA });
+  // Zonas para tocar: cada parte del dibujo con las expresiones que la nombran (para elegir piezas del asistente)
+  const zonas = [];
+  const toque = (x, y, w, h, cands) => {
+    cands = [...new Set(cands.filter(Boolean))];
+    if (cands.length) zonas.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" class="toque" data-expr="${esc(cands.join('|'))}"/>`);
+  };
+  const conValor = v => vars.filter(x => 'valor' in x && x.valor === v && x.nombre !== 'return').map(x => x.nombre);
+  const apuntanA = p => vars.filter(x => x.ptr === p && x.nombre !== 'return').map(x => x.nombre);
+  const casillaExprs = i => conValor(i).map(ix => `${nombre}->buckets[${ix}]`);
 
   // El HashMap
   if (!M || typeof M !== 'object') s.push(`<text x="${X0}" y="${YM + 24}" class="nota-svg">${esc(nombre)} ${M === '?' ? 'es basura' : 'aún no existe (NULL)'}</text>`);
@@ -169,6 +178,8 @@ export function svgTabla(estado, nombre, opciones = {}) {
       }
     });
     if (!opciones.sinDirecciones && M.dir) s.push(`<text x="${X0 + 4 * CL + 6}" y="${YM + AH - 2}" class="dir" text-anchor="start">${hex(M.dir)}</text>`);
+    toque(X0 - 56, YM, 54, AH, [nombre]);
+    ['buckets', 'size', 'capacity', 'current'].forEach((campo, k) => toque(X0 + k * CL, YM, CL, AH, [`${nombre}->${campo}`]));
   }
 
   // Un Pair [key / value] en (x, y)
@@ -180,12 +191,16 @@ export function svgTabla(estado, nombre, opciones = {}) {
     s.push(k === '?' ? `<text x="${x + w / 2}" y="${y + 16}" class="basura">?</text>`
       : `<text x="${x + w / 2}" y="${y + 16}" class="clave${invalido ? ' nula' : ''}">${k == null ? 'NULL' : esc(k.length > 7 ? k.slice(0, 6) + '…' : k)}</text>`);
     s.push(`<text x="${x + w / 2}" y="${y + PH + 16}" class="valor">${p.valor === '?' ? '?' : p.valor === null ? 'NULL' : esc(p.valor)}</text>`);
+    const base = [...apuntanA(i), ...(enTabla.has(i) ? casillaExprs(enTabla.get(i)) : [])];
+    toque(x, y, w, PH, [...base.map(c => `${c}->key`), ...base]);
+    toque(x, y + PH, w, PH, [...base.map(c => `${c}->value`), ...base]);
     const ns = porPar.get(i);
     if (ns) {
       const cx = x + w / 2, ty = y + 2 * PH + 18, wt = Math.max(30, ns.join(', ').length * 8 + 12);
       s.push(`<path d="M${cx},${ty - 4} L${cx},${y + 2 * PH + 4}" class="flecha var" marker-end="url(#punta-var)"/>`);
       s.push(`<rect x="${cx - wt / 2}" y="${ty - 4}" width="${wt}" height="20" rx="3" class="etiqueta${ns.some(n => n.startsWith('↩')) ? ' retorno' : ''}"/>`);
       s.push(`<text x="${cx}" y="${ty + 10}" class="var">${esc(ns.join(', '))}</text>`);
+      toque(cx - wt / 2, ty - 4, wt, 20, apuntanA(i));
     }
   };
 
@@ -201,7 +216,9 @@ export function svgTabla(estado, nombre, opciones = {}) {
       const t = ns.join(', '), wt = Math.max(26, t.length * 8 + 10), ty = y - 16 - 22;
       s.push(`<rect x="${x + CW / 2 - wt / 2}" y="${ty}" width="${wt}" height="18" rx="3" class="etiqueta"/>`);
       s.push(`<text x="${x + CW / 2}" y="${ty + 13}" class="var">${esc(t)}</text>`);
+      toque(x + CW / 2 - wt / 2, ty, wt, 18, ns);
     }
+    toque(x, y, CW, CH, [...(Number.isInteger(p) ? apuntanA(p) : []), ...casillaExprs(i)]);
     if (p === null) nulo(x + 16, y + 6, CW - 32, CH - 12, mk);
     else if (p === '?') s.push(`<text x="${x + CW / 2}" y="${y + CH / 2 + 6}" class="basura">?</text>`);
     else {
@@ -225,7 +242,7 @@ export function svgTabla(estado, nombre, opciones = {}) {
     fuera.forEach((i, k) => par(i, X0 + k * (CW + 10), yFuera + 8, ' fuera'));
   }
   if (sueltas.length) s.push(`<text x="${X0}" y="${alto - 8}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
-  s.push(enteros.svg);
+  s.push(enteros.svg, ...zonas);
 
   const marca = c => `<marker id="punta-${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta ${c}"/></marker>`;
   return `<svg class="memoria tabla-hash" viewBox="0 0 ${ancho} ${alto}" style="max-width:${Math.round(ancho * (opciones.escala ?? 0.62))}px" role="img" aria-label="Memoria de la tabla hash">

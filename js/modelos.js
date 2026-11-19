@@ -1,8 +1,8 @@
 // Lo que cambia según la estructura del ejercicio (ej.modelo): cómo se dibuja la memoria,
 // cómo se arma el estado de la entrada y la salida esperada de un test, cómo se compara y
 // cómo se explica un error. «lista» (Lab 2) es el modelo por omisión; «tabla» es la tabla hash (Lab 3).
-import { svgLista, estadoDeLista, compararConEsperado, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611190144';
-import { svgTabla, estadoEntradaTabla, estadoSalidaTabla, compararTabla, nombresFallasTabla, diagnosticarTabla, htmlVariablesTabla, vaciaTabla } from './tabla.js?v=202611190144';
+import { svgLista, estadoDeLista, compararConEsperado, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611190149';
+import { svgTabla, estadoEntradaTabla, estadoSalidaTabla, compararTabla, nombresFallasTabla, diagnosticarTabla, htmlVariablesTabla, vaciaTabla } from './tabla.js?v=202611190149';
 
 const LISTA = {
   svg: svgLista,

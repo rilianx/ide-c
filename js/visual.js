@@ -21,6 +21,7 @@ export function svgEnteros(vars, x, y) {
     out.push(`<rect x="${cx}" y="${y}" width="${w}" height="40" rx="3" class="etiqueta${v.nombre === 'return' ? ' retorno' : ''}"/>`);
     out.push(`<text x="${cx + w / 2}" y="${y + 13}" class="campo">${esc(nombre)}</text>`);
     out.push(`<text x="${cx + w / 2}" y="${y + 33}" class="dato num">${esc(val)}</text>`);
+    if (v.nombre !== 'return') out.push(`<rect x="${cx}" y="${y}" width="${w}" height="40" class="toque" data-expr="${esc(v.nombre)}"/>`);
     cx += w + 8;
   }
   return { svg: out.join(''), ancho: cx - x };
@@ -229,6 +230,30 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   if (sueltas.length) s.push(`<text x="${X0}" y="${alto - 10}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
   s.push(enteros.svg);
   if (!nodos.length) s.push(`<text x="${X0}" y="${YL + AL + 30}" class="nota-svg">(sin nodos)</text>`);
+  // Zonas para tocar: cada parte del dibujo con las expresiones que la nombran (para elegir piezas del asistente)
+  const toque = (x, y, w, h, cands) => {
+    cands = [...new Set(cands.filter(Boolean))];
+    if (cands.length) s.push(`<rect x="${x}" y="${y}" width="${w}" height="${h}" class="toque" data-expr="${esc(cands.join('|'))}"/>`);
+  };
+  const nombresDe = new Map();   // nodo → expresiones que llegan a él (variables, campos de la List y un paso más)
+  const agregar = (i, e) => { if (!Number.isInteger(i)) return; if (!nombresDe.has(i)) nombresDe.set(i, []); nombresDe.get(i).push(e); };
+  for (const v of vars) if (Number.isInteger(v.ptr) && v.nombre !== 'return') agregar(v.ptr, v.nombre);
+  if (!L.sinLista) for (const c of ['head', 'tail', 'current']) agregar(L[c], `${nombre}->${c}`);
+  for (const [i, es] of [...nombresDe]) for (const e of [...es]) { agregar(nodos[i]?.next, `${e}->next`); agregar(nodos[i]?.prev, `${e}->prev`); }
+  if (!L.sinLista) {
+    toque(X0 - 56, YL, 54, AL + 6, [nombre]);
+    ['head', 'tail', 'current'].forEach((c, k) => toque(X0 + k * CL, YL, CL, AL + 6, [`${nombre}->${c}`]));
+  }
+  nodos.forEach((n, i) => {
+    const { x, y } = pos.get(i), es = nombresDe.get(i) ?? [];
+    toque(x, y, CP, AL, [...es.map(e => `${e}->prev`), ...es]);
+    toque(x + CP, y, CD, AL, [...es.map(e => `${e}->data`), ...es]);
+    toque(x + CP + CD, y, CN, AL, [...es.map(e => `${e}->next`), ...es]);
+  });
+  for (const [i, ns] of porNodo) {
+    const { x, y } = pos.get(i), cx = x + CP + CD / 2, ty = y + AL + 32, w = Math.max(30, ns.join(', ').length * 8 + 12);
+    toque(cx - w / 2, ty - 4, w, 20, ns.filter(n => !n.startsWith('↩')));
+  }
 
   const marca = c => `<marker id="punta-${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta ${c}"/></marker>`;
   return `<svg class="memoria" viewBox="0 0 ${ancho} ${alto}" style="max-width:${Math.round(ancho * (opciones.escala ?? 0.62))}px" role="img" aria-label="Memoria de la lista">
