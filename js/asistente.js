@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611191706';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611191708';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -551,8 +551,7 @@ export class Asistente {
     let opciones = posibles.filter(calza).filter(x => x.texto !== objetivo.texto);
     if (!opciones.length) opciones = posibles;
     opciones = opciones.filter(x => ultimo(x) === ultimo(opciones[0]));
-    if (opciones.length > 1 && !elegida) return { elegir: opciones.slice(0, 3).map(e => e.texto) };
-    const e = opciones[0];
+    const e = opciones[0];   // sin preguntar: es un borrador (se cambia con otro toque o editando la parte)
     const sangria = (cm.getLine(b.linea).match(/^\s*/) || [''])[0];
     const poner = texto => { cm.replaceRange(sangria + texto, { line: b.linea, ch: 0 }, { line: b.linea, ch: cm.getLine(b.linea).length }); cm.setCursor({ line: b.linea, ch: cm.getLine(b.linea).length }); };
     this.armando = null;
@@ -570,9 +569,11 @@ export class Asistente {
   // La declaración de una variable con la expresión e: «TreeNode * left = aux->left;» (con un nombre libre).
   declaracion(e, vars) {
     const usados = new Set(vars.map(v => v.nombre));
-    const ultimo = /([A-Za-z_]\w*)$/.exec(e.texto)?.[1];   // el último campo: aux->left → left; map->buckets[pos] → par
-    const base = { key: 'clave', value: 'valor', data: 'dato', pair: 'par' }[ultimo] ?? (ultimo && !/\]$/.test(e.texto) ? ultimo
-      : { void: 'dato', char: 'clave', long: 'n', int: 'n', Pair: 'par' }[e.base] ?? this.nombres?.[e.base]?.[0] ?? 'aux');
+    // un puntero a una estructura (un nodo, un par…): «aux» (es el que después se va moviendo); un texto, un dato
+    // o un entero, según el campo (key → clave, value → valor, data → dato, el nombre del campo)
+    const ultimo = /([A-Za-z_]\w*)$/.exec(e.texto)?.[1];
+    const base = e.ptr && !['void', 'char'].includes(e.base) ? 'aux'
+      : { key: 'clave', value: 'valor', data: 'dato' }[ultimo] ?? (ultimo && !/\]$/.test(e.texto) ? ultimo : { void: 'dato', char: 'clave', long: 'n', int: 'n' }[e.base] ?? 'aux');
     let nombre = base, k = 2;
     while (usados.has(nombre)) nombre = `${base}${k++}`;
     const decl = e.ptr ? `${e.base} ${'*'.repeat(e.ptr)} ${nombre}` : `${e.base === 'int' || e.base === 'long' ? 'long' : e.base} ${nombre}`;
@@ -587,8 +588,8 @@ export class Asistente {
     const posibles = [...new Map(cands.map(c => ctx.exprs.find(x => x.texto === c)).filter(Boolean).map(e => [e.texto, e])).values()];
     if (!posibles.length) return 'no-sirve';
     const mismos = posibles.filter(x => mismo(x, posibles[0]) && (/->/.test(x.texto) === /->/.test(posibles[0].texto) || x.texto.split('->').pop() === posibles[0].texto.split('->').pop() || !/->/.test(posibles[0].texto)));   // varias formas de lo mismo (aux, tree->root): se escoge
-    if (mismos.length > 1 && !elegida) return { elegir: mismos.slice(0, 3).map(e => e.texto) };
-    const e = mismos[0];
+    // sin preguntar (es un borrador): de preferencia un camino (tree->root → «root»), no copiar una variable (aux2 = aux)
+    const e = mismos.find(x => /->|\[/.test(x.texto)) ?? mismos[0];
     this.insertar([this.declaracion(e, ctx.vars)]);
     this.borrador = { tipo: 'var', linea: this.editor.cm.getCursor().line, primero: e };
     this.dibujar();
