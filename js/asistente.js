@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611191250';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611191258';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -240,6 +240,16 @@ function htmlPiezas(piezas, prefijo = [], yaVistas = new Set()) {
   return h + sueltas.join('');
 }
 
+// El grupo de un comando, para mostrar menos opciones: if / while / for / else en Control; el tipo en Variables;
+// la función en Memoria y Llamar; los demás, solos.
+function grupoDe(p) {
+  const e = p.etiqueta;
+  if (p.cat === 'Control') return /^\}?\s*else/.test(e) ? 'else' : (/^(if|while|for)\b/.exec(e)?.[1] ?? e);
+  if (p.cat === 'Variables') return /^(.*?)\s*(?<![A-Za-z0-9])_(?![A-Za-z0-9])/.exec(e)?.[1] || e;
+  if (p.cat === 'Memoria' || p.cat === 'Llamar') return /\b(malloc|calloc|free|[A-Za-z_]\w*)\s*\(/.exec(e.replace(/sizeof\s*\(/g, ''))?.[1] ?? e;
+  return e;
+}
+
 // ¿La línea es una de las plantillas? → {plantilla, textos de sus huecos}. Se compara con la
 // primera línea que arma la plantilla, sin importar los espacios.
 function reconocer(linea, todas) {
@@ -413,14 +423,26 @@ export class Asistente {
       if (!cats.includes(this.cat)) this.cat = cats[0];
       html += `<div class="fila cats">${cats.map(c => `<button class="cat${c === this.cat ? ' activa' : ''}" data-cat="${c}">${c}</button>`).join('')}</div>`;
       this.plantillasActuales = todas.filter(p => p.cat === this.cat);
-      html += `<div class="chips">${this.plantillasActuales.map((p, i) => `<button class="chip ${p.clase ?? ''}" data-p="${i}">${esc(p.etiqueta)}</button>`).join('')}</div>`;
+      // menos opciones a la vista: los comandos se agrupan (if …, while …, for …; TreeNode * …; malloc …) y al tocar
+      // un grupo se abren sus alternativas; un grupo de uno se muestra directo
+      const grupos = new Map();
+      this.plantillasActuales.forEach((p, i) => { const g = grupoDe(p); if (!grupos.has(g)) grupos.set(g, []); grupos.get(g).push(i); });
+      if (!grupos.has(this.grupoAbierto)) this.grupoAbierto = null;
+      const chipP = i => `<button class="chip ${this.plantillasActuales[i].clase ?? ''}" data-p="${i}">${esc(this.plantillasActuales[i].etiqueta)}</button>`;
+      html += '<div class="chips">' + (this.grupoAbierto != null
+        ? '<button class="chip nav" data-grupo="">‹</button>' + grupos.get(this.grupoAbierto).map(chipP).join('')
+        : [...grupos].map(([g, is]) => is.length === 1 ? chipP(is[0]) : `<button class="chip nav grupo" data-grupo="${esc(g)}">${esc(g)} …</button>`).join('')) + '</div>';
+      if (this.cat === 'Variables') html += '<p class="nota">O toca el dibujo: se crea una variable con lo que toques.</p>';
+      if (this.cat === 'Asignar') html += '<p class="nota">O toca el dibujo: lo primero que toques va a la derecha del =, lo segundo a la izquierda.</p>';
       }
     }
     this.caja.innerHTML = html;
     if (!this.armando) this.piezasActuales = null;
-    this.alPiezas?.(this.piezasActuales?.map(p => p.texto) ?? []);
+    const sinHueco = !this.armando && (this.cat === 'Variables' || this.cat === 'Asignar') && !ctx.fuera && ctx.fn;
+    this.alPiezas?.(sinHueco ? ctx.exprs.map(e => e.texto) : this.piezasActuales?.map(p => p.texto) ?? []);
 
-    this.caja.querySelectorAll('.cat').forEach(b => b.onclick = () => { this.cat = b.dataset.cat; this.dibujar(); });
+    this.caja.querySelectorAll('.cat').forEach(b => b.onclick = () => { this.cat = b.dataset.cat; this.grupoAbierto = null; this.dibujar(); });
+    this.caja.querySelectorAll('[data-grupo]').forEach(b => b.onclick = () => { this.grupoAbierto = b.dataset.grupo || null; this.dibujar(); });
     this.caja.querySelectorAll('[data-p]').forEach(b => b.onclick = () => this.empezar(this.plantillasActuales[+b.dataset.p]));
     this.caja.querySelectorAll('.pieza').forEach(b => b.onclick = () => this.elegir(this.piezasActuales[+b.dataset.i]));
     this.caja.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => {
@@ -494,10 +516,37 @@ export class Asistente {
   // Se tocó una parte del dibujo: cands son las expresiones que la nombran (de la más precisa a la menos).
   // Si hay un hueco esperando y alguna sirve, se elige. → 'ok' | 'sin-hueco' | 'no-sirve'
   tocar(cands) {
+    if (!this.armando && (this.cat === 'Variables' || this.cat === 'Asignar')) return this.tocarSinHueco(cands);
     if (!this.armando || !this.piezasActuales?.length) return 'sin-hueco';
     const p = cands.map(c => this.piezasActuales.find(x => x.texto === c)).find(Boolean);
     if (!p) return 'no-sirve';
     this.elegir(p);
+    return 'ok';
+  }
+
+  // Tocar el dibujo con la categoría Variables (se declara una variable con eso) o Asignar (eso queda a la
+  // derecha del =; el siguiente toque, a la izquierda).
+  tocarSinHueco(cands) {
+    const ctx = this.contexto();
+    if (ctx.fuera || !ctx.fn) return 'sin-hueco';
+    const e = cands.map(c => ctx.exprs.find(x => x.texto === c)).find(Boolean);
+    if (!e) return 'no-sirve';
+    const tipo = T(e.base, e.ptr);
+    if (this.cat === 'Variables') {
+      const usados = new Set(ctx.vars.map(v => v.nombre));
+      const ultimo = /([A-Za-z_]\w*)$/.exec(e.texto)?.[1];   // el último campo: aux->left → left; map->buckets[pos] → par
+      const base = { key: 'clave', value: 'valor', data: 'dato', pair: 'par' }[ultimo] ?? (ultimo && !/\]$/.test(e.texto) ? ultimo
+        : { void: 'dato', char: 'clave', long: 'n', int: 'n', Pair: 'par' }[e.base] ?? this.nombres?.[e.base]?.[0] ?? 'aux');
+      let nombre = base, k = 2;
+      while (usados.has(nombre)) nombre = `${base}${k++}`;
+      const decl = e.ptr ? `${e.base} ${'*'.repeat(e.ptr)} ${nombre}` : `${e.base === 'int' || e.base === 'long' ? 'long' : e.base} ${nombre}`;
+      this.insertar([`${decl} = ${e.texto};`]);
+      this.dibujar();
+      return 'ok';
+    }
+    // Asignar: lo tocado va a la derecha; falta lo de la izquierda (del mismo tipo)
+    this.armando = { plantilla: { cat: 'Asignar', etiqueta: `_ = ${e.texto};`, huecos: [{ k: 'lval', tipo: () => tipo }], armar: v => [`${v[0].texto} = ${e.texto};`] }, valores: [] };
+    this.dibujar();
     return 'ok';
   }
 
