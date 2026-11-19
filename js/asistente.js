@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190258';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190259';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -188,14 +188,14 @@ function condicionDe(linea) {
   for (; k < m.length && p; k++) { if (m[k] === '(') p++; else if (m[k] === ')') p--; }
   if (p) return null;
   const fin = k - 1;   // la posición del «)» que cierra
-  const partes = [], ops = [];
+  const partes = [], ops = [], rangos = [];
   let a = ini; p = 0;
   for (let j = ini; j < fin; j++) {
     if (m[j] === '(') p++; else if (m[j] === ')') p--;
-    else if (!p && (m.startsWith('&&', j) || m.startsWith('||', j))) { partes.push(linea.slice(a, j).trim()); ops.push(m.slice(j, j + 2)); a = j + 2; j++; }
+    else if (!p && (m.startsWith('&&', j) || m.startsWith('||', j))) { partes.push(linea.slice(a, j).trim()); rangos.push([a, j]); ops.push(m.slice(j, j + 2)); a = j + 2; j++; }
   }
-  partes.push(linea.slice(a, fin).trim());
-  return { ini, fin, partes, ops };
+  partes.push(linea.slice(a, fin).trim()); rangos.push([a, fin]);
+  return { ini, fin, partes, ops, rangos };
 }
 
 // Piezas por niveles: una expresión se parte en tramos (map | ->buckets | [i] | ->key). Se muestran las del
@@ -358,6 +358,15 @@ export class Asistente {
         html += `<div class="fila linea-actual"><span class="nota">${que}:</span>`
           + (this.armando?.editando != null && n === 1 ? '' : n === 1 ? (ctx.linea.texto.trim() ? `<code>${esc(ctx.linea.texto.trim())}</code>` : '<span class="nota">(vacía)</span>') : `<code>${esc(this.editor.cm.getLine(sel.ini).trim())} …</code>`)
           + '<span class="grupo">'
+          // si se eligió una parte de una condición (if/while con && o ||): ◀ ▶ mueven esa componente y ✕ la quita
+          + (() => {
+            const a = this.armando, k = this.componenteElegida();
+            if (k == null) return '';
+            const n = condicionDe(this.editor.cm.getLine(a.linea)).partes.length;
+            return `<button data-tmov="${k}" data-dir="-1" title="Mover esta parte de la condición a la izquierda (se revisa antes)"${k ? '' : ' disabled'}>◀</button>`
+              + `<button data-tmov="${k}" data-dir="1" title="Mover esta parte de la condición a la derecha"${k < n - 1 ? '' : ' disabled'}>▶</button>`
+              + `<button data-tdel="${k}" title="Quitar esta parte de la condición">✕</button>`;
+          })()
           + '<button class="mover" data-dir="-1" title="Mover arriba (si choca con un bloque, entra en él; al borde de su bloque, sale)">↑</button>'
           + '<button class="mover" data-dir="1" title="Mover abajo">↓</button>'
           + '<button class="ampliar" data-mas="1" title="Agregar a la selección la instrucción (o bloque) siguiente">＋</button>'
@@ -366,15 +375,10 @@ export class Asistente {
           + '<button class="deshacer" title="Deshacer (Ctrl+Z)">↶</button></span></div>';
         // en un if/while: agregar a la condición con && o ||
         if (/^(\}\s*else\s+)?(if|while)\s*\(/.test(ctx.linea.texto.trim()) && n === 1 || /^(\}\s*else\s+)?(if|while)\s*\(/.test(this.editor.cm.getLine(sel.ini).trim()) && sel.ini === ctx.linea.n) {
-          // a la derecha («… && _ != NULL») o a la izquierda («_ != NULL && …»: se revisa primero)
-          this.condiciones = ['der', 'izq'].flatMap(lado => [['&&', '!='], ['&&', '=='], ['||', '!='], ['||', '==']].map(([o, c]) => [o, c, lado]));
+          // se agrega a la derecha («… && _ != NULL»); para que se revise antes, se elige y se mueve con ◀
+          this.condiciones = ['der'].flatMap(lado => [['&&', '!='], ['&&', '=='], ['||', '!='], ['||', '==']].map(([o, c]) => [o, c, lado]));
           html += `<div class="fila condicion"><span class="nota">Agregar a la condición:</span>${this.condiciones.map(([o, c, lado], i) =>
             `<button class="chip" data-cond="${i}">${lado === 'der' ? `… ${o} _ ${c} NULL` : `_ ${c} NULL ${o} …`}</button>`).join('')}</div>`;
-          // las partes de la condición: moverlas a la izquierda o a la derecha, o quitarlas
-          const cond = condicionDe(this.editor.cm.getLine(sel.ini));
-          if (cond && cond.partes.length > 1) html += `<div class="fila partes-cond"><span class="nota">Partes:</span>${cond.partes.map((t, i) =>
-            `<span class="parte-cond"><button data-tmov="${i}" data-dir="-1" title="Mover a la izquierda (se revisa antes)"${i ? '' : ' disabled'}>◀</button><code>${esc(t)}</code><button data-tmov="${i}" data-dir="1" title="Mover a la derecha"${i < cond.partes.length - 1 ? '' : ' disabled'}>▶</button><button data-tdel="${i}" title="Quitar esta parte">✕</button></span>`
-            + (i < cond.ops.length ? `<b class="op-cond">${esc(cond.ops[i])}</b>` : '')).join('')}</div>`;
         }
       } else this.lineaActual = null;
       if (this.armando) {
@@ -512,12 +516,23 @@ export class Asistente {
     if (!auto) this.dibujar();
   }
 
+  // Si se está editando una parte de una condición con varias componentes, cuál es (índice) o null.
+  componenteElegida() {
+    const a = this.armando;
+    if (!a || a.editando == null || a.editando < 0 || !a.posiciones) return null;
+    const c = condicionDe(this.editor.cm.getLine(a.linea));
+    if (!c || c.partes.length < 2) return null;
+    const p = a.posiciones[a.editando];
+    const k = c.rangos.findIndex(([x, y]) => p.ini >= x && p.fin <= y);
+    return k < 0 ? null : k;
+  }
+
   // Mueve la parte i de la condición a la izquierda (dir -1) o a la derecha (1), o la quita (0).
   // Los && / || se quedan en su lugar; al quitar, se va con el que la une a la anterior (o a la siguiente).
   cambiarCondicion(i, dir) {
     const s = this.seleccion();
-    if (!s) return;
-    const cm = this.editor.cm, n = s.ini, L = cm.getLine(n), c = condicionDe(L);
+    if (!s && !this.armando) return;
+    const cm = this.editor.cm, n = this.armando?.linea ?? s.ini, L = cm.getLine(n), c = condicionDe(L);
     if (!c) return;
     const partes = [...c.partes], ops = [...c.ops];
     if (dir) {
@@ -531,6 +546,8 @@ export class Asistente {
     }
     const texto = partes.map((t, k) => t + (k < ops.length ? ` ${ops[k]} ` : '')).join('');
     cm.replaceRange(texto, { line: n, ch: c.ini }, { line: n, ch: c.fin });
+    this.armando = null;
+    this.componentePendiente = dir ? i + dir : null;   // al volver a editar la línea, queda elegida la que se movió
     cm.setCursor({ line: n, ch: cm.getLine(n).length });
     this.dibujar();
   }
@@ -550,7 +567,15 @@ export class Asistente {
     trozos.push(t.slice(a));
     const plantilla = { etiqueta: trozos.map(x => x.replace(/(?<![A-Za-z0-9])_(?![A-Za-z0-9])/g, ' ')).join('_'), huecos,
       armar: v => [trozos.map((x, i) => x + (i < v.length ? v[i].texto : '')).join('')] };
-    this.armando = { plantilla, valores: partes.map(p => ({ texto: p.texto })), linea: l.n, editando: auto ? -1 : 0, ctxLinea: { ...ctx, exprs: l.exprs } };
+    const posiciones = partes.map(p => ({ ini: p.ini + sangria.length, fin: p.fin + sangria.length }));
+    let editando = auto ? -1 : 0;
+    if (this.componentePendiente != null) {   // recién se movió una componente de la condición: queda elegida
+      const c = condicionDe(l.texto), r = c?.rangos[this.componentePendiente];
+      const k = r ? posiciones.findIndex(p => p.ini >= r[0] && p.fin <= r[1]) : -1;
+      if (k >= 0) editando = k;
+      this.componentePendiente = null;
+    }
+    this.armando = { plantilla, valores: partes.map(p => ({ texto: p.texto })), linea: l.n, editando, posiciones, ctxLinea: { ...ctx, exprs: l.exprs } };
     if (!auto) this.dibujar();
   }
 
