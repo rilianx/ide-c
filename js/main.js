@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611191655';
-import { Runner } from './runner.js?v=202611191655';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191655';
-import { traducirMensaje } from './mensajes.js?v=202611191655';
-import { modeloDe } from './modelos.js?v=202611191655';
+import { Editor } from './editor.js?v=202611191704';
+import { Runner } from './runner.js?v=202611191704';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191704';
+import { traducirMensaje } from './mensajes.js?v=202611191704';
+import { modeloDe } from './modelos.js?v=202611191704';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191655';
-import { Asistente } from './asistente.js?v=202611191655';
-import { activarDivisores } from './divisores.js?v=202611191655';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191655';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191704';
+import { Asistente } from './asistente.js?v=202611191704';
+import { activarDivisores } from './divisores.js?v=202611191704';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191704';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -102,7 +102,9 @@ function mostrarCamino(t, x, y) {
   rotulo.style.top = `${y + 16}px`;
   // el camino: cada prefijo de la expresión (L, L->current, L->current->data)
   const svg = t.closest('svg');
-  svg.querySelectorAll('.toque.camino').forEach(z => z.classList.remove('camino'));
+  svg.querySelectorAll('.toque.camino, .toque.apuntado').forEach(z => z.classList.remove('camino', 'apuntado'));
+  // si es un puntero, lo apuntado (el nodo completo): las otras zonas que también se nombran así
+  for (const z of svg.querySelectorAll('rect.toque')) { const cs = z.dataset.expr.split('|'); if (z !== t && cs.length > 1 && cs.includes(principal)) z.classList.add('apuntado'); }
   const ts = tramosDe(principal);
   for (let k = 1; k <= ts.length; k++) {
     const pre = ts.slice(0, k).join('');
@@ -111,7 +113,7 @@ function mostrarCamino(t, x, y) {
 }
 function ocultarCamino() {
   rotulo.hidden = true;
-  document.querySelectorAll('.toque.camino').forEach(z => z.classList.remove('camino'));
+  document.querySelectorAll('.toque.camino, .toque.apuntado').forEach(z => z.classList.remove('camino', 'apuntado'));
 }
 document.addEventListener('pointerover', e => {
   if (e.pointerType !== 'mouse') return;
@@ -119,11 +121,25 @@ document.addEventListener('pointerover', e => {
   if (t) mostrarCamino(t, e.clientX, e.clientY); else if (!rotulo.hidden) ocultarCamino();
 });
 let tRotulo = null;
+// Menú para escoger cuando varias formas de nombrar lo tocado sirven (aux, tree->root…)
+const menuDibujo = document.createElement('div');
+menuDibujo.className = 'menu-dibujo'; menuDibujo.hidden = true;
+document.body.append(menuDibujo);
+function escoger(opciones, x, y, alElegir) {
+  menuDibujo.innerHTML = '<div class="nota">¿Cuál?</div>' + opciones.map((o, k) => `<button data-k="${k}"><code>${esc(o)}</code></button>`).join('');
+  menuDibujo.hidden = false;
+  menuDibujo.style.left = `${Math.max(8, Math.min(x - 20, innerWidth - menuDibujo.offsetWidth - 8))}px`;
+  menuDibujo.style.top = `${Math.min(y + 12, innerHeight - menuDibujo.offsetHeight - 8)}px`;
+  menuDibujo.querySelectorAll('[data-k]').forEach(b => b.onclick = ev => { ev.stopPropagation(); menuDibujo.hidden = true; alElegir(opciones[+b.dataset.k]); });
+}
 document.addEventListener('click', e => {
+  if (!menuDibujo.hidden && !e.target.closest('.menu-dibujo')) menuDibujo.hidden = true;
   const t = e.target.closest?.('#vivo-zoom .toque, #vis-cuadros .toque');
   if (!t) return;
+  ocultarCamino();
   const cands = t.dataset.expr.split('|');
   const r = asistente.tocar(cands);
+  if (r?.elegir) { escoger(r.elegir, e.clientX, e.clientY, texto => asistente.tocar([texto], true)); return; }
   t.classList.add('tocado'); setTimeout(() => t.classList.remove('tocado'), 400);
   if (r === 'sin-hueco') {   // sin comando abierto: se muestra cómo se llega ahí (un rato)
     mostrarCamino(t, e.clientX, e.clientY);

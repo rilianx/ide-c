@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611191655';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611191704';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -434,13 +434,12 @@ export class Asistente {
       html += '<div class="chips">' + (this.grupoAbierto != null
         ? '<button class="chip nav" data-grupo="">‹</button>' + grupos.get(this.grupoAbierto).map(chipP).join('')
         : [...grupos].map(([g, is]) => is.length === 1 ? chipP(is[0]) : `<button class="chip nav grupo" data-grupo="${esc(g)}">${esc(g)} …</button>`).join('')) + '</div>';
-      if (this.cat === 'Variables') html += '<p class="nota">O toca el dibujo: se crea una variable con lo que toques.</p>';
-      if (this.cat === 'Asignar') html += '<p class="nota">O toca el dibujo: lo primero que toques va a la derecha del =, lo segundo a la izquierda.</p>';
+      if (ctx.linea && !ctx.linea.texto.trim()) html += '<p class="nota">O toca el dibujo: lo primero crea una variable con eso; lo segundo, la asignación «primero = segundo».</p>';
       }
     }
     this.caja.innerHTML = html;
     if (!this.armando) this.piezasActuales = null;
-    const sinHueco = !this.armando && (this.cat === 'Variables' || this.cat === 'Asignar') && !ctx.fuera && ctx.fn;
+    const sinHueco = !this.armando && !ctx.fuera && ctx.fn && ctx.linea && !ctx.linea.texto.trim();
     this.alPiezas?.(sinHueco ? ctx.exprs.map(e => e.texto) : this.piezasActuales?.map(p => p.texto) ?? []);
 
     this.caja.querySelectorAll('.cat').forEach(b => b.onclick = () => { this.cat = b.dataset.cat; this.grupoAbierto = null; this.dibujar(); });
@@ -517,44 +516,51 @@ export class Asistente {
 
   // Se tocó una parte del dibujo: cands son las expresiones que la nombran (de la más precisa a la menos).
   // Si hay un hueco esperando y alguna sirve, se elige. → 'ok' | 'sin-hueco' | 'no-sirve'
-  tocar(cands) {
-    if (this.borrador && this.editor.cm.getCursor().line === this.borrador.linea) return this.cambiarBorrador(cands);
-    if (!this.armando && (this.cat === 'Variables' || this.cat === 'Asignar')) return this.tocarSinHueco(cands);
+  // Se tocó una parte del dibujo: cands son las expresiones que la nombran (de la más precisa a la menos).
+  // → 'ok' | 'sin-hueco' | 'no-sirve' | {elegir: [textos]} (varias formas sirven: hay que escoger una;
+  // después se llama de nuevo con [la escogida] y elegida = true)
+  tocar(cands, elegida = false) {
+    const cm = this.editor.cm;
+    if (this.borrador && cm.getCursor().line === this.borrador.linea) return this.cambiarBorrador(cands, elegida);
+    if (!this.armando) {   // en una línea vacía: se declara una variable con lo tocado
+      const ctx = this.contexto();
+      if (ctx.linea && !ctx.linea.texto.trim()) return this.tocarSinHueco(cands, elegida);
+    }
     if (!this.armando || !this.piezasActuales?.length) return 'sin-hueco';
-    const p = cands.map(c => this.piezasActuales.find(x => x.texto === c)).find(Boolean);
-    if (!p) return 'no-sirve';
-    const der = this.armando.plantilla.desdeDibujo?.der;
-    this.elegir(p);
-    if (der) { this.borrador = { tipo: 'asig', linea: this.editor.cm.getCursor().line, der, izq: p }; this.dibujar(); }
+    const ps = [...new Map(cands.map(c => this.piezasActuales.find(x => x.texto === c)).filter(Boolean).map(p => [p.texto, p])).values()];
+    if (!ps.length) return 'no-sirve';
+    if (ps.length > 1 && !elegida) return { elegir: ps.slice(0, 3).map(p => p.texto) };
+    this.elegir(ps[0]);
     return 'ok';
   }
 
-  // La línea que se armó tocando el dibujo queda como borrador hasta ↵ (o hasta ir a otra línea): otro toque la
-  // cambia. Variable: se declara con lo nuevo. Asignación: si lo nuevo es del tipo de lo de la derecha, cambia la
-  // izquierda; si no, pasa a ser la derecha (y la izquierda se vuelve a elegir).
-  cambiarBorrador(cands) {
+  // La línea que se armó tocando el dibujo queda como borrador hasta ↵ (o hasta ir a otra línea):
+  //   1er toque: «Tipo aux = a;»   2º toque (b, del mismo tipo): «a = b;»   otro toque (c): «a = c;»
+  //   un toque de otro tipo: se declara una variable nueva con eso.
+  cambiarBorrador(cands, elegida = false) {
     const b = this.borrador, ctx = this.contexto(), cm = this.editor.cm;
     const varsAntes = ctx.vars.filter(v => !(b.tipo === 'var' && new RegExp(`\\b${v.nombre}\\s*=`).test(cm.getLine(b.linea))));
-    const exprs = b.tipo === 'var' ? expresiones(varsAntes, ctx.est) : ctx.exprs;
-    const posibles = cands.map(c => exprs.find(x => x.texto === c)).filter(Boolean);
-    // en una asignación, de preferencia lo que calza con el tipo de la derecha (cambia la izquierda)
-    const e = (b.tipo === 'asig' && posibles.find(x => mismo(x, b.der))) || posibles[0];
-    if (!e) return 'no-sirve';
+    const exprs = expresiones(varsAntes, ctx.est);
+    const posibles = [...new Map(cands.map(c => exprs.find(x => x.texto === c)).filter(Boolean).map(e => [e.texto, e])).values()];
+    if (!posibles.length) return 'no-sirve';
+    const objetivo = b.tipo === 'var' ? b.primero : b.izq;   // con qué tiene que calzar para asignar
+    const calza = x => mismo(x, objetivo) || (x.ptr && objetivo.ptr && x.base === objetivo.base);
+    const ultimo = x => /(->\s*\w+|\[[^\]]*\]|^\w+)$/.exec(x.texto)?.[1];   // el último tramo: ->left, [pos], aux
+    let opciones = posibles.filter(calza).filter(x => x.texto !== objetivo.texto);
+    if (!opciones.length) opciones = posibles;
+    opciones = opciones.filter(x => ultimo(x) === ultimo(opciones[0]));
+    if (opciones.length > 1 && !elegida) return { elegir: opciones.slice(0, 3).map(e => e.texto) };
+    const e = opciones[0];
     const sangria = (cm.getLine(b.linea).match(/^\s*/) || [''])[0];
     const poner = texto => { cm.replaceRange(sangria + texto, { line: b.linea, ch: 0 }, { line: b.linea, ch: cm.getLine(b.linea).length }); cm.setCursor({ line: b.linea, ch: cm.getLine(b.linea).length }); };
     this.armando = null;
-    if (b.tipo === 'var') {
+    if (calza(e) && e.texto !== objetivo.texto) {   // asignación: lo primero = lo nuevo
+      this.borrador = { tipo: 'asig', linea: b.linea, izq: objetivo, der: e };
+      poner(`${objetivo.texto} = ${e.texto};`);
+    } else {   // otro tipo: una variable nueva con eso
+      this.borrador = { tipo: 'var', linea: b.linea, primero: e };
       poner(this.declaracion(e, varsAntes));
-    } else if (mismo(e, b.der) || (e.ptr && b.der.ptr && e.base === b.der.base)) {
-      b.izq = e;
-      poner(`${e.texto} = ${b.der.texto};`);
-    } else {   // otro tipo: es la nueva derecha; falta la izquierda
-      this.borrador = null;
-      cm.replaceRange('', { line: b.linea, ch: sangria.length }, { line: b.linea, ch: cm.getLine(b.linea).length });
-      this.cat = 'Asignar';
-      return this.tocarSinHueco(cands);
     }
-    this.borrador = b;
     this.dibujar();
     return 'ok';
   }
@@ -571,22 +577,18 @@ export class Asistente {
     return `${decl} = ${e.texto};`;
   }
 
-  // Tocar el dibujo con la categoría Variables (se declara una variable con eso) o Asignar (eso queda a la
-  // derecha del =; el siguiente toque, a la izquierda).
-  tocarSinHueco(cands) {
+  // Tocar el dibujo en una línea vacía: se declara una variable con eso («TreeNode * left = aux->left;»), como
+  // borrador (el siguiente toque la puede volver una asignación).
+  tocarSinHueco(cands, elegida = false) {
     const ctx = this.contexto();
     if (ctx.fuera || !ctx.fn) return 'sin-hueco';
-    const e = cands.map(c => ctx.exprs.find(x => x.texto === c)).find(Boolean);
-    if (!e) return 'no-sirve';
-    const tipo = T(e.base, e.ptr);
-    if (this.cat === 'Variables') {
-      this.insertar([this.declaracion(e, ctx.vars)]);
-      this.borrador = { tipo: 'var', linea: this.editor.cm.getCursor().line };
-      this.dibujar();
-      return 'ok';
-    }
-    // Asignar: lo tocado va a la derecha; falta lo de la izquierda (del mismo tipo)
-    this.armando = { plantilla: { cat: 'Asignar', desdeDibujo: { der: e }, etiqueta: `_ = ${e.texto};`, huecos: [{ k: 'lval', tipo: () => tipo }], armar: v => [`${v[0].texto} = ${e.texto};`] }, valores: [] };
+    const posibles = [...new Map(cands.map(c => ctx.exprs.find(x => x.texto === c)).filter(Boolean).map(e => [e.texto, e])).values()];
+    if (!posibles.length) return 'no-sirve';
+    const mismos = posibles.filter(x => mismo(x, posibles[0]) && (/->/.test(x.texto) === /->/.test(posibles[0].texto) || x.texto.split('->').pop() === posibles[0].texto.split('->').pop() || !/->/.test(posibles[0].texto)));   // varias formas de lo mismo (aux, tree->root): se escoge
+    if (mismos.length > 1 && !elegida) return { elegir: mismos.slice(0, 3).map(e => e.texto) };
+    const e = mismos[0];
+    this.insertar([this.declaracion(e, ctx.vars)]);
+    this.borrador = { tipo: 'var', linea: this.editor.cm.getCursor().line, primero: e };
     this.dibujar();
     return 'ok';
   }

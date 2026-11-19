@@ -1,7 +1,7 @@
 // Modelo «árbol binario de búsqueda» (Lab 4): tests declarativos y dibujo estático de un TreeMap.
 // Cada nodo es una caja [clave / left | right] en la columna de su clave (de menor a mayor, fija durante
 // toda la ejecución) y en la fila de su profundidad; los que no cuelgan de root van abajo, aparte.
-import { svgEnteros } from './visual.js?v=202611191655';
+import { svgEnteros } from './visual.js?v=202611191704';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');

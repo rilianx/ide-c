@@ -459,3 +459,8 @@ svg.memoria path.toque.linea.camino { stroke: color-mix(in srgb, #d4730f 35%, tr
 .rotulo-dibujo div { line-height: 1.5; }
 .rotulo-dibujo .pista { color: #9fd3a8; font-size: 12px; }
 .vivo .vivo-fila { align-items: flex-start; } .vivo .vivo-fila > .llamada-vivo, .vivo .vivo-fila > .flecha-vivo { margin-top: 12px; }
+.menu-dibujo { position: fixed; z-index: 45; background: var(--panel); border: 1px solid var(--borde); border-radius: 8px; box-shadow: 0 4px 16px rgb(0 0 0 / .2); padding: 4px; display: flex; flex-direction: column; gap: 3px; }
+.menu-dibujo .nota { font-size: 12px; padding: 0 4px; }
+.menu-dibujo button { text-align: left; padding: 5px 10px; }
+.menu-dibujo code { font-family: var(--mono); }
+svg.memoria .toque.apuntado { fill: color-mix(in srgb, #2f6fd6 18%, transparent); stroke: #2f6fd6; stroke-width: 1.4; }
