@@ -415,11 +415,11 @@ svg.memoria .clave-arbol { font-size: 17px; }
   .vivo .vivo-fila { flex: 1; min-width: 0; }
   .vivo .vivo-fila > svg.memoria { flex: 1; width: 100%; height: calc(33dvh - 46px); max-width: none !important; max-height: none; }
 }
-/* Celular: el espacio que queda (después de las pestañas) se reparte 3 : 4 : 3 entre la ventana, el código y el asistente */
+/* Celular: el espacio que queda (después de las pestañas) se reparte 3 : 5 : 2 entre la ventana, el código y el asistente */
 @media (max-width: 1000px) {
   .vivo:not([hidden]) { height: auto; flex: 3 1 0; min-height: 0; }
-  .centro > .editor { flex: 4 1 0; }
-  .asistente { height: auto; flex: 3 1 0; min-height: 0; }
+  .centro > .editor { flex: 5 1 0; }
+  .asistente { height: auto; flex: 2 1 0; min-height: 0; }
   .vivo .vivo-zoom, .vivo .vivo-fila { height: 100%; }
   .vivo .vivo-fila > svg.memoria { height: 100%; }
 }
