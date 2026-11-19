@@ -1,10 +1,10 @@
 // Lo que cambia según la estructura del ejercicio (ej.modelo): cómo se dibuja la memoria,
 // cómo se arma el estado de la entrada y la salida esperada de un test, cómo se compara y
 // cómo se explica un error. «lista» (Lab 2) es el modelo por omisión; «tabla» es la tabla hash (Lab 3).
-import { svgLista, esperadoLista, estadoDeLista, compararConEsperado, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611190259';
-import { svgTabla, estadoEntradaTabla, estadoSalidaTabla, textoEsperadoTabla, esperadoTabla, compararTabla, nombresFallasTabla, diagnosticarTabla, htmlVariablesTabla, vaciaTabla } from './tabla.js?v=202611190259';
+import { svgLista, esperadoLista, estadoDeLista, compararConEsperado, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611191225';
+import { svgTabla, estadoEntradaTabla, estadoSalidaTabla, textoEsperadoTabla, esperadoTabla, compararTabla, nombresFallasTabla, diagnosticarTabla, htmlVariablesTabla, vaciaTabla } from './tabla.js?v=202611191225';
 
-import { svgArbol, estadoEntradaArbol, estadoSalidaArbol, textoEsperadoArbol, esperadoArbol, compararArbol, nombresFallasArbol, lugaresArbol, diagnosticarArbol, htmlVariablesArbol, vacioArbol } from './arbol.js?v=202611190259';
+import { palabraDe, svgArbol, estadoEntradaArbol, estadoSalidaArbol, textoEsperadoArbol, esperadoArbol, compararArbol, nombresFallasArbol, lugaresArbol, diagnosticarArbol, htmlVariablesArbol, vacioArbol } from './arbol.js?v=202611191225';
 
 const esc = x => String(x ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const LISTA = {
@@ -52,6 +52,25 @@ const ARBOL = {
   vacio: vacioArbol,
   opcionesMini: {},
 };
+// Las entradas de la llamada (key = 7010, data = 7, x → nodo) se agregan como variables al estado de entrada.
+function conEntradas(M) {
+  const base = M.estadoEntrada;
+  M.estadoEntrada = t => {
+    const e = base(t);
+    if (!e) return e;
+    const [f, k] = t.llamadas?.[0] ?? [];
+    const vs = (t.entradas ?? []).map(v => {
+      if (!v.ruta) return { ...v };
+      let i = e.arbol?.root;   // un nodo del árbol: se sigue la ruta (root->left…)
+      for (const c of v.ruta.split('->').slice(1)) i = Number.isInteger(i) ? e.nodos[i]?.[c] : null;
+      return { nombre: v.nombre, ptr: Number.isInteger(i) ? i : null };
+    });
+    if (M === ARBOL && f === 'insertTreeMap') vs.push({ nombre: 'value', texto: { t: palabraDe(k) } });   // la palabra (implícita en el test)
+    return { ...e, vars: [...(e.vars ?? []), ...vs] };
+  };
+}
+conEntradas(LISTA); conEntradas(TABLA); conEntradas(ARBOL);
+
 // El dibujo de un estado con lo que se espera al final anotado encima (sin un segundo dibujo).
 const anotado = M => (estado, salida, nombre, opciones = {}) => {
   const esp = M.esperado(estado, salida);

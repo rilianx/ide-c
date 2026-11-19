@@ -16,7 +16,7 @@ export function svgEnteros(vars, x, y) {
   const out = [];
   let cx = x;
   for (const v of vs) {
-    const nombre = v.nombre === 'return' ? '↩ retorna' : v.nombre, val = valor(v);
+    const nombre = v.nombre === 'return' ? '↩ retorna' : 'dato' in v ? `*${v.nombre}` : v.nombre, val = valor(v);   // void *: el valor al que apunta
     const w = Math.max(40, nombre.length * 7 + 14, val.length * 10 + 14);
     out.push(`<rect x="${cx}" y="${y}" width="${w}" height="40" rx="3" class="etiqueta${v.nombre === 'return' ? ' retorno' : ''}"/>`);
     out.push(`<text x="${cx + w / 2}" y="${y + 13}" class="campo">${esc(nombre)}</text>`);

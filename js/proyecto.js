@@ -1,8 +1,8 @@
 // Lógica pura del proyecto (sin DOM): qué funciones escribió el estudiante,
 // cómo se arma el programa que se compila y cómo se comparan las salidas.
 // Se puede importar desde node para probarla.
-import { generarTestArbol, describirTestArbol } from './arbol.js?v=202611190259';
-import { generarTestTabla, describirTestTabla } from './tabla.js?v=202611190259';
+import { generarTestArbol, describirTestArbol } from './arbol.js?v=202611191225';
+import { generarTestTabla, describirTestTabla } from './tabla.js?v=202611191225';
 
 // Tipo de un campo de struct en ej.estructuras: «Node» (puntero a Node, forma corta), «Pair **»,
 // «long», «char *»… → {base, ptr}.
@@ -500,12 +500,45 @@ export function generarTest(t, retornos, variable = 'L') {
   return { codigo: lineas.join('\n'), esperado: esperado.join('\n') };
 }
 
+// Parámetros de cada función del .h (prototipos y definiciones): Map nombre → [{nombre, base, ptr}].
+export function parametrosDelH(h) {
+  const m = new Map();
+  const t = sinComentarios(h ?? '');
+  for (const r of t.matchAll(/(?:^|[;}\n])\s*[A-Za-z_][\w \t*]*?[\s*]([A-Za-z_]\w*)\s*\(((?:[^;{()]|\([^;{()]*\))*)\)\s*[;{]/g)) {
+    if (m.has(r[1])) continue;
+    const ps = !r[2].trim() || r[2].trim() === 'void' ? [] : r[2].split(/,(?![^()]*\))/).map(x => {
+      const fp = /\(\s*\*\s*([A-Za-z_]\w*)\s*\)/.exec(x);
+      if (fp) return { nombre: fp[1], base: 'funcion', ptr: 0 };
+      const q = /^(.*?)([A-Za-z_]\w*)\s*$/.exec(x.trim());
+      return q ? { nombre: q[2], base: q[1].replace(/\b(const|struct|unsigned|signed)\b|\*/g, '').trim(), ptr: (q[1].match(/\*/g) || []).length } : null;
+    }).filter(Boolean);
+    m.set(r[1], ps);
+  }
+  return m;
+}
+
+// Las entradas de la llamada de un test, como variables para dibujar (key = 7010, key = "gato", data = 7, x → nodo):
+// los argumentos de la primera llamada con el nombre de su parámetro (sin el de la estructura: tree, map, list).
+export function entradasDe(t, params, tipoEstructura) {
+  const [f, ...args] = t.llamadas?.[0] ?? [];
+  const ps = (params.get(f) ?? []).filter(p => !(p.base === tipoEstructura && p.ptr === 1));
+  return ps.map((p, i) => {
+    const a = args[i];
+    if (a === undefined) return null;
+    if (typeof a === 'string' && /^root\b/.test(a)) return { nombre: p.nombre, ruta: a };   // un nodo del árbol: minimum(tree->root->left)
+    if ((p.base === 'char' && p.ptr === 1) || typeof a === 'string') return { nombre: p.nombre, texto: { t: String(a) } };
+    if (p.ptr === 0) return { nombre: p.nombre, valor: a };
+    return { nombre: p.nombre, dato: a };   // void *: el valor al que apunta
+  }).filter(Boolean);
+}
+
 // Genera el código y la salida esperada de los tests declarativos del ejercicio.
 export function prepararTests(ej, archivos) {
   const h = Object.entries(archivos).find(([n]) => n.endsWith('.h'))?.[1];
   const retornos = retornosDelH(h);
   const gen = ej.modelo === 'tabla' ? generarTestTabla : ej.modelo === 'arbol' ? generarTestArbol : generarTest;
-  for (const p of ej.pasos) for (const t of p.tests) if (t.llamadas) Object.assign(t, gen(t, retornos, ej.visual?.variable ?? 'L'), { modelo: ej.modelo ?? 'lista', variable: ej.visual?.variable ?? 'L' });
+  const params = parametrosDelH(h);
+  for (const p of ej.pasos) for (const t of p.tests) if (t.llamadas) Object.assign(t, gen(t, retornos, ej.visual?.variable ?? 'L'), { modelo: ej.modelo ?? 'lista', variable: ej.visual?.variable ?? 'L', entradas: entradasDe(t, params, ej.visual?.tipo) });
 }
 
 // Descripción corta de un test declarativo (para mostrarlo en vez del código).
