@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190223';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190225';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -289,8 +289,10 @@ export class Asistente {
         const que = n === 1 ? `Línea ${sel.ini + 1}` : `Líneas ${sel.ini + 1}–${sel.fin + 1}`;
         html += `<div class="fila linea-actual"><span class="nota">${que}:</span>`
           + (n === 1 ? (ctx.linea.texto.trim() ? `<code>${esc(ctx.linea.texto.trim())}</code>` : '<span class="nota">(vacía)</span>') : `<code>${esc(this.editor.cm.getLine(sel.ini).trim())} …</code>`)
-          + ((n === 1 || sel.ini === ctx.linea.n) && ctx.linea.texto.trim() && (this.lineaActual.rec || partesDe(ctx.linea.texto, ctx.est).length) ? '<button class="editar-linea" title="Cambiar una parte de esta línea">✎ Editar</button>' : '')
-          + '<span class="grupo"><button class="mover" data-dir="-1" title="Mover arriba (si choca con un bloque, entra en él; al borde de su bloque, sale)">↑</button>'
+          + '<span class="grupo">'
+          // ✎ Editar va con los demás botones; si la línea no tiene nada que cambiar, desactivado
+          + `<button class="editar-linea" title="Cambiar una parte de esta línea"${(n === 1 || sel.ini === ctx.linea.n) && ctx.linea.texto.trim() && (this.lineaActual.rec || partesDe(ctx.linea.texto, ctx.est).length) ? '' : ' disabled'}>✎ Editar</button>`
+          + '<button class="mover" data-dir="-1" title="Mover arriba (si choca con un bloque, entra en él; al borde de su bloque, sale)">↑</button>'
           + '<button class="mover" data-dir="1" title="Mover abajo">↓</button>'
           + '<button class="ampliar" data-mas="1" title="Agregar a la selección la instrucción (o bloque) siguiente">＋</button>'
           + (this.finUnidad(sel.m, sel.ini) < sel.fin ? '<button class="ampliar" data-mas="0" title="Quitar la última de la selección">−</button>' : '')
