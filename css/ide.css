@@ -428,3 +428,4 @@ svg.memoria .clave-arbol { font-size: 17px; }
   body.con-vivo:not(.barras) #pestanas-movil, body.con-vivo:not(.barras) .barra-editor { display: none; }
 }
 @media (min-width: 1001px) { #vivo-menu { display: none; } }
+.asistente .nota.borrador { color: var(--acento); margin: 0; }

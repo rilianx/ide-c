@@ -1,7 +1,7 @@
 // Modelo «árbol binario de búsqueda» (Lab 4): tests declarativos y dibujo estático de un TreeMap.
 // Cada nodo es una caja [clave / left | right] en la columna de su clave (de menor a mayor, fija durante
 // toda la ejecución) y en la fila de su profundidad; los que no cuelgan de root van abajo, aparte.
-import { svgEnteros } from './visual.js?v=202611191258';
+import { svgEnteros } from './visual.js?v=202611191320';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');
@@ -294,7 +294,7 @@ export function svgArbol(estado, nombre, opciones = {}) {
       s.push(`<path d="M${x + 6},${y} C${x + 6},${y - 26} ${p.x + NW / 2 + (p.x < x ? 14 : -14)},${p.y + NH + 24} ${p.x + NW / 2 + (p.x < x ? 14 : -14)},${p.y + NH + 1}" class="flecha parent${malo ? ' mal' : ''}" marker-end="url(#punta-${malo ? 'mal' : 'parent'})"/>`);
     } else if (malo) s.push(`<text x="${x}" y="${y - 4}" class="nota-svg mal-texto">parent = ${n.parent === null ? 'NULL' : '?'} ✗</text>`);
     const es = nombresDe.get(i) ?? [];
-    toque(x, y, NW, KH, [...es.map(e => `${e}->pair->key`), ...es.map(e => `${e}->pair`), ...es]);
+    toque(x, y, NW, KH, [...es, ...es.map(e => `${e}->pair`), ...es.map(e => `${e}->pair->key`)]);   // el nodo (o su par, o su clave si el hueco pide eso)
     toque(x, y + KH, NW / 2, PH, [...es.map(e => `${e}->left`), ...es]);
     toque(x + NW / 2, y + KH, NW / 2, PH, [...es.map(e => `${e}->right`), ...es]);
   });
