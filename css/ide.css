@@ -366,3 +366,11 @@ svg.memoria .dato.num { font-size: 17px; }
 svg.memoria .toque { fill: transparent; cursor: pointer; }
 svg.memoria .toque.elegible { fill: color-mix(in srgb, #2f6fd6 12%, transparent); stroke: #2f6fd6; stroke-width: 1.2; stroke-dasharray: 3 2; }
 svg.memoria .toque.tocado { fill: color-mix(in srgb, #1a7f37 30%, transparent); }
+
+/* Tests de la función en la ventana: 1/3 y un punto por test */
+.vivo-tests { position: absolute; bottom: 8px; left: 8px; z-index: 2; display: flex; align-items: center; gap: 5px; font-size: 13px; background: color-mix(in srgb, var(--panel) 80%, transparent); border-radius: 10px; padding: 1px 6px; }
+.vivo-tests:empty { display: none; }
+.punto-test { width: 14px; height: 14px; min-width: 0; padding: 0; border-radius: 50%; border: 2px solid transparent; }
+.punto-test.ok { background: #1a7f37; } .punto-test.mal { background: #cf222e; }
+.punto-test.actual { border-color: var(--texto); box-shadow: 0 0 0 2px var(--panel) inset; }
+.vivo-cuerpo { padding-bottom: 28px; }

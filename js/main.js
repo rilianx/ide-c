@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611190149';
-import { Runner } from './runner.js?v=202611190149';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611190149';
-import { traducirMensaje } from './mensajes.js?v=202611190149';
-import { modeloDe } from './modelos.js?v=202611190149';
+import { Editor } from './editor.js?v=202611190153';
+import { Runner } from './runner.js?v=202611190153';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611190153';
+import { traducirMensaje } from './mensajes.js?v=202611190153';
+import { modeloDe } from './modelos.js?v=202611190153';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611190149';
-import { Asistente } from './asistente.js?v=202611190149';
-import { activarDivisores } from './divisores.js?v=202611190149';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611190149';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611190153';
+import { Asistente } from './asistente.js?v=202611190153';
+import { activarDivisores } from './divisores.js?v=202611190153';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611190153';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -500,9 +500,20 @@ editor.cm.on('cursorActivity', () => {
 
 // ---------- Ventana de ejecución en la pestaña Código (celular) ----------
 let vivoCerrado = false, resumenVivo = '';
+// Tests de la función en la ventana: «1/3» y un punto por test (verde pasa, rojo no; el que se ve, marcado)
+let estadosVivo = null;   // {paso, estados: ['ok', 'falla', …]}
+function pintarTestsVivo() {
+  const caja = $('vivo-tests');
+  if (!estadosVivo || estadosVivo.paso !== paso) { caja.innerHTML = ''; return; }
+  const { estados } = estadosVivo, actual = visElegido && +visElegido.split('.')[0] === paso ? +visElegido.split('.')[1] : -1;
+  const ok = estados.filter(e => e === 'ok').length;
+  caja.innerHTML = `<b class="${ok === estados.length ? 'res-bien' : ''}">${ok}/${estados.length}</b>`
+    + estados.map((e, i) => `<button class="punto-test ${e === 'ok' ? 'ok' : 'mal'}${i === actual ? ' actual' : ''}" data-t="${i}" title="Test ${i + 1}${e === 'ok' ? ': pasa' : ': no pasa'}"></button>`).join('');
+  caja.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { irAEntrada = true; abrirVisual(`${paso}.${b.dataset.t}`); });
+}
 // El resultado del test, en el panel y en la ventana sobre el editor.
 function resultadoVivo(html) {
-  $('vis-resultado').innerHTML = html;
+  $('vis-resultado').innerHTML = html + (resumenVivo ? ` <span class="nota">· ${esc(resumenVivo)}</span>` : '');
   $('vivo-res').innerHTML = html + (resumenVivo ? ` <span class="nota">· ${esc(resumenVivo)}</span>` : '');
 }
 // Vuelve a poner (o quitar) la marca amarilla según si la ejecución se ve.
@@ -606,9 +617,10 @@ async function ejecutarEnVivo() {
     estadoPasos[k] = !escrita ? undefined : ok === tests.length ? 'ok' : 'falla';
     if (!escrita) resumenVivo = '';
     dibujarPasos();
-    const f = res.findIndex(r => r.estado !== 'ok');
-    if (f >= 0 && `${k}.${f}` !== visElegido) { visElegido = `${k}.${f}`; $('vis-test-sel').value = visElegido; }
-  } else resumenVivo = '';
+    // no se cambia de test solo (confunde): se queda en el que se está viendo; los puntos dicen cuáles pasan
+    estadosVivo = escrita ? { paso: k, estados: res.map(r => r.estado) } : null;
+  } else { resumenVivo = ''; estadosVivo = null; }
+  pintarTestsVivo();
   dibujarVisual(false, 'auto');
 }
 
@@ -763,6 +775,7 @@ function mostrarPaso() {
   $('vivo-zoom').innerHTML = `<div class="vivo-fila">${entradaHtml}${esperadoMini}</div>`;
   $('vivo').classList.toggle('pasa', !!vis.pasa);
   $('vivo').classList.toggle('falla', !vis.pasa);
+  pintarTestsVivo();
   mostrarVivo();
 }
 document.addEventListener('keydown', e => {
