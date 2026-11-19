@@ -5,6 +5,27 @@
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');   // dirección corta
 
+// Variables que no son punteros a nodos (enteros, contadores, textos, datos) como cajitas amarillas
+// [nombre / valor] en una fila desde (x, y); lo que retorna va en verde. → {svg, ancho}
+export function svgEnteros(vars, x, y) {
+  const vs = (vars ?? []).filter(v => !('ptr' in v));
+  if (!vs.length) return { svg: '', ancho: 0 };
+  const valor = v => 'valor' in v ? String(v.valor)
+    : 'texto' in v ? (v.texto === null ? 'NULL' : v.texto === '?' ? '?' : `"${v.texto.t}"`)
+    : v.dato === null ? 'NULL' : v.dato === '?' ? '?' : String(v.dato);
+  const out = [];
+  let cx = x;
+  for (const v of vs) {
+    const nombre = v.nombre === 'return' ? '↩ retorna' : v.nombre, val = valor(v);
+    const w = Math.max(40, nombre.length * 7 + 14, val.length * 10 + 14);
+    out.push(`<rect x="${cx}" y="${y}" width="${w}" height="40" rx="3" class="etiqueta${v.nombre === 'return' ? ' retorno' : ''}"/>`);
+    out.push(`<text x="${cx + w / 2}" y="${y + 13}" class="campo">${esc(nombre)}</text>`);
+    out.push(`<text x="${cx + w / 2}" y="${y + 33}" class="dato num">${esc(val)}</text>`);
+    cx += w + 8;
+  }
+  return { svg: out.join(''), ancho: cx - x };
+}
+
 // Medidas
 const CP = 26, CD = 46, CN = 26;        // celdas prev, dato, next
 const AN = CP + CD + CN, AL = 38;       // ancho y alto de un nodo
@@ -91,7 +112,8 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   });
   const filas = Math.max(1, Math.ceil((maxLugar + 1) / POR_FILA));
   const yUltima = YN + (filas - 1) * ALTO_FILA;
-  const ancho = Math.max(X0 + 3 * CL + 120, X0 + Math.min(Math.max(maxLugar + 1, 1), POR_FILA) * (AN + SEP) + 30);
+  const enteros = svgEnteros(vars, X0 + 3 * CL + 56, YL);   // contadores, enteros… al lado de la List
+  const ancho = Math.max(X0 + 3 * CL + 120, X0 + Math.min(Math.max(maxLugar + 1, 1), POR_FILA) * (AN + SEP) + 30, X0 + 3 * CL + 64 + enteros.ancho);
   const alto = lugares.size ? yUltima + AL + 62 + BAJO + (sueltas.length ? 22 : 0) : YL + AL + 46 + (sueltas.length ? 22 : 0);
   const s = [];
 
@@ -205,6 +227,7 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
     s.push(`<text x="${cx}" y="${ty + 10}" class="var">${esc(nombres.join(', '))}</text>`);
   }
   if (sueltas.length) s.push(`<text x="${X0}" y="${alto - 10}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
+  s.push(enteros.svg);
   if (!nodos.length) s.push(`<text x="${X0}" y="${YL + AL + 30}" class="nota-svg">(sin nodos)</text>`);
 
   const marca = c => `<marker id="punta-${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta ${c}"/></marker>`;

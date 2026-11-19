@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190133';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190144';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -119,8 +119,8 @@ function plantillas(est, ctors, retorno, nombres = {}, llamadas = []) {
       armar: v => [`${v[0].texto} = (${a.base} **)calloc(${v[1].texto}, sizeof(${a.base} *));`] });
     out.push({ cat: 'Control', etiqueta: 'if (is_equal(_, _)) { … }', huecos: [{ k: 'expr', tipo: () => T('char') }, { k: 'expr', tipo: () => T('char') }],
       armar: v => [`if (is_equal(${v[0].texto}, ${v[1].texto})) {`, '', '}'], dentro: 1 });
-    out.push({ cat: 'Control', etiqueta: 'for (long i = 0; i < _; i++) { … }', huecos: [{ k: 'expr', tipo: LONG }],
-      armar: v => [`for (long i = 0; i < ${v[0].texto}; i++) {`, '', '}'], dentro: 1 });
+    out.push({ cat: 'Control', etiqueta: 'for (long i = _; i < _; i++) { … }', huecos: [{ k: 'expr', tipo: LONG, masUno: true }, { k: 'expr', tipo: LONG }],
+      armar: v => [`for (long i = ${v[0].texto}; i < ${v[1].texto}; i++) {`, '', '}'], dentro: 1 });
     out.push({ cat: 'Control', etiqueta: 'if (_ > 0.7 * _) { … }', huecos: [{ k: 'expr', tipo: LONG }, { k: 'expr', tipo: LONG }],
       armar: v => [`if (${v[0].texto} > 0.7 * ${v[1].texto}) {`, '', '}'], dentro: 1 });
   }
@@ -201,7 +201,7 @@ export class Asistente {
     const vars = variablesEn(texto, fn, pos);
     const finLinea = cm.posFromIndex(fn.fin).line, iniLinea = cm.posFromIndex(fn.cuerpo).line;
     const linea = cm.getLine(c.line);
-    const editable = c.line > iniLinea && c.line < finLinea && /[^\s{}]/.test(linea);   // ni la cabecera, ni la } final, ni solo llaves
+    const editable = c.line > iniLinea && c.line < finLinea && (/[^\s{}]/.test(linea) || !linea.trim());   // ni la cabecera, ni la } final, ni solo llaves (una vacía sí: para borrarla)
     // las variables para editar la línea son las visibles al comienzo de ella
     const varsLinea = variablesEn(texto, fn, cm.indexFromPos({ line: c.line, ch: 0 }));
     return { ej, texto, fn, vars, est, exprs: expresiones(vars, est), linea: editable ? { n: c.line, texto: linea, exprs: expresiones(varsLinea, est) } : null };
@@ -218,6 +218,8 @@ export class Asistente {
     const deseado = hueco.k === 'ret' ? fn.retorno : hueco.tipo(valores);
     let lista = exprs.filter(e => deseado ? mismo(e, deseado) : (!hueco.soloStructs || ctx.est[e.base]));
     if (esNum(deseado)) lista = [...lista, ...['0', '1', '-1'].map(t => ({ texto: t, ...T('long', 0) }))];
+    // valor inicial de un for: también «algo + 1» (por ejemplo, map->current + 1)
+    if (hueco.masUno) lista = [...lista, ...exprs.filter(e => esNum(e)).map(e => ({ ...e, texto: `${e.texto} + 1` }))];
     if (!hueco.sinNull && (!deseado || deseado.ptr)) lista = [...lista, { texto: 'NULL', base: deseado?.base ?? 'void', ptr: deseado?.ptr ?? 1 }];
     // un struct nuevo en memoria: (List *)malloc(sizeof(List))
     if (deseado?.ptr === 1 && ctx.est[deseado.base]) lista = [...lista, { texto: `(${deseado.base} *)malloc(sizeof(${deseado.base}))`, base: deseado.base, ptr: 1 }];
@@ -267,7 +269,7 @@ export class Asistente {
         const n = sel.fin - sel.ini + 1;
         const que = n === 1 ? `Línea ${sel.ini + 1}` : `Líneas ${sel.ini + 1}–${sel.fin + 1}`;
         html += `<div class="fila linea-actual"><span class="nota">${que}:</span>`
-          + (n === 1 ? `<code>${esc(ctx.linea.texto.trim())}</code>` : `<code>${esc(this.editor.cm.getLine(sel.ini).trim())} …</code>`)
+          + (n === 1 ? (ctx.linea.texto.trim() ? `<code>${esc(ctx.linea.texto.trim())}</code>` : '<span class="nota">(vacía)</span>') : `<code>${esc(this.editor.cm.getLine(sel.ini).trim())} …</code>`)
           + (this.lineaActual.rec && n === 1 ? '<button class="editar-linea" title="Cambiar una parte de esta línea">✎ Editar</button>' : '')
           + '<span class="grupo"><button class="mover" data-dir="-1" title="Mover arriba (si choca con un bloque, entra en él; al borde de su bloque, sale)">↑</button>'
           + '<button class="mover" data-dir="1" title="Mover abajo">↓</button>'

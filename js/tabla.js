@@ -2,6 +2,8 @@
 // (direccionamiento abierto): el HashMap con sus campos, el arreglo buckets con sus índices
 // y, debajo de cada casilla ocupada, el Pair [key | value]. Un par inválido (key NULL) va gris.
 
+import { svgEnteros } from './visual.js?v=202611190144';
+
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');
 const valorTexto = v => v === null || v === undefined ? 'NULL' : String(v);
@@ -135,7 +137,8 @@ export function svgTabla(estado, nombre, opciones = {}) {
   b.forEach((p, i) => { if (Number.isInteger(p) && !enTabla.has(p)) enTabla.set(p, i); });
   const fuera = pares.map((p, i) => i).filter(i => !enTabla.has(i));
   const yFuera = YA + filas * FILA + 14;
-  const ancho = Math.max(X0 + 4 * CL + 70, X0 + Math.min(Math.max(cap, 1), POR) * CW + 20, X0 + fuera.length * (CW + 10) + 20);
+  const enteros = svgEnteros(vars, X0 + 4 * CL + 56, YM);   // contadores, índices, textos… al lado del HashMap
+  const ancho = Math.max(X0 + 4 * CL + 64 + enteros.ancho, X0 + 4 * CL + 70, X0 + Math.min(Math.max(cap, 1), POR) * CW + 20, X0 + fuera.length * (CW + 10) + 20);
   const alto = (fuera.length ? yFuera + 18 + 2 * PH + (porPar.size ? 34 : 8) : YA + filas * FILA) + (sueltas.length ? 22 : 0) + 4;
   const s = [];
   const flecha = (d, clase = 'next', marca = '') => s.push(`<path d="${d}" class="flecha ${clase} ${marca}" marker-end="url(#punta-${marca || clase})"/>`);
@@ -222,6 +225,7 @@ export function svgTabla(estado, nombre, opciones = {}) {
     fuera.forEach((i, k) => par(i, X0 + k * (CW + 10), yFuera + 8, ' fuera'));
   }
   if (sueltas.length) s.push(`<text x="${X0}" y="${alto - 8}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
+  s.push(enteros.svg);
 
   const marca = c => `<marker id="punta-${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta ${c}"/></marker>`;
   return `<svg class="memoria tabla-hash" viewBox="0 0 ${ancho} ${alto}" style="max-width:${Math.round(ancho * (opciones.escala ?? 0.62))}px" role="img" aria-label="Memoria de la tabla hash">

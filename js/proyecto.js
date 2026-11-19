@@ -1,7 +1,7 @@
 // Lógica pura del proyecto (sin DOM): qué funciones escribió el estudiante,
 // cómo se arma el programa que se compila y cómo se comparan las salidas.
 // Se puede importar desde node para probarla.
-import { generarTestTabla, describirTestTabla } from './tabla.js?v=202611190133';
+import { generarTestTabla, describirTestTabla } from './tabla.js?v=202611190144';
 
 // Tipo de un campo de struct en ej.estructuras: «Node» (puntero a Node, forma corta), «Pair **»,
 // «long», «char *»… → {base, ptr}.
@@ -391,6 +391,9 @@ export function instrumentarFuncion(texto, nombre, ej, revisar = true, soloRevis
       }
       continue;
     }
+    // la variable de un for (for (long i = …; …) {): se ve dentro del ciclo, también en su condición
+    const vFor = /\bfor\s*\(\s*(?:const\s+|unsigned\s+|signed\s+)?(int|long|short|size_t)\s+([A-Za-z_]\w*)\s*=/.exec(linea);
+    if (vFor && /\{\s*$/.test(linea)) vars.push({ nombre: vFor[2], tipo: vFor[1], prof: antes + 1, clase: 'int' });
     let L = lineas[i], M = m[i];
     const c = soloRevision ? null : condicionConVolcado(L, M, `__voyf(${i + 1}), ${volcado(-(i + 1))}`, `__voyf(${i + 1})`);
     if (c) { L = c; M = enmascarar(c); }
