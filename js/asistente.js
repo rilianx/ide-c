@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190239';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190248';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -192,6 +192,23 @@ function condicionDe(linea) {
 // Piezas por niveles: una expresión se parte en tramos (map | ->buckets | [i] | ->key). Se muestran las del
 // nivel del prefijo elegido; si hay más hondas, un botón «map->…» para entrar. Pocas piezas: todas de una vez.
 const tramos = t => { const m = String(t).match(/^[A-Za-z_]\w*|->[A-Za-z_]\w*|\[[^\[\]]*\]/g); return m && m.join('') === t ? m : null; };
+// Índices de las piezas parecidas a `actual` (una expresión compuesta): las hermanas (mismo prefijo), la de
+// arriba, sus hijas y las que solo cambian un índice [..]. Las más parecidas primero.
+function parecidasA(actual, piezas) {
+  const ta = tramos(actual);
+  if (!ta || ta.length < 2) return [];
+  const padre = ta.slice(0, -1).join(''), sinIndices = t => t.map(x => x.startsWith('[') ? '[]' : x).join('');
+  const puntaje = (p, i) => {
+    const t = tramos(p.texto);
+    if (!t || p.texto === actual) return 0;
+    if (t.length === ta.length && t.slice(0, -1).join('') === padre) return 4;   // hermana: ->key → ->value
+    if (t.length === ta.length && sinIndices(t) === sinIndices(ta)) return 3;   // otro índice: [i] → [pos]
+    if (p.texto === padre) return 2;   // la de arriba: map->buckets[i]
+    if (t.length === ta.length + 1 && t.slice(0, -1).join('') === actual) return 1;   // una hija
+    return 0;
+  };
+  return piezas.map((p, i) => [puntaje(p, i), i]).filter(([n]) => n).sort((a, b) => b[0] - a[0]).slice(0, 8).map(([, i]) => i);
+}
 function htmlPiezas(piezas, prefijo = []) {
   const chip = (p, i) => `<button class="chip pieza" data-i="${i}" title="${p.base ? esc(nombreTipo(p)) : ''}">${esc(p.texto)}</button>`;
   if (piezas.length <= 7) return piezas.map(chip).join('');
@@ -369,6 +386,11 @@ export class Asistente {
       // por niveles, para no saturar: map y map->… ; al tocar map->…: map->buckets, map->buckets[…], map->size…
       const clave = `${this.armando.linea}|${actualI}|${valores.length}|${plantilla.etiqueta}`;
       if (this.navClave !== clave) { this.navClave = clave; this.navPrefijo = []; }
+      // al cambiar una parte compuesta (map->buckets[i]->key), primero las parecidas: mismo prefijo, la de arriba
+      // (map->buckets[i]) y las que cambian solo el índice (map->buckets[pos]->key)
+      const actual = editando != null && editando >= 0 ? valores[editando]?.texto : null;
+      const parecidas = actual ? parecidasA(actual, piezas) : [];
+      if (parecidas.length) html += `<div class="chips parecidas"><span class="nota">Parecidas:</span>${parecidas.map(i => `<button class="chip pieza" data-i="${i}">${esc(piezas[i].texto)}</button>`).join('')}</div>`;
       html += `<div class="chips">${htmlPiezas(piezas, this.navPrefijo)}`
         + (piezas.length ? '' : `<span class="nota">No hay ${plantilla.huecos[actualI].k === 'nombre' ? 'nombres libres' : 'piezas de ese tipo'} aquí.</span>`) + '</div>';
       this.piezasActuales = piezas;
