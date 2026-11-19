@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611182339';
-import { Runner } from './runner.js?v=202611182339';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611182339';
-import { traducirMensaje } from './mensajes.js?v=202611182339';
-import { modeloDe } from './modelos.js?v=202611182339';
+import { Editor } from './editor.js?v=202611190133';
+import { Runner } from './runner.js?v=202611190133';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611190133';
+import { traducirMensaje } from './mensajes.js?v=202611190133';
+import { modeloDe } from './modelos.js?v=202611190133';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611182339';
-import { Asistente } from './asistente.js?v=202611182339';
-import { activarDivisores } from './divisores.js?v=202611182339';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611182339';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611190133';
+import { Asistente } from './asistente.js?v=202611190133';
+import { activarDivisores } from './divisores.js?v=202611190133';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611190133';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -506,7 +506,21 @@ $('vivo-abrir').onclick = () => { vivoCerrado = false; mostrarVivo(); if (vis) m
 {
   const caja = $('vivo-cuerpo'), dedos = new Map();
   let zoom = 1, inicio = null, pellizco = null, ultimoToque = 0;
-  const aplicarZoom = () => { $('vivo-zoom').style.transform = `scale(${zoom})`; $('vivo-zoom').style.width = `${100 / zoom}%`; };
+  // se escala el dibujo sin cambiar su ancho (así los dibujos crecen igual que las letras) y se recorre con el dedo
+  // centro (x, y en pantalla): ese punto del dibujo queda bajo los dedos
+  const aplicarZoom = (centro = null) => {
+    const z = $('vivo-zoom'), r = caja.getBoundingClientRect(), antes = parseFloat(z.dataset.zoom || '1');
+    const px = centro ? centro.x - r.left : 0, py = centro ? centro.y - r.top : 0;
+    const cx = (caja.scrollLeft + px) / antes, cy = (caja.scrollTop + py) / antes;   // en coordenadas del dibujo
+    z.dataset.zoom = zoom;
+    z.style.width = zoom > 1 ? `${caja.clientWidth}px` : '';
+    z.style.transform = zoom > 1 ? `scale(${zoom})` : '';
+    caja.style.touchAction = zoom > 1 ? 'pan-x pan-y' : '';
+    caja.style.height = zoom > 1 ? `min(45vh, ${Math.ceil(z.offsetHeight * zoom) + 4}px)` : '';   // la ventana crece con el dibujo
+    caja.style.maxHeight = zoom > 1 ? 'none' : '';
+    $('vivo').style.maxHeight = zoom > 1 ? '50vh' : '';
+    if (centro) { caja.scrollLeft = cx * zoom - px; caja.scrollTop = cy * zoom - py; }
+  };
   caja.addEventListener('pointerdown', e => {
     dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (dedos.size === 1) inicio = { x: e.clientX, y: e.clientY, t: Date.now() };
@@ -518,7 +532,7 @@ $('vivo-abrir').onclick = () => { vivoCerrado = false; mostrarVivo(); if (vis) m
     if (pellizco && dedos.size === 2) {
       const [a, b] = [...dedos.values()];
       zoom = Math.min(3, Math.max(1, pellizco.z * Math.hypot(a.x - b.x, a.y - b.y) / pellizco.d));
-      aplicarZoom();
+      aplicarZoom({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
     }
   });
   const soltar = e => {
@@ -528,7 +542,7 @@ $('vivo-abrir').onclick = () => { vivoCerrado = false; mostrarVivo(); if (vis) m
     const dx = e.clientX - inicio.x, dy = e.clientY - inicio.y;
     if (zoom === 1 && Math.abs(dx) > 50 && Math.abs(dx) > 2 * Math.abs(dy)) cambiarTest(dx < 0 ? 1 : -1);
     else if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {   // toque: doble toque = tamaño normal
-      if (Date.now() - ultimoToque < 350) { zoom = zoom > 1 ? 1 : 2; aplicarZoom(); }
+      if (Date.now() - ultimoToque < 350) { zoom = zoom > 1 ? 1 : 2; aplicarZoom({ x: e.clientX, y: e.clientY }); }
       ultimoToque = Date.now();
     }
     inicio = null;
