@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611191713';
-import { Runner } from './runner.js?v=202611191713';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191713';
-import { traducirMensaje } from './mensajes.js?v=202611191713';
-import { modeloDe } from './modelos.js?v=202611191713';
+import { Editor } from './editor.js?v=202611191720';
+import { Runner } from './runner.js?v=202611191720';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191720';
+import { traducirMensaje } from './mensajes.js?v=202611191720';
+import { modeloDe } from './modelos.js?v=202611191720';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191713';
-import { Asistente } from './asistente.js?v=202611191713';
-import { activarDivisores } from './divisores.js?v=202611191713';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191713';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191720';
+import { Asistente } from './asistente.js?v=202611191720';
+import { activarDivisores } from './divisores.js?v=202611191720';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191720';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -48,9 +48,17 @@ const asistente = new Asistente($('asistente'), editor, () => ({ ej: E.ej, archi
 // Cada parte del dibujo (.toque) trae las expresiones que la nombran (map->capacity, aux->next…). Si el
 // asistente espera una pieza, las partes que sirven se marcan, y tocar una la elige.
 let elegibles = new Set();
+// En el dibujo del test la estructura se llama como en el test (L, tree, map); en la función que se escribe,
+// como su parámetro (list…): «L->current» → «list->current».
+function enLaFuncion(cands) {
+  const v = E?.ej?.visual?.variable, fn = asistente.contexto?.().fn;
+  const p = fn?.params.find(q => q.base === E.ej.visual.tipo && q.ptr === 1)?.nombre;
+  if (!v || !p || p === v) return cands;
+  return [...new Set(cands.flatMap(c => c === v || c.startsWith(v + '->') || c.startsWith(v + '[') ? [p + c.slice(v.length), c] : [c]))];
+}
 function marcarElegibles() {
   for (const t of document.querySelectorAll('#vivo-zoom .toque, #vis-cuadros .toque'))
-    t.classList.toggle('elegible', t.dataset.expr.split('|').some(c => elegibles.has(c)));
+    t.classList.toggle('elegible', enLaFuncion(t.dataset.expr.split('|')).some(c => elegibles.has(c)));
 }
 for (const id of ['vivo-zoom', 'vis-cuadros']) new MutationObserver(marcarElegibles).observe(document.getElementById(id), { childList: true });
 // Una flecha es parte del puntero de donde sale: se le agrega una zona para tocar (y pasar el mouse) con las
@@ -87,7 +95,7 @@ rotulo.className = 'rotulo-dibujo'; rotulo.hidden = true;
 document.body.append(rotulo);
 const tramosDe = x => x.match(/^[A-Za-z_]\w*|->\s*[A-Za-z_]\w*|\[[^\[\]]*\]/g) ?? [x];
 function mostrarCamino(t, x, y) {
-  const cands = t.dataset.expr.split('|');
+  const cands = t.dataset.expr.split('|');   // (como en el dibujo; el camino se busca en él)
   const estructura = vis?.cuadros[vis.i]?.dentro ? vis.cuadros[vis.i].fn?.lista : E.ej.visual.variable;
   // la principal: la que parte de la estructura (L->…), si hay; y otras del mismo tipo de final (aux->data)
   const fin = tramosDe(cands[0]).at(-1);
@@ -137,7 +145,7 @@ document.addEventListener('click', e => {
   const t = e.target.closest?.('#vivo-zoom .toque, #vis-cuadros .toque');
   if (!t) return;
   ocultarCamino();
-  const cands = t.dataset.expr.split('|');
+  const cands = enLaFuncion(t.dataset.expr.split('|'));
   const r = asistente.tocar(cands);
   if (r?.elegir) { escoger(r.elegir, e.clientX, e.clientY, texto => asistente.tocar([texto], true)); return; }
   t.classList.add('tocado'); setTimeout(() => t.classList.remove('tocado'), 400);
