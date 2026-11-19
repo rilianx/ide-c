@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611191731';
-import { Runner } from './runner.js?v=202611191731';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191731';
-import { traducirMensaje } from './mensajes.js?v=202611191731';
-import { modeloDe } from './modelos.js?v=202611191731';
+import { Editor } from './editor.js?v=202611191745';
+import { Runner } from './runner.js?v=202611191745';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191745';
+import { traducirMensaje } from './mensajes.js?v=202611191745';
+import { modeloDe } from './modelos.js?v=202611191745';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191731';
-import { Asistente } from './asistente.js?v=202611191731';
-import { activarDivisores } from './divisores.js?v=202611191731';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191731';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191745';
+import { Asistente, NOMBRES_SUGERIDOS } from './asistente.js?v=202611191745';
+import { activarDivisores } from './divisores.js?v=202611191745';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191745';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -146,6 +146,23 @@ document.addEventListener('click', e => {
   if (!t) return;
   ocultarCamino();
   const cands = enLaFuncion(t.dataset.expr.split('|'));
+  // el nombre de una variable (su etiqueta): cambiarle el nombre (si no hay un hueco esperando ni un borrador)
+  const ctx = asistente.contexto();
+  const variable = ctx.fn && cands.find(c => /^[A-Za-z_]\w*$/.test(c) && ctx.vars.some(v => v.nombre === c));
+  const esperando = asistente.armando && asistente.armando.editando !== -1 && asistente.piezasActuales?.length;
+  const enBorrador = asistente.borrador && editor.cm.getCursor().line === asistente.borrador.linea;
+  if (variable && cands.every(c => /^[A-Za-z_]\w*$/.test(c)) && !esperando && !enBorrador) {
+    const usados = new Set(ctx.texto.slice(ctx.fn.cuerpo, ctx.fn.fin).match(/\b[A-Za-z_]\w*\b/g) ?? []);   // los nombres que ya usa la función
+    const opciones = [...NOMBRES_SUGERIDOS.filter(n => !usados.has(n)).slice(0, 6), '✎ otro…'];
+    escoger(opciones, e.clientX, e.clientY, n => {
+      const nuevo = n === '✎ otro…' ? prompt(`Nuevo nombre para «${variable}»:`, variable)?.trim() : n;
+      if (!nuevo) return;
+      if (!asistente.renombrar(variable, nuevo)) estado(`No se puede usar «${nuevo}» (no es un nombre válido o ya se usa en la función).`, true);
+      else estado(`«${variable}» ahora se llama «${nuevo}».`);
+    });
+    menuDibujo.querySelector('.nota').textContent = `Renombrar «${variable}» a:`;
+    return;
+  }
   const r = asistente.tocar(cands);
   if (r?.elegir) { escoger(r.elegir, e.clientX, e.clientY, texto => asistente.tocar([texto], true)); return; }
   t.classList.add('tocado'); setTimeout(() => t.classList.remove('tocado'), 400);

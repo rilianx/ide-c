@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611191731';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611191745';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -249,6 +249,25 @@ function grupoDe(p) {
   if (p.cat === 'Memoria' || p.cat === 'Llamar') return /\b(malloc|calloc|free|[A-Za-z_]\w*)\s*\(/.exec(e.replace(/sizeof\s*\(/g, ''))?.[1] ?? e;
   return e;
 }
+
+// Nombres lógicos para una variable según de dónde sale (el final de la expresión; el más largo que calce).
+// Un ejercicio puede agregar los suyos en ejercicio.json → nombresLogicos.
+const NOMBRES_LOGICOS = {
+  'root': 'aux', 'current': 'actual', 'current->prev': 'anterior', 'current->next': 'siguiente',
+  'head': 'primero', 'tail': 'ultimo', 'prev': 'anterior', 'next': 'siguiente',
+  'left': 'izq', 'right': 'der', 'parent': 'padre', 'pair': 'par', 'buckets[]': 'par',
+  'key': 'clave', 'value': 'valor', 'data': 'dato',
+};
+function nombreLogico(texto, extra = {}) {
+  const dic = { ...NOMBRES_LOGICOS, ...extra };
+  const ts = (texto.match(/->\s*[A-Za-z_]\w*|\[[^\[\]]*\]/g) ?? []).map(t => t.startsWith('[') ? '[]' : t.replace(/^->\s*/, ''));
+  for (let k = Math.min(ts.length, 3); k >= 1; k--) {
+    const fin = ts.slice(-k).join('->').replace(/->\[\]/g, '[]');
+    if (dic[fin]) return dic[fin];
+  }
+  return null;
+}
+export const NOMBRES_SUGERIDOS = ['aux', 'actual', 'anterior', 'siguiente', 'nuevo', 'izq', 'der', 'padre', 'par', 'pos', 'i'];
 
 // ¿La línea es una de las plantillas? → {plantilla, textos de sus huecos}. Se compara con la
 // primera línea que arma la plantilla, sin importar los espacios.
@@ -572,12 +591,35 @@ export class Asistente {
     // un puntero a una estructura (un nodo, un par…): «aux» (es el que después se va moviendo); un texto, un dato
     // o un entero, según el campo (key → clave, value → valor, data → dato, el nombre del campo)
     const ultimo = /([A-Za-z_]\w*)$/.exec(e.texto)?.[1];
-    const base = e.ptr && !['void', 'char'].includes(e.base) ? 'aux'
-      : { key: 'clave', value: 'valor', data: 'dato' }[ultimo] ?? (ultimo && !/\]$/.test(e.texto) ? ultimo : { void: 'dato', char: 'clave', long: 'n', int: 'n' }[e.base] ?? 'aux');
+    const base = nombreLogico(e.texto, this.obtener().ej.nombresLogicos) ?? (e.ptr && !['void', 'char'].includes(e.base) ? 'aux'
+      : ultimo && !/\]$/.test(e.texto) && /->/.test(e.texto) ? ultimo : { void: 'dato', char: 'clave', long: 'n', int: 'n' }[e.base] ?? 'aux');
     let nombre = base, k = 2;
     while (usados.has(nombre)) nombre = `${base}${k++}`;
     const decl = e.ptr ? `${e.base} ${'*'.repeat(e.ptr)} ${nombre}` : `${e.base === 'int' || e.base === 'long' ? 'long' : e.base} ${nombre}`;
     return `${decl} = ${e.texto};`;
+  }
+
+  // Cambia el nombre de una variable (o parámetro) en toda la función donde está el cursor. → true si se pudo
+  renombrar(viejo, nuevo) {
+    const cm = this.editor.cm, texto = cm.getValue();
+    const fn = funcionEn(texto, cm.indexFromPos({ line: cm.getCursor().line, ch: 0 }));
+    if (!fn || !/^[A-Za-z_]\w*$/.test(nuevo) || PALABRAS.has(nuevo) || viejo === nuevo) return false;
+    const ini = texto.lastIndexOf('\n', texto.lastIndexOf('(', fn.cuerpo)) + 1;   // desde la cabecera (los parámetros)
+    const m = enmascarar(texto);
+    const ya = new RegExp(`\\b${nuevo}\\b`).test(m.slice(ini, fn.fin));
+    if (ya) return false;   // ese nombre ya se usa en la función
+    let nuevoTexto = '', a = ini;
+    for (const r of m.slice(ini, fn.fin).matchAll(new RegExp(`(?<![\\w.>])${viejo}\\b`, 'g'))) {   // no los campos (x->viejo)
+      const k = ini + r.index;
+      nuevoTexto += texto.slice(a, k) + nuevo; a = k + viejo.length;
+    }
+    nuevoTexto += texto.slice(a, fn.fin);
+    const c = cm.getCursor();
+    cm.replaceRange(nuevoTexto, cm.posFromIndex(ini), cm.posFromIndex(fn.fin));
+    cm.setCursor(c);
+    this.armando = null;
+    this.dibujar();
+    return true;
   }
 
   // Tocar el dibujo en una línea vacía: se declara una variable con eso («TreeNode * left = aux->left;»), como
