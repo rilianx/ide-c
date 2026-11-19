@@ -112,7 +112,7 @@ main#codigo.sin-izq .pasos, main#codigo.sin-der .panel { overflow: hidden; paddi
 .asistente .vista b { color: var(--acento); }
 .asistente .fn-actual { font-family: var(--mono); }
 .asistente .linea-actual { padding-bottom: 6px; border-bottom: 1px dashed var(--borde); margin-bottom: 4px; }
-.asistente .linea-actual code { font-family: var(--mono); font-size: calc(var(--letra, 14px) - 1px); background: color-mix(in srgb, var(--texto) 6%, transparent); padding: 1px 6px; border-radius: 4px; white-space: pre-wrap; }
+.asistente .linea-actual code { font-family: var(--mono); font-size: calc(var(--letra, 14px) - 1px); background: color-mix(in srgb, var(--texto) 6%, transparent); padding: 1px 6px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 100%; vertical-align: bottom; }
 .asistente .linea-actual .grupo { display: inline-flex; gap: 3px; flex-wrap: wrap; }
 .asistente .condicion { margin: 2px 0 4px; }
 .asistente .linea-actual button { padding: 2px 8px; font-size: 13px; }
@@ -382,3 +382,6 @@ svg.memoria .toque.tocado { fill: color-mix(in srgb, #1a7f37 30%, transparent); 
 svg.memoria .esperado { font-size: 12px; fill: #1a7f37; font-weight: 600; }
 .llamada-vivo { font-family: var(--mono); font-size: 15px; white-space: nowrap; }
 .flecha-vivo { color: var(--suave); }
+
+/* al editar una línea larga se ve entera (para tocar la parte que se cambia) */
+.asistente .armando .vista { white-space: pre-wrap; word-break: break-word; }

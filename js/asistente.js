@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190217';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190223';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -154,6 +154,21 @@ function plantillas(est, ctors, retorno, nombres = {}, llamadas = []) {
   return out;
 }
 
+// Partes que se pueden cambiar en una línea: expresiones (map->buckets[pos]->key, aux, NULL, 0…), no las
+// palabras de C, los tipos, los nombres de funciones ni el nombre que se declara. → [{ini, fin, texto}]
+const PALABRAS = new Set(['if', 'else', 'while', 'for', 'return', 'sizeof', 'do', 'break', 'continue', 'long', 'int', 'char', 'void', 'double', 'float', 'short', 'unsigned', 'signed', 'const', 'struct']);
+function partesDe(t, est = {}) {
+  const m = enmascarar(t), out = [];
+  for (const r of m.matchAll(/-?\b\d+\b|\b[A-Za-z_]\w*(?:\s*->\s*[A-Za-z_]\w*|\[[^\[\]]*\])*/g)) {
+    const texto = t.slice(r.index, r.index + r[0].length).trim(), primera = /^[A-Za-z_]\w*/.exec(texto)?.[0];
+    if (primera && (PALABRAS.has(primera) || est[primera])) continue;   // palabra de C o tipo
+    if (/^\s*\(/.test(m.slice(r.index + r[0].length))) continue;   // nombre de una función
+    if (/\b(long|int|char|void|double|float|short|unsigned|[A-Z]\w*)\s*\**\s*$/.test(m.slice(0, r.index)) && !/[=(,]\s*$/.test(m.slice(0, r.index))) continue;   // el nombre que se declara
+    out.push({ ini: r.index, fin: r.index + r[0].length, texto });
+  }
+  return out;
+}
+
 // ¿La línea es una de las plantillas? → {plantilla, textos de sus huecos}. Se compara con la
 // primera línea que arma la plantilla, sin importar los espacios.
 function reconocer(linea, todas) {
@@ -248,7 +263,7 @@ export class Asistente {
       const hueco = plantilla.huecos[valores.length];
       const editando = this.armando.editando;
       const actualI = editando ?? valores.length;
-      const vista = plantilla.etiqueta.split('_').map((s, i, a) => esc(s) + (i < a.length - 1
+      const vista = plantilla.etiqueta.split(/(?<![A-Za-z0-9])_(?![A-Za-z0-9])/).map((s, i, a) => esc(s) + (i < a.length - 1
         ? (i < valores.length && i !== editando ? `<b class="lleno" data-h="${i}" title="Toca para cambiar">${esc(valores[i].texto)}</b>`
           : `<span class="hueco${i === actualI ? ' actual' : ''}">${i === editando ? esc(valores[i].texto) : '_'}</span>`) : '')).join('');
       html += `<div class="fila armando">${editando != null ? `<span class="nota">Línea ${this.armando.linea + 1}:</span>` : ''}<code class="vista">${vista}</code><button class="cancelar" title="Cancelar">✕</button></div>`;
@@ -274,7 +289,7 @@ export class Asistente {
         const que = n === 1 ? `Línea ${sel.ini + 1}` : `Líneas ${sel.ini + 1}–${sel.fin + 1}`;
         html += `<div class="fila linea-actual"><span class="nota">${que}:</span>`
           + (n === 1 ? (ctx.linea.texto.trim() ? `<code>${esc(ctx.linea.texto.trim())}</code>` : '<span class="nota">(vacía)</span>') : `<code>${esc(this.editor.cm.getLine(sel.ini).trim())} …</code>`)
-          + (this.lineaActual.rec && n === 1 ? '<button class="editar-linea" title="Cambiar una parte de esta línea">✎ Editar</button>' : '')
+          + ((n === 1 || sel.ini === ctx.linea.n) && ctx.linea.texto.trim() && (this.lineaActual.rec || partesDe(ctx.linea.texto, ctx.est).length) ? '<button class="editar-linea" title="Cambiar una parte de esta línea">✎ Editar</button>' : '')
           + '<span class="grupo"><button class="mover" data-dir="-1" title="Mover arriba (si choca con un bloque, entra en él; al borde de su bloque, sale)">↑</button>'
           + '<button class="mover" data-dir="1" title="Mover abajo">↓</button>'
           + '<button class="ampliar" data-mas="1" title="Agregar a la selección la instrucción (o bloque) siguiente">＋</button>'
@@ -377,7 +392,8 @@ export class Asistente {
   // Abre la línea actual como plantilla con sus partes ya puestas; se toca la que se quiere cambiar.
   editarLinea() {
     const l = this.lineaActual;
-    if (!l?.rec) return;
+    if (!l) return;
+    if (!l.rec) return this.editarLibre();
     const { plantilla, textos } = l.rec;
     const valores = textos.map(t => l.exprs.find(e => e.texto === t) ?? { texto: t });
     // se empieza por la última parte que no es un nombre nuevo (en «a = b», por b); se toca otra para cambiarla
@@ -385,6 +401,24 @@ export class Asistente {
     // para editar, la línea no cuenta su propia declaración
     const ctx = this.contexto();
     this.armando = { plantilla, valores, linea: l.n, editando: primero < 0 ? 0 : primero, ctxLinea: { ...ctx, exprs: l.exprs } };
+    this.dibujar();
+  }
+
+  // Editar una línea que no es de ningún comando (por ejemplo, un while largo con &&): cada parte
+  // (map->buckets[pos], NULL, key, 0…) es un hueco con su valor; se toca una y se elige la pieza nueva.
+  editarLibre() {
+    const l = this.lineaActual, ctx = this.contexto();
+    const sangria = (l.texto.match(/^\s*/) || [''])[0], t = l.texto.slice(sangria.length);
+    const partes = partesDe(t, ctx.est);
+    if (!partes.length) return;
+    const tipoDe = texto => /^-?\d+$/.test(texto) ? T('long', 0) : texto === 'NULL' ? null : l.exprs.find(e => e.texto === texto) ?? null;
+    const huecos = partes.map(p => { const tp = tipoDe(p.texto); return { k: 'expr', tipo: () => tp && (tp.ptr || esNum(tp)) ? T(tp.base, tp.ptr) : null }; });
+    const trozos = []; let a = 0;
+    for (const p of partes) { trozos.push(t.slice(a, p.ini)); a = p.fin; }
+    trozos.push(t.slice(a));
+    const plantilla = { etiqueta: trozos.map(x => x.replace(/(?<![A-Za-z0-9])_(?![A-Za-z0-9])/g, ' ')).join('_'), huecos,
+      armar: v => [trozos.map((x, i) => x + (i < v.length ? v[i].texto : '')).join('')] };
+    this.armando = { plantilla, valores: partes.map(p => ({ texto: p.texto })), linea: l.n, editando: 0, ctxLinea: { ...ctx, exprs: l.exprs } };
     this.dibujar();
   }
 
