@@ -529,8 +529,10 @@ export class Asistente {
     if (!this.armando || !this.piezasActuales?.length) return 'sin-hueco';
     const ps = [...new Map(cands.map(c => this.piezasActuales.find(x => x.texto === c)).filter(Boolean).map(p => [p.texto, p])).values()];
     if (!ps.length) return 'no-sirve';
-    if (ps.length > 1 && !elegida) return { elegir: ps.slice(0, 3).map(p => p.texto) };
-    this.elegir(ps[0]);
+    const fin = x => /(->\s*\w+|\[[^\]]*\]|^\w+)$/.exec(x.texto)?.[1];   // solo las que terminan igual (->right)
+    const iguales = ps.filter(x => fin(x) === fin(ps[0]));
+    if (iguales.length > 1 && !elegida) return { elegir: iguales.slice(0, 3).map(p => p.texto) };
+    this.elegir(iguales[0]);
     return 'ok';
   }
 
