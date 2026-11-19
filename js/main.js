@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611191247';
-import { Runner } from './runner.js?v=202611191247';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191247';
-import { traducirMensaje } from './mensajes.js?v=202611191247';
-import { modeloDe } from './modelos.js?v=202611191247';
+import { Editor } from './editor.js?v=202611191248';
+import { Runner } from './runner.js?v=202611191248';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191248';
+import { traducirMensaje } from './mensajes.js?v=202611191248';
+import { modeloDe } from './modelos.js?v=202611191248';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191247';
-import { Asistente } from './asistente.js?v=202611191247';
-import { activarDivisores } from './divisores.js?v=202611191247';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191247';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191248';
+import { Asistente } from './asistente.js?v=202611191248';
+import { activarDivisores } from './divisores.js?v=202611191248';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191248';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -53,6 +53,8 @@ function marcarElegibles() {
     t.classList.toggle('elegible', t.dataset.expr.split('|').some(c => elegibles.has(c)));
 }
 for (const id of ['vivo-zoom', 'vis-cuadros']) new MutationObserver(marcarElegibles).observe(document.getElementById(id), { childList: true });
+// en la ventana, el dibujo (ajustado al alto) queda pegado arriba, no centrado
+new MutationObserver(() => { for (const s of document.querySelectorAll('#vivo-zoom svg.memoria')) s.setAttribute('preserveAspectRatio', 'xMidYMin meet'); }).observe(document.getElementById('vivo-zoom'), { childList: true, subtree: true });
 document.addEventListener('click', e => {
   const t = e.target.closest?.('#vivo-zoom .toque, #vis-cuadros .toque');
   if (!t) return;
@@ -528,7 +530,12 @@ function ejecucionVisible() {
   if (!vis || $('vis-panel').hidden) return false;
   return innerWidth <= 1000 ? !vivoCerrado : !$('codigo').classList.contains('sin-der');
 }
-function mostrarVivo() { $('vivo').hidden = vivoCerrado || (!vis && !vivoMensaje) || $('vis-panel').hidden; $('vivo-abrir').hidden = !vivoCerrado; }
+function mostrarVivo() {
+  $('vivo').hidden = vivoCerrado || (!vis && !vivoMensaje) || $('vis-panel').hidden; $('vivo-abrir').hidden = !vivoCerrado;
+  document.body.classList.toggle('con-vivo', !$('vivo').hidden);   // celular: sin las barras de arriba, el dibujo parte arriba
+}
+// ☰ en la ventana: muestra (u oculta) las barras de arriba (pestañas, archivos, letra, teclado)
+$('vivo-menu').onclick = () => document.body.classList.toggle('barras');
 let vivoMensaje = false;   // la ventana tiene algo que decir aunque no haya ejecución (no compila)
 // al cerrar la ventana, el editor deja de marcar la línea de la ejecución (queda el marcado de bloques)
 $('vivo-cerrar').onclick = () => { vivoCerrado = true; mostrarVivo(); editor.marcarEjecucion(null, null); };

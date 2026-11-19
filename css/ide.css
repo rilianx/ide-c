@@ -423,3 +423,8 @@ svg.memoria .clave-arbol { font-size: 17px; }
   .vivo .vivo-zoom, .vivo .vivo-fila { height: 100%; }
   .vivo .vivo-fila > svg.memoria { height: 100%; }
 }
+/* Celular: con la ventana de ejecución abierta, las barras de arriba se ocultan (☰ las muestra) */
+@media (max-width: 1000px) {
+  body.con-vivo:not(.barras) #pestanas-movil, body.con-vivo:not(.barras) .barra-editor { display: none; }
+}
+@media (min-width: 1001px) { #vivo-menu { display: none; } }
