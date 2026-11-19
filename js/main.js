@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611190211';
-import { Runner } from './runner.js?v=202611190211';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611190211';
-import { traducirMensaje } from './mensajes.js?v=202611190211';
-import { modeloDe } from './modelos.js?v=202611190211';
+import { Editor } from './editor.js?v=202611190217';
+import { Runner } from './runner.js?v=202611190217';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611190217';
+import { traducirMensaje } from './mensajes.js?v=202611190217';
+import { modeloDe } from './modelos.js?v=202611190217';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611190211';
-import { Asistente } from './asistente.js?v=202611190211';
-import { activarDivisores } from './divisores.js?v=202611190211';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611190211';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611190217';
+import { Asistente } from './asistente.js?v=202611190217';
+import { activarDivisores } from './divisores.js?v=202611190217';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611190217';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -181,6 +181,7 @@ function dibujarPasos() {
   })).join('');
 }
 $('funcion').onchange = () => {
+  if (!E) return;   // aún cargando el ejercicio
   const f = $('funcion').value, k = E.ej.pasos.findIndex(p => p.funciones.includes(f));
   if (k >= 0) elegirPaso(k, true, f);
 };
@@ -861,3 +862,22 @@ $('ejercicio').onchange = () => abrirEjercicio($('ejercicio').value);
 let ejInicial = new URLSearchParams(location.search).get('ej');
 try { ejInicial ??= localStorage.getItem('ide-c:ej'); } catch { /* sin almacenamiento */ }
 await abrirEjercicio(lista.some(e => e.id === ejInicial) ? ejInicial : lista[0].id);
+
+// ---------- Actualización ----------
+// El celular puede guardar la página vieja en caché. version.txt (lo escribe herramientas/version.mjs) dice
+// cuál es la versión publicada; si no es la que está corriendo, se recarga con la nueva (lo escrito por el
+// estudiante queda guardado en el navegador). Se revisa al abrir y cada vez que se vuelve a la pestaña.
+const VERSION = new URL(import.meta.url).searchParams.get('v');
+async function revisarVersion() {
+  if (!VERSION || location.protocol === 'file:') return;
+  let publicada;
+  try { publicada = (await (await fetch(`version.txt?t=${Date.now()}`, { cache: 'no-store' })).text()).trim(); } catch { return; }
+  if (!/^\d+$/.test(publicada) || publicada === VERSION) return;
+  try { if (sessionStorage.getItem('ide-c:recargada') === publicada) return; sessionStorage.setItem('ide-c:recargada', publicada); } catch { /* sin almacenamiento */ }
+  estado('Hay una versión nueva: actualizando…');
+  const u = new URL(location.href);
+  u.searchParams.set('v', publicada);
+  location.replace(u.toString());
+}
+revisarVersion();
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') revisarVersion(); });

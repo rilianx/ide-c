@@ -12,4 +12,5 @@ const poner = (ruta, re) => {
 poner('index.html', /((?:src|href)="(?:js|css)\/[\w.-]+\.(?:js|css))(?:\?v=\w+)?(")/g);
 for (const f of readdirSync(new URL('js/', raiz))) if (f.endsWith('.js'))
   poner('js/' + f, /((?:from |new URL\()'\.\/[\w.-]+\.js)(?:\?v=\w+)?(')/g);
+writeFileSync(new URL('version.txt', raiz), v + '\n');   // la app lo revisa para recargarse si quedó vieja en caché
 console.log('versión', v);

@@ -52,7 +52,7 @@ Son módulos ES nativos, sin paso de compilación: la carpeta se publica tal cua
 
 Con GitHub Pages (Settings → Pages → la rama y la carpeta de la app). Hace falta un servidor: abriendo `index.html` directo desde el disco (`file://`) el navegador no deja cargar los ejercicios ni el compilador. Para probar en local: `python3 -m http.server` en esta carpeta y abrir http://localhost:8000.
 
-Antes de cada commit que se publica, conviene correr `node herramientas/version.mjs`: pone un número de versión en las URLs de los JS y el CSS para que el navegador no mezcle archivos nuevos con otros viejos guardados en caché.
+Antes de cada commit que se publica, conviene correr `node herramientas/version.mjs`: pone un número de versión en las URLs de los JS y el CSS para que el navegador no mezcle archivos nuevos con otros viejos guardados en caché. También escribe `version.txt`: la app lo revisa al abrirse y al volver a la pestaña, y si la versión publicada es otra, se recarga sola con la nueva (lo escrito por el estudiante queda guardado).
 
 ## Tests declarativos
 
