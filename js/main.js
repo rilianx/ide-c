@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611191241';
-import { Runner } from './runner.js?v=202611191241';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191241';
-import { traducirMensaje } from './mensajes.js?v=202611191241';
-import { modeloDe } from './modelos.js?v=202611191241';
+import { Editor } from './editor.js?v=202611191246';
+import { Runner } from './runner.js?v=202611191246';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191246';
+import { traducirMensaje } from './mensajes.js?v=202611191246';
+import { modeloDe } from './modelos.js?v=202611191246';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191241';
-import { Asistente } from './asistente.js?v=202611191241';
-import { activarDivisores } from './divisores.js?v=202611191241';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191241';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191246';
+import { Asistente } from './asistente.js?v=202611191246';
+import { activarDivisores } from './divisores.js?v=202611191246';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191246';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -559,9 +559,7 @@ $('vivo-abrir').onclick = () => { vivoCerrado = false; mostrarVivo(); if (vis) m
     z.style.width = zoom > 1 ? `${caja.clientWidth}px` : '';
     z.style.transform = zoom > 1 ? `scale(${zoom})` : '';
     caja.style.touchAction = zoom > 1 ? 'pan-x pan-y' : '';
-    caja.style.height = zoom > 1 ? `min(45vh, ${Math.ceil(z.offsetHeight * zoom) + 4}px)` : '';   // la ventana crece con el dibujo
-    caja.style.maxHeight = zoom > 1 ? 'none' : '';
-    $('vivo').style.maxHeight = zoom > 1 ? '50vh' : '';
+    // (la ventana tiene alto fijo: con zoom, el dibujo se recorre con el dedo)
     if (centro) { caja.scrollLeft = cx * zoom - px; caja.scrollTop = cy * zoom - py; }
   };
   caja.addEventListener('pointerdown', e => {
