@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611191627';
-import { Runner } from './runner.js?v=202611191627';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191627';
-import { traducirMensaje } from './mensajes.js?v=202611191627';
-import { modeloDe } from './modelos.js?v=202611191627';
+import { Editor } from './editor.js?v=202611191655';
+import { Runner } from './runner.js?v=202611191655';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191655';
+import { traducirMensaje } from './mensajes.js?v=202611191655';
+import { modeloDe } from './modelos.js?v=202611191655';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191627';
-import { Asistente } from './asistente.js?v=202611191627';
-import { activarDivisores } from './divisores.js?v=202611191627';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191627';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191655';
+import { Asistente } from './asistente.js?v=202611191655';
+import { activarDivisores } from './divisores.js?v=202611191655';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191655';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -53,6 +53,31 @@ function marcarElegibles() {
     t.classList.toggle('elegible', t.dataset.expr.split('|').some(c => elegibles.has(c)));
 }
 for (const id of ['vivo-zoom', 'vis-cuadros']) new MutationObserver(marcarElegibles).observe(document.getElementById(id), { childList: true });
+// Una flecha es parte del puntero de donde sale: se le agrega una zona para tocar (y pasar el mouse) con las
+// expresiones de la zona que contiene su punto de partida.
+function flechasTocables() {
+  for (const svg of document.querySelectorAll('#vivo-zoom svg.memoria')) {
+    if (svg.dataset.flechas) continue;
+    svg.dataset.flechas = '1';
+    const zonas = [...svg.querySelectorAll('rect.toque')].map(z => ({ z, x: +z.getAttribute('x'), y: +z.getAttribute('y'), w: +z.getAttribute('width'), h: +z.getAttribute('height') }));
+    const capa = [];
+    for (const f of svg.querySelectorAll('path.flecha')) {
+      const m = /^M\s*(-?[\d.]+)[ ,](-?[\d.]+)/.exec(f.getAttribute('d') ?? '');
+      if (!m) continue;
+      const x = +m[1], y = +m[2];
+      const dentro = zonas.filter(r => x >= r.x - 1 && x <= r.x + r.w + 1 && y >= r.y - 1 && y <= r.y + r.h + 1).sort((a, b) => a.w * a.h - b.w * b.h)[0];
+      if (!dentro) continue;
+      const t = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      t.setAttribute('d', f.getAttribute('d'));
+      t.setAttribute('class', 'toque linea');
+      t.dataset.expr = dentro.z.dataset.expr;
+      capa.push(t);
+    }
+    svg.append(...capa);
+  }
+  marcarElegibles();
+}
+new MutationObserver(flechasTocables).observe(document.getElementById('vivo-zoom'), { childList: true, subtree: true });
 // en la ventana, el dibujo (ajustado al alto) queda pegado arriba, no centrado
 new MutationObserver(() => { for (const s of document.querySelectorAll('#vivo-zoom svg.memoria')) s.setAttribute('preserveAspectRatio', 'xMidYMin meet'); }).observe(document.getElementById('vivo-zoom'), { childList: true, subtree: true });
 // Al pasar sobre el dibujo (o al tocarlo sin un comando abierto): cómo se llega a esa parte (L->current->data),
@@ -69,7 +94,9 @@ function mostrarCamino(t, x, y) {
   const delMismo = cands.filter(c => tramosDe(c).at(-1) === fin);
   const principal = delMismo.find(c => c.startsWith(estructura + '->') || c === estructura) ?? delMismo[0];
   const otras = delMismo.filter(c => c !== principal).slice(0, 2);
-  rotulo.innerHTML = `<code>${esc(principal)}</code>${otras.length ? `<span> = ${otras.map(o => `<code>${esc(o)}</code>`).join(' = ')}</span>` : ''}`;
+  const editando = asistente.armando?.editando >= 0;   // con una parte de la línea elegida: tocar la reemplaza
+  rotulo.innerHTML = [principal, ...otras].map((c, k) => `<div>${k ? '<span>= </span>' : ''}<code>${esc(c)}</code></div>`).join('')
+    + (editando ? '<div class="pista">clic: reemplaza la parte elegida</div>' : '');
   rotulo.hidden = false;
   rotulo.style.left = `${Math.min(x + 12, innerWidth - rotulo.offsetWidth - 8)}px`;
   rotulo.style.top = `${y + 16}px`;

@@ -253,6 +253,7 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
     toque(x, y, CP, AL, [...es.map(e => `${e}->prev`), ...es]);
     toque(x + CP, y, CD, AL, [...es.map(e => `${e}->data`), ...es]);
     toque(x + CP + CD, y, CN, AL, [...es.map(e => `${e}->next`), ...es]);
+    if (!opciones.sinDirecciones) toque(x, y + AL + 3, AN, 15, es);   // la dirección (0x1be0) también es el nodo
   });
   for (const [i, ns] of porNodo) {
     const { x, y } = pos.get(i), cx = x + CP + CD / 2, ty = y + AL + 32, w = Math.max(30, ns.join(', ').length * 8 + 12);

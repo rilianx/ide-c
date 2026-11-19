@@ -453,3 +453,9 @@ svg.memoria .clave-arbol { font-size: 17px; }
 .rotulo-dibujo code { font-family: var(--mono); color: #ffd36b; }
 .rotulo-dibujo span { color: #ccc; }
 svg.memoria .toque.camino { fill: color-mix(in srgb, #d4730f 20%, transparent); stroke: #d4730f; stroke-width: 1.6; }
+svg.memoria path.toque.linea { fill: none; stroke: transparent; stroke-width: 12; pointer-events: stroke; cursor: pointer; }
+svg.memoria path.toque.linea.elegible { stroke: color-mix(in srgb, #2f6fd6 22%, transparent); stroke-dasharray: none; }
+svg.memoria path.toque.linea.camino { stroke: color-mix(in srgb, #d4730f 35%, transparent); }
+.rotulo-dibujo div { line-height: 1.5; }
+.rotulo-dibujo .pista { color: #9fd3a8; font-size: 12px; }
+.vivo .vivo-fila { align-items: flex-start; } .vivo .vivo-fila > .llamada-vivo, .vivo .vivo-fila > .flecha-vivo { margin-top: 12px; }
