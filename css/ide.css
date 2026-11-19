@@ -392,3 +392,6 @@ svg.memoria .esperado { font-size: 12px; fill: #1a7f37; font-weight: 600; }
 .asistente .parte-cond code { font-family: var(--mono); font-size: 13px; padding: 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .asistente .parte-cond button { padding: 0 6px; font-size: 12px; min-width: 0; }
 .asistente .op-cond { font-family: var(--mono); font-size: 13px; color: var(--suave); }
+
+/* piezas por niveles: «map->…» entra, «‹» vuelve */
+.asistente .chip.nav { border-style: dashed; color: var(--acento); }

@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190237';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190239';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -189,6 +189,31 @@ function condicionDe(linea) {
   return { ini, fin, partes, ops };
 }
 
+// Piezas por niveles: una expresión se parte en tramos (map | ->buckets | [i] | ->key). Se muestran las del
+// nivel del prefijo elegido; si hay más hondas, un botón «map->…» para entrar. Pocas piezas: todas de una vez.
+const tramos = t => { const m = String(t).match(/^[A-Za-z_]\w*|->[A-Za-z_]\w*|\[[^\[\]]*\]/g); return m && m.join('') === t ? m : null; };
+function htmlPiezas(piezas, prefijo = []) {
+  const chip = (p, i) => `<button class="chip pieza" data-i="${i}" title="${p.base ? esc(nombreTipo(p)) : ''}">${esc(p.texto)}</button>`;
+  if (piezas.length <= 7) return piezas.map(chip).join('');
+  const pre = prefijo.join(''), grupos = new Map(), sueltas = [];
+  piezas.forEach((p, i) => {
+    const ts = tramos(p.texto);
+    if (!ts) { if (!prefijo.length) sueltas.push(chip(p, i)); return; }   // NULL, 0, pos + 1, malloc…
+    if (ts.length <= prefijo.length || ts.slice(0, prefijo.length).join('') !== pre) return;
+    const sig = ts[prefijo.length];
+    if (!grupos.has(sig)) grupos.set(sig, { hoja: null, mas: null });
+    const g = grupos.get(sig);
+    if (ts.length === prefijo.length + 1) g.hoja = i;
+    else g.mas ??= ts[prefijo.length + 1].startsWith('[') ? '[…]' : '->…';
+  });
+  let h = prefijo.length ? '<button class="chip nav" data-nav="..">‹</button>' : '';
+  for (const [sig, g] of grupos) {
+    if (g.hoja != null) h += chip(piezas[g.hoja], g.hoja);
+    if (g.mas) h += `<button class="chip nav" data-nav="${esc(sig)}">${esc(pre + sig + g.mas)}</button>`;
+  }
+  return h + sueltas.join('');
+}
+
 // ¿La línea es una de las plantillas? → {plantilla, textos de sus huecos}. Se compara con la
 // primera línea que arma la plantilla, sin importar los espacios.
 function reconocer(linea, todas) {
@@ -341,7 +366,10 @@ export class Asistente {
       } else {
       if (editando != null) html += '<p class="nota">Elige la pieza nueva (o toca otra parte de la línea para cambiar esa).</p>';
       const piezas = this.piezas(this.armando.ctxLinea ?? ctx, plantilla.huecos[actualI], valores);
-      html += `<div class="chips">${piezas.map((p, i) => `<button class="chip pieza" data-i="${i}" title="${p.base ? esc(nombreTipo(p)) : ''}">${esc(p.texto)}</button>`).join('')}`
+      // por niveles, para no saturar: map y map->… ; al tocar map->…: map->buckets, map->buckets[…], map->size…
+      const clave = `${this.armando.linea}|${actualI}|${valores.length}|${plantilla.etiqueta}`;
+      if (this.navClave !== clave) { this.navClave = clave; this.navPrefijo = []; }
+      html += `<div class="chips">${htmlPiezas(piezas, this.navPrefijo)}`
         + (piezas.length ? '' : `<span class="nota">No hay ${plantilla.huecos[actualI].k === 'nombre' ? 'nombres libres' : 'piezas de ese tipo'} aquí.</span>`) + '</div>';
       this.piezasActuales = piezas;
       }
@@ -360,6 +388,10 @@ export class Asistente {
     this.caja.querySelectorAll('.cat').forEach(b => b.onclick = () => { this.cat = b.dataset.cat; this.dibujar(); });
     this.caja.querySelectorAll('[data-p]').forEach(b => b.onclick = () => this.empezar(this.plantillasActuales[+b.dataset.p]));
     this.caja.querySelectorAll('.pieza').forEach(b => b.onclick = () => this.elegir(this.piezasActuales[+b.dataset.i]));
+    this.caja.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => {
+      if (b.dataset.nav === '..') this.navPrefijo = this.navPrefijo.slice(0, -1); else this.navPrefijo = [...this.navPrefijo, b.dataset.nav];
+      this.dibujar();
+    });
     this.caja.querySelectorAll('.lleno').forEach(b => b.onclick = () => { this.armando.editando = +b.dataset.h; this.dibujar(); });
     const q = s => this.caja.querySelector(s);
     if (q('.editar-linea')) q('.editar-linea').onclick = () => this.editarLinea();
