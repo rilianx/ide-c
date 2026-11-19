@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611190153';
-import { Runner } from './runner.js?v=202611190153';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611190153';
-import { traducirMensaje } from './mensajes.js?v=202611190153';
-import { modeloDe } from './modelos.js?v=202611190153';
+import { Editor } from './editor.js?v=202611190201';
+import { Runner } from './runner.js?v=202611190201';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611190201';
+import { traducirMensaje } from './mensajes.js?v=202611190201';
+import { modeloDe } from './modelos.js?v=202611190201';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611190153';
-import { Asistente } from './asistente.js?v=202611190153';
-import { activarDivisores } from './divisores.js?v=202611190153';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611190153';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611190201';
+import { Asistente } from './asistente.js?v=202611190201';
+import { activarDivisores } from './divisores.js?v=202611190201';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611190201';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -759,14 +759,14 @@ function mostrarPaso() {
   const esEntrada = c?.dentro && !c.condicion && !c.error && c.linea === c.fn?.cabecera;
   const sal = vis.test.salida;
   const mini = { sinDirecciones: true, escala: 0.5, ...MOD().opcionesMini };
-  const esperadoMini = esEntrada && sal ? `<div class="esperado-mini"><span class="rot">→ se espera</span>${MOD().svg(MOD().estadoSalida(vis.test), c.fn.lista, mini)}${(sal.retornos ?? []).map(r => `<span class="ret">↩ ${esc(r === null ? 'NULL' : r)}</span>`).join(' ')}</div>` : '';
+  const esperadoMini = esEntrada && sal ? `<div class="esperado-mini"><span class="rot">→ se espera</span>${MOD().svg(MOD().estadoSalida(vis.test), c.fn.lista, mini)}<div>${MOD().textoEsperado(vis.test)}</div></div>` : '';
   const entradaVacia = esEntrada && MOD().vacio(c.estado);
   const entradaHtml = esEntrada ? `<div class="entrada-mini"><span class="rot">entrada</span>${entradaVacia ? `<code>${esc(c.fn.nombre)}()</code><span class="nota">${MOD().sinEntrada}</span>` : dibujoFinal}</div>` : dibujoFinal;
   if (vis.sinEscribir && sal) {   // la función del paso aún no está escrita: la entrada del test y lo que se espera
     const fn0 = E.ej.pasos[vis.paso].funciones[0], ent = MOD().estadoEntrada(vis.test);
     const dibEnt = !ent ? `<code>${esc(fn0)}()</code><span class="nota">${MOD().sinEntrada}</span>` : MOD().svg(ent, E.ej.visual.variable, mini);
     const dibEsp = MOD().svg(MOD().estadoSalida(vis.test), E.ej.visual.variable, mini)
-      + (sal.retornos ?? []).map(r => `<span class="ret">↩ ${esc(r === null ? 'NULL' : r)}</span>`).join(' ');
+      + `<div>${MOD().textoEsperado(vis.test)}</div>`;
     $('vivo-zoom').innerHTML = `<div class="vivo-fila"><div class="entrada-mini"><span class="rot">entrada</span>${dibEnt}</div><div class="esperado-mini"><span class="rot">→ se espera</span>${dibEsp}</div></div>`;
     $('vivo').classList.remove('pasa', 'falla');
     mostrarVivo();

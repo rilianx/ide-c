@@ -2,7 +2,7 @@
 // (direccionamiento abierto): el HashMap con sus campos, el arreglo buckets con sus índices
 // y, debajo de cada casilla ocupada, el Pair [key | value]. Un par inválido (key NULL) va gris.
 
-import { svgEnteros } from './visual.js?v=202611190153';
+import { svgEnteros } from './visual.js?v=202611190201';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');
@@ -71,7 +71,21 @@ export function estadoEntradaTabla(t) {
 }
 export function estadoSalidaTabla(t) {
   const s = t.salida ?? {};
-  return estadoDeTabla(s.tabla, 'current' in s ? s.current : undefined, s.size);
+  const e = estadoDeTabla(s.tabla, 'current' in s ? s.current : undefined, s.size);
+  // el par que se espera que retorne, marcado en el dibujo
+  const r = s.retornos?.[0];
+  if (typeof r === 'string') {
+    const i = e.pares.findIndex(p => p.key?.t === r);
+    if (i >= 0) e.vars = [{ nombre: 'return', ptr: i }];
+  }
+  return e;
+}
+// Lo que se espera, dicho explícitamente: qué retorna (un par, no un texto) y dónde queda current.
+export function textoEsperadoTabla(t) {
+  const s = t.salida ?? {};
+  const partes = (s.retornos ?? []).map(r => r === null ? '↩ retorna NULL' : `↩ retorna el par «${esc(r)}»`);
+  if ('current' in s) partes.push(`current = ${esc(s.current)}`);
+  return partes.map(p => `<span class="ret">${p}</span>`).join(' ');
 }
 export const vaciaTabla = estado => !estado?.mapa && !(estado?.pares ?? []).length;
 

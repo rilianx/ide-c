@@ -1,8 +1,8 @@
 // Tests: cada uno es un trozo de C que usa solo la interfaz (.h) e imprime algo;
 // se compara su salida con la esperada. Si un test se cuelga (ciclo infinito),
 // se detiene y se siguen corriendo los que faltan.
-import { modeloDe } from './modelos.js?v=202611190153';
-import { armarTests, mismaSalida, mensajes, describirTest } from './proyecto.js?v=202611190153';
+import { modeloDe } from './modelos.js?v=202611190201';
+import { armarTests, mismaSalida, mensajes, describirTest } from './proyecto.js?v=202611190201';
 
 // tests: [{nombre, codigo, esperado, paso}]; alActualizar(resultados) se llama a medida que avanzan.
 // Devuelve {compilacion, resultados} con resultados[i] = {estado, obtenido, error}.
@@ -53,7 +53,7 @@ export function htmlTest(t) {
   const ent = M.estadoEntrada(t);
   const entrada = ent ? M.svg(ent, variable, op) : `<span class="nota">(${M.sinEntrada})</span>`;
   const salida = M.svg(M.estadoSalida(t), variable, op);
-  const rets = (s.retornos ?? []).map(r => `<span class="ret">↩ ${esc(r === null ? 'NULL' : r)}</span>`).join(' ');
+  const rets = M.textoEsperado(t);
   return `<div class="test-dibujo"><div class="lado"><span class="rot">entrada</span>${entrada}</div>`
     + `<div class="llamada"><code>${esc(d.llamadas)}</code><span>→</span></div>`
     + `<div class="lado"><span class="rot">se espera</span>${salida}${rets ? `<div>${rets}</div>` : ''}</div></div>`;

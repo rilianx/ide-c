@@ -333,7 +333,7 @@ svg.memoria text.var { font-size: 14px; font-weight: 500; }
 .esperado-mini { flex: 0 0 38%; display: flex; flex-direction: column; align-items: flex-start; border-left: 1px dashed var(--borde); padding-left: 6px; }
 .esperado-mini .rot { font-size: 10px; color: var(--suave); text-transform: uppercase; }
 .esperado-mini svg.memoria { max-height: 12vh; }
-.esperado-mini .ret { font-size: 12px; }
+.esperado-mini .ret { font-size: 11px; white-space: nowrap; display: inline-block; margin: 2px 2px 0 0; }
 
 /* celular con el teclado abierto: sin el asistente de abajo (más espacio para el código) */
 @media (max-width: 1000px) { body.escribiendo .asistente { display: none; } }
@@ -359,7 +359,7 @@ svg.memoria .valor { font-size: 12px; fill: var(--suave); text-anchor: middle; }
 svg.memoria .dato.num { font-size: 17px; }
 
 /* ◀ ▶ en la ventana de ejecución */
-.vivo-pasos { position: absolute; bottom: 6px; right: 4px; z-index: 2; display: flex; gap: 4px; }
+.vivo-pasos { display: flex; gap: 4px; margin-left: auto; }
 .vivo-pasos button { padding: 0 9px; font-size: 13px; background: color-mix(in srgb, var(--panel) 80%, transparent); }
 
 /* Tocar el dibujo para elegir una pieza del asistente */
@@ -368,9 +368,12 @@ svg.memoria .toque.elegible { fill: color-mix(in srgb, #2f6fd6 12%, transparent)
 svg.memoria .toque.tocado { fill: color-mix(in srgb, #1a7f37 30%, transparent); }
 
 /* Tests de la función en la ventana: 1/3 y un punto por test */
-.vivo-tests { position: absolute; bottom: 8px; left: 8px; z-index: 2; display: flex; align-items: center; gap: 5px; font-size: 13px; background: color-mix(in srgb, var(--panel) 80%, transparent); border-radius: 10px; padding: 1px 6px; }
+.vivo-tests { display: flex; align-items: center; gap: 5px; font-size: 13px; }
 .vivo-tests:empty { display: none; }
 .punto-test { width: 14px; height: 14px; min-width: 0; padding: 0; border-radius: 50%; border: 2px solid transparent; }
 .punto-test.ok { background: #1a7f37; } .punto-test.mal { background: #cf222e; }
 .punto-test.actual { border-color: var(--texto); box-shadow: 0 0 0 2px var(--panel) inset; }
-.vivo-cuerpo { padding-bottom: 28px; }
+
+/* controles de la ventana, en su propia fila (no tapan el dibujo) */
+.vivo-controles { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 2px; min-height: 26px; }
+.vivo-pasos button { padding: 1px 10px; }
