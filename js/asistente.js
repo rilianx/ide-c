@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190226';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190237';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -221,6 +221,7 @@ export class Asistente {
       if (this.sel) { const n = editor.cm.getCursor().line; if (n < this.sel.ini || n > this.sel.fin) this.sel = null; }
       // si se estaba editando una línea y el cursor se fue a otra, se cancela
       if (this.armando?.editando != null && editor.cm.getCursor().line !== this.armando.linea) this.armando = null;
+      if (this.sinAuto != null && editor.cm.getCursor().line !== this.sinAuto) this.sinAuto = null;
       clearTimeout(t); t = setTimeout(() => this.dibujar(), 120); });
   }
 
@@ -247,6 +248,11 @@ export class Asistente {
     if (hueco.k === 'nombre') {
       const usados = new Set(vars.map(v => v.nombre));
       return hueco.sug.filter(n => !usados.has(n)).map(n => ({ texto: n }));
+    }
+    if (hueco.libre) {   // editar una parte de una línea cualquiera: primero las del mismo tipo, después las demás
+      const t = hueco.preferido;
+      const otras = [...exprs.filter(e => t && mismo(e, t)), ...exprs.filter(e => !(t && mismo(e, t)))];
+      return [...otras, ...['0', '1', '-1'].map(x => ({ texto: x, ...T('long', 0) })), { texto: 'NULL', base: 'void', ptr: 1 }];
     }
     if (hueco.k === 'lval') return exprs.filter(e => hueco.num ? esNum(e) : hueco.tipo ? mismo(e, hueco.tipo(valores)) : true).map(e => ({ ...e }));
     const deseado = hueco.k === 'ret' ? fn.retorno : hueco.tipo(valores);
@@ -278,20 +284,6 @@ export class Asistente {
 
     if (ctx.fuera) {
       html += `<p class="nota">${esc(ctx.fuera)}</p>`;
-    } else if (this.armando) {
-      const { plantilla, valores } = this.armando;
-      const hueco = plantilla.huecos[valores.length];
-      const editando = this.armando.editando;
-      const actualI = editando ?? valores.length;
-      const vista = plantilla.etiqueta.split(/(?<![A-Za-z0-9])_(?![A-Za-z0-9])/).map((s, i, a) => esc(s) + (i < a.length - 1
-        ? (i < valores.length && i !== editando ? `<b class="lleno" data-h="${i}" title="Toca para cambiar">${esc(valores[i].texto)}</b>`
-          : `<span class="hueco${i === actualI ? ' actual' : ''}">${i === editando ? esc(valores[i].texto) : '_'}</span>`) : '')).join('');
-      html += `<div class="fila armando">${editando != null ? `<span class="nota">Línea ${this.armando.linea + 1}:</span>` : ''}<code class="vista">${vista}</code><button class="cancelar" title="Cancelar">✕</button></div>`;
-      if (editando != null) html += '<p class="nota">Elige la pieza nueva (o toca otra parte de la línea para cambiar esa).</p>';
-      const piezas = this.piezas(this.armando.ctxLinea ?? ctx, plantilla.huecos[actualI], valores);
-      html += `<div class="chips">${piezas.map((p, i) => `<button class="chip pieza" data-i="${i}" title="${p.base ? esc(nombreTipo(p)) : ''}">${esc(p.texto)}</button>`).join('')}`
-        + (piezas.length ? '' : `<span class="nota">No hay ${plantilla.huecos[actualI].k === 'nombre' ? 'nombres libres' : 'piezas de ese tipo'} aquí.</span>`) + '</div>';
-      this.piezasActuales = piezas;
     } else {
       const { ocultos = {} } = this.obtener();
       if (!this.nombres || this.nombresDe !== ej.id) {   // del código base: los .h y el código del curso
@@ -301,17 +293,20 @@ export class Asistente {
         this.nombresDe = ej.id;
       }
       const todas = plantillas(ctx.est, ej.constructores ?? [], ctx.fn.retorno, this.nombres, (ej.llamadas ?? []).filter(f => f.nombre !== ctx.fn.nombre));
-      const sel = ctx.linea ? this.seleccion() : null;
+      // al tocar una línea queda en modo edición (sus partes se tocan para cambiarlas); en una línea vacía,
+      // los comandos para escribir una nueva. Mientras se arma un comando nuevo, no hay barra de la línea.
+      const construyendo = this.armando && this.armando.editando == null;
+      const sel = ctx.linea && !construyendo ? this.seleccion() : null;
       this.editor.marcarSeleccion(sel ? sel.ini : null, sel?.fin);
       if (ctx.linea && sel) {
         this.lineaActual = { ...ctx.linea, rec: reconocer(ctx.linea.texto, todas) };
+        if (!this.armando && ctx.linea.texto.trim() && sel.ini === ctx.linea.n && this.sinAuto !== ctx.linea.n
+          && (this.lineaActual.rec || partesDe(ctx.linea.texto, ctx.est).length)) this.editarLinea(true);
         const n = sel.fin - sel.ini + 1;
         const que = n === 1 ? `Línea ${sel.ini + 1}` : `Líneas ${sel.ini + 1}–${sel.fin + 1}`;
         html += `<div class="fila linea-actual"><span class="nota">${que}:</span>`
-          + (n === 1 ? (ctx.linea.texto.trim() ? `<code>${esc(ctx.linea.texto.trim())}</code>` : '<span class="nota">(vacía)</span>') : `<code>${esc(this.editor.cm.getLine(sel.ini).trim())} …</code>`)
+          + (this.armando?.editando != null && n === 1 ? '' : n === 1 ? (ctx.linea.texto.trim() ? `<code>${esc(ctx.linea.texto.trim())}</code>` : '<span class="nota">(vacía)</span>') : `<code>${esc(this.editor.cm.getLine(sel.ini).trim())} …</code>`)
           + '<span class="grupo">'
-          // ✎ Editar va con los demás botones; si la línea no tiene nada que cambiar, desactivado
-          + `<button class="editar-linea" title="Cambiar una parte de esta línea"${(n === 1 || sel.ini === ctx.linea.n) && ctx.linea.texto.trim() && (this.lineaActual.rec || partesDe(ctx.linea.texto, ctx.est).length) ? '' : ' disabled'}>✎ Editar</button>`
           + '<button class="mover" data-dir="-1" title="Mover arriba (si choca con un bloque, entra en él; al borde de su bloque, sale)">↑</button>'
           + '<button class="mover" data-dir="1" title="Mover abajo">↓</button>'
           + '<button class="ampliar" data-mas="1" title="Agregar a la selección la instrucción (o bloque) siguiente">＋</button>'
@@ -331,11 +326,32 @@ export class Asistente {
             + (i < cond.ops.length ? `<b class="op-cond">${esc(cond.ops[i])}</b>` : '')).join('')}</div>`;
         }
       } else this.lineaActual = null;
+      if (this.armando) {
+      const { plantilla, valores } = this.armando;
+      const hueco = plantilla.huecos[valores.length];
+      const editando = this.armando.editando;
+      const actualI = editando ?? valores.length;   // -1: editando una línea, aún sin elegir qué parte
+      const vista = plantilla.etiqueta.split(/(?<![A-Za-z0-9])_(?![A-Za-z0-9])/).map((s, i, a) => esc(s) + (i < a.length - 1
+        ? (i < valores.length && i !== editando ? `<b class="lleno" data-h="${i}" title="Toca para cambiar">${esc(valores[i].texto)}</b>`
+          : `<span class="hueco${i === actualI ? ' actual' : ''}">${i === editando ? esc(valores[i].texto) : '_'}</span>`) : '')).join('');
+      html += `<div class="fila armando">${editando != null ? '<span class="nota">✎</span>' : ''}<code class="vista">${vista}</code><button class="cancelar" title="${editando != null ? 'Dejar de editar (para escribir una línea nueva aquí)' : 'Cancelar'}">✕</button></div>`;
+      if (editando === -1) {
+        html += '<p class="nota">Toca la parte de la línea que quieres cambiar. Para escribir una línea nueva: ↵ (o ✕).</p>';
+        this.piezasActuales = [];
+      } else {
+      if (editando != null) html += '<p class="nota">Elige la pieza nueva (o toca otra parte de la línea para cambiar esa).</p>';
+      const piezas = this.piezas(this.armando.ctxLinea ?? ctx, plantilla.huecos[actualI], valores);
+      html += `<div class="chips">${piezas.map((p, i) => `<button class="chip pieza" data-i="${i}" title="${p.base ? esc(nombreTipo(p)) : ''}">${esc(p.texto)}</button>`).join('')}`
+        + (piezas.length ? '' : `<span class="nota">No hay ${plantilla.huecos[actualI].k === 'nombre' ? 'nombres libres' : 'piezas de ese tipo'} aquí.</span>`) + '</div>';
+      this.piezasActuales = piezas;
+      }
+      } else {
       const cats = [...new Set(todas.map(p => p.cat))];
       if (!cats.includes(this.cat)) this.cat = cats[0];
       html += `<div class="fila cats">${cats.map(c => `<button class="cat${c === this.cat ? ' activa' : ''}" data-cat="${c}">${c}</button>`).join('')}</div>`;
       this.plantillasActuales = todas.filter(p => p.cat === this.cat);
       html += `<div class="chips">${this.plantillasActuales.map((p, i) => `<button class="chip ${p.clase ?? ''}" data-p="${i}">${esc(p.etiqueta)}</button>`).join('')}</div>`;
+      }
     }
     this.caja.innerHTML = html;
     if (!this.armando) this.piezasActuales = null;
@@ -359,7 +375,7 @@ export class Asistente {
     this.caja.querySelectorAll('[data-tmov]').forEach(b => b.onclick = () => this.cambiarCondicion(+b.dataset.tmov, +b.dataset.dir));
     this.caja.querySelectorAll('[data-tdel]').forEach(b => b.onclick = () => this.cambiarCondicion(+b.dataset.tdel, 0));
     if (q('.deshacer')) q('.deshacer').onclick = () => { this.editor.cm.undo(); this.editor.cm.focus(); };
-    const c = this.caja.querySelector('.cancelar'); if (c) c.onclick = () => { this.armando = null; this.dibujar(); };
+    const c = this.caja.querySelector('.cancelar'); if (c) c.onclick = () => { if (this.armando?.editando != null) this.sinAuto = this.armando.linea; this.armando = null; this.dibujar(); };
     // los botones no le quitan el foco al editor
     this.caja.querySelectorAll('button').forEach(b => b.addEventListener('mousedown', e => e.preventDefault()));
   }
@@ -419,18 +435,18 @@ export class Asistente {
   }
 
   // Abre la línea actual como plantilla con sus partes ya puestas; se toca la que se quiere cambiar.
-  editarLinea() {
+  editarLinea(auto = false) {
     const l = this.lineaActual;
     if (!l) return;
-    if (!l.rec) return this.editarLibre();
+    if (!l.rec) return this.editarLibre(auto);
     const { plantilla, textos } = l.rec;
     const valores = textos.map(t => l.exprs.find(e => e.texto === t) ?? { texto: t });
     // se empieza por la última parte que no es un nombre nuevo (en «a = b», por b); se toca otra para cambiarla
     const primero = plantilla.huecos.map(h => h.k).lastIndexOf(plantilla.huecos.findLast(h => h.k !== 'nombre')?.k);
     // para editar, la línea no cuenta su propia declaración
     const ctx = this.contexto();
-    this.armando = { plantilla, valores, linea: l.n, editando: primero < 0 ? 0 : primero, ctxLinea: { ...ctx, exprs: l.exprs } };
-    this.dibujar();
+    this.armando = { plantilla, valores, linea: l.n, editando: auto ? -1 : primero < 0 ? 0 : primero, ctxLinea: { ...ctx, exprs: l.exprs } };
+    if (!auto) this.dibujar();
   }
 
   // Mueve la parte i de la condición a la izquierda (dir -1) o a la derecha (1), o la quita (0).
@@ -458,20 +474,21 @@ export class Asistente {
 
   // Editar una línea que no es de ningún comando (por ejemplo, un while largo con &&): cada parte
   // (map->buckets[pos], NULL, key, 0…) es un hueco con su valor; se toca una y se elige la pieza nueva.
-  editarLibre() {
+  editarLibre(auto = false) {
     const l = this.lineaActual, ctx = this.contexto();
     const sangria = (l.texto.match(/^\s*/) || [''])[0], t = l.texto.slice(sangria.length);
     const partes = partesDe(t, ctx.est);
     if (!partes.length) return;
     const tipoDe = texto => /^-?\d+$/.test(texto) ? T('long', 0) : texto === 'NULL' ? null : l.exprs.find(e => e.texto === texto) ?? null;
-    const huecos = partes.map(p => { const tp = tipoDe(p.texto); return { k: 'expr', tipo: () => tp && (tp.ptr || esNum(tp)) ? T(tp.base, tp.ptr) : null }; });
+    // cualquier pieza sirve, pero primero las del mismo tipo (map->buckets[i]->key → también ->value)
+    const huecos = partes.map(p => { const tp = tipoDe(p.texto); return { k: 'expr', libre: true, preferido: tp && (tp.ptr || esNum(tp)) ? T(tp.base, tp.ptr) : null }; });
     const trozos = []; let a = 0;
     for (const p of partes) { trozos.push(t.slice(a, p.ini)); a = p.fin; }
     trozos.push(t.slice(a));
     const plantilla = { etiqueta: trozos.map(x => x.replace(/(?<![A-Za-z0-9])_(?![A-Za-z0-9])/g, ' ')).join('_'), huecos,
       armar: v => [trozos.map((x, i) => x + (i < v.length ? v[i].texto : '')).join('')] };
-    this.armando = { plantilla, valores: partes.map(p => ({ texto: p.texto })), linea: l.n, editando: 0, ctxLinea: { ...ctx, exprs: l.exprs } };
-    this.dibujar();
+    this.armando = { plantilla, valores: partes.map(p => ({ texto: p.texto })), linea: l.n, editando: auto ? -1 : 0, ctxLinea: { ...ctx, exprs: l.exprs } };
+    if (!auto) this.dibujar();
   }
 
   // ---- Selección (una instrucción o un bloque completo) para mover o borrar ----
