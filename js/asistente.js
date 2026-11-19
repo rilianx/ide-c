@@ -209,8 +209,8 @@ function parecidasA(actual, piezas) {
   };
   return piezas.map((p, i) => [puntaje(p, i), i]).filter(([n]) => n).sort((a, b) => b[0] - a[0]).slice(0, 8).map(([, i]) => i);
 }
-function htmlPiezas(piezas, prefijo = []) {
-  const chip = (p, i) => `<button class="chip pieza" data-i="${i}" title="${p.base ? esc(nombreTipo(p)) : ''}">${esc(p.texto)}</button>`;
+function htmlPiezas(piezas, prefijo = [], yaVistas = new Set()) {
+  const chip = (p, i) => yaVistas.has(i) ? '' : `<button class="chip pieza" data-i="${i}" title="${p.base ? esc(nombreTipo(p)) : ''}">${esc(p.texto)}</button>`;
   if (piezas.length <= 7) return piezas.map(chip).join('');
   const pre = prefijo.join(''), grupos = new Map(), sueltas = [];
   piezas.forEach((p, i) => {
@@ -391,7 +391,7 @@ export class Asistente {
       const actual = editando != null && editando >= 0 ? valores[editando]?.texto : null;
       const parecidas = actual ? parecidasA(actual, piezas) : [];
       if (parecidas.length) html += `<div class="chips parecidas"><span class="nota">Parecidas:</span>${parecidas.map(i => `<button class="chip pieza" data-i="${i}">${esc(piezas[i].texto)}</button>`).join('')}</div>`;
-      html += `<div class="chips">${htmlPiezas(piezas, this.navPrefijo)}`
+      html += `<div class="chips">${htmlPiezas(piezas, this.navPrefijo, new Set(parecidas))}`
         + (piezas.length ? '' : `<span class="nota">No hay ${plantilla.huecos[actualI].k === 'nombre' ? 'nombres libres' : 'piezas de ese tipo'} aquí.</span>`) + '</div>';
       this.piezasActuales = piezas;
       }
