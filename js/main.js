@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611191356';
-import { Runner } from './runner.js?v=202611191356';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191356';
-import { traducirMensaje } from './mensajes.js?v=202611191356';
-import { modeloDe } from './modelos.js?v=202611191356';
+import { Editor } from './editor.js?v=202611191627';
+import { Runner } from './runner.js?v=202611191627';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191627';
+import { traducirMensaje } from './mensajes.js?v=202611191627';
+import { modeloDe } from './modelos.js?v=202611191627';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191356';
-import { Asistente } from './asistente.js?v=202611191356';
-import { activarDivisores } from './divisores.js?v=202611191356';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191356';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191627';
+import { Asistente } from './asistente.js?v=202611191627';
+import { activarDivisores } from './divisores.js?v=202611191627';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191627';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -55,13 +55,53 @@ function marcarElegibles() {
 for (const id of ['vivo-zoom', 'vis-cuadros']) new MutationObserver(marcarElegibles).observe(document.getElementById(id), { childList: true });
 // en la ventana, el dibujo (ajustado al alto) queda pegado arriba, no centrado
 new MutationObserver(() => { for (const s of document.querySelectorAll('#vivo-zoom svg.memoria')) s.setAttribute('preserveAspectRatio', 'xMidYMin meet'); }).observe(document.getElementById('vivo-zoom'), { childList: true, subtree: true });
+// Al pasar sobre el dibujo (o al tocarlo sin un comando abierto): cómo se llega a esa parte (L->current->data),
+// con el camino destacado en el dibujo (L, su campo current, el dato del nodo).
+const rotulo = document.createElement('div');
+rotulo.className = 'rotulo-dibujo'; rotulo.hidden = true;
+document.body.append(rotulo);
+const tramosDe = x => x.match(/^[A-Za-z_]\w*|->\s*[A-Za-z_]\w*|\[[^\[\]]*\]/g) ?? [x];
+function mostrarCamino(t, x, y) {
+  const cands = t.dataset.expr.split('|');
+  const estructura = vis?.cuadros[vis.i]?.dentro ? vis.cuadros[vis.i].fn?.lista : E.ej.visual.variable;
+  // la principal: la que parte de la estructura (L->…), si hay; y otras del mismo tipo de final (aux->data)
+  const fin = tramosDe(cands[0]).at(-1);
+  const delMismo = cands.filter(c => tramosDe(c).at(-1) === fin);
+  const principal = delMismo.find(c => c.startsWith(estructura + '->') || c === estructura) ?? delMismo[0];
+  const otras = delMismo.filter(c => c !== principal).slice(0, 2);
+  rotulo.innerHTML = `<code>${esc(principal)}</code>${otras.length ? `<span> = ${otras.map(o => `<code>${esc(o)}</code>`).join(' = ')}</span>` : ''}`;
+  rotulo.hidden = false;
+  rotulo.style.left = `${Math.min(x + 12, innerWidth - rotulo.offsetWidth - 8)}px`;
+  rotulo.style.top = `${y + 16}px`;
+  // el camino: cada prefijo de la expresión (L, L->current, L->current->data)
+  const svg = t.closest('svg');
+  svg.querySelectorAll('.toque.camino').forEach(z => z.classList.remove('camino'));
+  const ts = tramosDe(principal);
+  for (let k = 1; k <= ts.length; k++) {
+    const pre = ts.slice(0, k).join('');
+    for (const z of svg.querySelectorAll('.toque')) if (z.dataset.expr.split('|').includes(pre)) { z.classList.add('camino'); break; }
+  }
+}
+function ocultarCamino() {
+  rotulo.hidden = true;
+  document.querySelectorAll('.toque.camino').forEach(z => z.classList.remove('camino'));
+}
+document.addEventListener('pointerover', e => {
+  if (e.pointerType !== 'mouse') return;
+  const t = e.target.closest?.('#vivo-zoom .toque');
+  if (t) mostrarCamino(t, e.clientX, e.clientY); else if (!rotulo.hidden) ocultarCamino();
+});
+let tRotulo = null;
 document.addEventListener('click', e => {
   const t = e.target.closest?.('#vivo-zoom .toque, #vis-cuadros .toque');
   if (!t) return;
   const cands = t.dataset.expr.split('|');
   const r = asistente.tocar(cands);
   t.classList.add('tocado'); setTimeout(() => t.classList.remove('tocado'), 400);
-  if (r === 'sin-hueco') estado(`Esto es ${cands[0]}. Para usarlo, elige un comando abajo y después toca el dibujo.`);
+  if (r === 'sin-hueco') {   // sin comando abierto: se muestra cómo se llega ahí (un rato)
+    mostrarCamino(t, e.clientX, e.clientY);
+    clearTimeout(tRotulo); tRotulo = setTimeout(ocultarCamino, 2500);
+  }
   else if (r === 'no-sirve') estado(`${cands[0]} no sirve en este hueco (es de otro tipo).`, true);
 });
 activarDivisores(document.getElementById('codigo'), () => { editor.refrescar(); setTimeout(remarcarEjecucion, 0); });   // (después: vis aún no existe al iniciar)

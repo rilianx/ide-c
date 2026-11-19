@@ -447,3 +447,9 @@ svg.memoria .clave-arbol { font-size: 17px; }
 .vivo-nota:empty { display: none; }
 .vivo-nota { flex: none; font-size: 13px; max-height: 5.5em; overflow: auto; }
 .vivo-nota .diagnostico, .vivo-nota .error-ej { margin: 2px 0; }
+
+/* cómo se llega a una parte del dibujo (al pasar el mouse o tocarla): el rótulo y el camino destacado */
+.rotulo-dibujo { position: fixed; z-index: 40; pointer-events: none; background: #222; color: #fff; padding: 3px 8px; border-radius: 6px; font-size: 13px; box-shadow: 0 2px 8px rgb(0 0 0 / .25); white-space: nowrap; }
+.rotulo-dibujo code { font-family: var(--mono); color: #ffd36b; }
+.rotulo-dibujo span { color: #ccc; }
+svg.memoria .toque.camino { fill: color-mix(in srgb, #d4730f 20%, transparent); stroke: #d4730f; stroke-width: 1.6; }

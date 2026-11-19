@@ -1,8 +1,8 @@
 // Lógica pura del proyecto (sin DOM): qué funciones escribió el estudiante,
 // cómo se arma el programa que se compila y cómo se comparan las salidas.
 // Se puede importar desde node para probarla.
-import { generarTestArbol, describirTestArbol } from './arbol.js?v=202611191356';
-import { generarTestTabla, describirTestTabla } from './tabla.js?v=202611191356';
+import { generarTestArbol, describirTestArbol } from './arbol.js?v=202611191627';
+import { generarTestTabla, describirTestTabla } from './tabla.js?v=202611191627';
 
 // Tipo de un campo de struct en ej.estructuras: «Node» (puntero a Node, forma corta), «Pair **»,
 // «long», «char *»… → {base, ptr}.
