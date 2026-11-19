@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190206';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190211';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -76,7 +76,7 @@ function plantillas(est, ctors, retorno, nombres = {}, llamadas = []) {
   });
   out.push({
     cat: 'Asignar', etiqueta: '_ = _;',
-    huecos: [{ k: 'lval' }, { k: 'expr', tipo: v => T(v[0].base, v[0].ptr) }],
+    huecos: [{ k: 'lval' }, { k: 'expr', tipo: v => T(v[0].base, v[0].ptr), calculos: true }],
     armar: v => [`${v[0].texto} = ${v[1].texto};`],
   });
   for (const s of structs) out.push({
@@ -109,11 +109,8 @@ function plantillas(est, ctors, retorno, nombres = {}, llamadas = []) {
     for (const a of arreglos) out.push({ cat: 'Variables', etiqueta: `${a.base} ** _ = _;`, clase: 'decl',
       huecos: [{ k: 'nombre', sug: sug(a.base, ['old_buckets', 'viejo']) }, { k: 'expr', tipo: () => T(a.base, 2) }],
       armar: v => [`${a.base} ** ${v[0].texto} = ${v[1].texto};`] });
-    out.push({ cat: 'Asignar', etiqueta: '_ = (_ + 1) % _;', huecos: [{ k: 'lval', num: true }, { k: 'expr', tipo: LONG }, { k: 'expr', tipo: LONG }],
-      armar: v => [`${v[0].texto} = (${v[1].texto} + 1) % ${v[2].texto};`] });
     out.push({ cat: 'Asignar', etiqueta: '_++;', huecos: [{ k: 'lval', num: true }], armar: v => [`${v[0].texto}++;`] });
     out.push({ cat: 'Asignar', etiqueta: '_--;', huecos: [{ k: 'lval', num: true }], armar: v => [`${v[0].texto}--;`] });
-    out.push({ cat: 'Asignar', etiqueta: '_ *= 2;', huecos: [{ k: 'lval', num: true }], armar: v => [`${v[0].texto} *= 2;`] });
     for (const a of arreglos) out.push({ cat: 'Memoria', etiqueta: `_ = calloc(_, sizeof(${a.base} *));`, clase: 'mem',
       huecos: [{ k: 'lval', tipo: () => T(a.base, 2) }, { k: 'expr', tipo: LONG }],
       armar: v => [`${v[0].texto} = (${a.base} **)calloc(${v[1].texto}, sizeof(${a.base} *));`] });
@@ -220,6 +217,11 @@ export class Asistente {
     const deseado = hueco.k === 'ret' ? fn.retorno : hueco.tipo(valores);
     let lista = exprs.filter(e => deseado ? mismo(e, deseado) : (!hueco.soloStructs || ctx.est[e.base]));
     if (esNum(deseado)) lista = [...lista, ...['0', '1', '-1'].map(t => ({ texto: t, ...T('long', 0) }))];
+    // a la derecha de «x = _» (x entero): también cálculos con x (x + 1, x - 1, x * 2, (x + 1) % capacidad)
+    if (hueco.calculos && esNum(deseado) && valores[0]) {
+      const x = valores[0].texto, caps = exprs.filter(e => esNum(e) && /capacity|capacidad/i.test(e.texto) && e.texto !== x);
+      lista = [...[`${x} + 1`, `${x} - 1`, `${x} * 2`, ...caps.map(c => `(${x} + 1) % ${c.texto}`)].map(t => ({ texto: t, ...T('long', 0) })), ...lista];
+    }
     // valor inicial de un for: también «algo + 1» (por ejemplo, map->current + 1)
     if (hueco.masUno) lista = [...lista, ...exprs.filter(e => esNum(e)).map(e => ({ ...e, texto: `${e.texto} + 1` }))];
     if (!hueco.sinNull && (!deseado || deseado.ptr)) lista = [...lista, { texto: 'NULL', base: deseado?.base ?? 'void', ptr: deseado?.ptr ?? 1 }];
@@ -281,9 +283,10 @@ export class Asistente {
           + '<button class="deshacer" title="Deshacer (Ctrl+Z)">↶</button></span></div>';
         // en un if/while: agregar a la condición con && o ||
         if (/^(\}\s*else\s+)?(if|while)\s*\(/.test(ctx.linea.texto.trim()) && n === 1 || /^(\}\s*else\s+)?(if|while)\s*\(/.test(this.editor.cm.getLine(sel.ini).trim()) && sel.ini === ctx.linea.n) {
-          this.condiciones = [['&&', '!='], ['&&', '=='], ['||', '!='], ['||', '==']];
-          html += `<div class="fila condicion"><span class="nota">Agregar a la condición:</span>${this.condiciones.map(([o, c], i) =>
-            `<button class="chip" data-cond="${i}">${o} _ ${c} NULL</button>`).join('')}</div>`;
+          // a la derecha («… && _ != NULL») o a la izquierda («_ != NULL && …»: se revisa primero)
+          this.condiciones = ['der', 'izq'].flatMap(lado => [['&&', '!='], ['&&', '=='], ['||', '!='], ['||', '==']].map(([o, c]) => [o, c, lado]));
+          html += `<div class="fila condicion"><span class="nota">Agregar a la condición:</span>${this.condiciones.map(([o, c, lado], i) =>
+            `<button class="chip" data-cond="${i}">${lado === 'der' ? `… ${o} _ ${c} NULL` : `_ ${c} NULL ${o} …`}</button>`).join('')}</div>`;
         }
       } else this.lineaActual = null;
       const cats = [...new Set(todas.map(p => p.cat))];
@@ -307,9 +310,9 @@ export class Asistente {
     this.caja.querySelectorAll('.mover').forEach(b => b.onclick = () => this.mover(+b.dataset.dir));
     this.caja.querySelectorAll('.ampliar').forEach(b => b.onclick = () => this.ampliar(b.dataset.mas === '1'));
     this.caja.querySelectorAll('[data-cond]').forEach(b => b.onclick = () => {
-      const [op, cmp] = this.condiciones[+b.dataset.cond];
-      this.empezar({ etiqueta: `${op} _ ${cmp} NULL`, huecos: [{ k: 'expr', tipo: () => null, sinNull: true, soloStructs: true }],
-        condicion: { op, cmp, linea: this.editor.cm.getCursor().line }, armar: v => [] });
+      const [op, cmp, lado] = this.condiciones[+b.dataset.cond];
+      this.empezar({ etiqueta: lado === 'der' ? `… ${op} _ ${cmp} NULL` : `_ ${cmp} NULL ${op} …`, huecos: [{ k: 'expr', tipo: () => null, sinNull: true, soloStructs: true }],
+        condicion: { op, cmp, lado, linea: this.editor.cm.getCursor().line }, armar: v => [] });
     });
     if (q('.deshacer')) q('.deshacer').onclick = () => { this.editor.cm.undo(); this.editor.cm.focus(); };
     const c = this.caja.querySelector('.cancelar'); if (c) c.onclick = () => { this.armando = null; this.dibujar(); };
@@ -343,12 +346,16 @@ export class Asistente {
     const { plantilla, valores } = this.armando;
     this.armando = null;
     if (plantilla.condicion) {   // «if (a)» → «if (a && b != NULL)»
-      const { op, cmp, linea } = plantilla.condicion, cm = this.editor.cm, L = cm.getLine(linea), m = enmascarar(L);
+      const { op, cmp, lado, linea } = plantilla.condicion, cm = this.editor.cm, L = cm.getLine(linea), m = enmascarar(L);
       const r = /\b(if|while)\s*\(/.exec(m);
       if (r) {
-        let p = 0, k = r.index + r[0].length - 1;
+        const ini = r.index + r[0].length;   // justo después del «(»
+        let p = 0, k = ini - 1;
         for (; k < m.length; k++) { if (m[k] === '(') p++; else if (m[k] === ')' && !--p) break; }
-        if (k < m.length) cm.replaceRange(` ${op} ${valores[0].texto} ${cmp} NULL`, { line: linea, ch: k });
+        if (k < m.length) {
+          if (lado === 'izq') cm.replaceRange(`${valores[0].texto} ${cmp} NULL ${op} `, { line: linea, ch: ini });
+          else cm.replaceRange(` ${op} ${valores[0].texto} ${cmp} NULL`, { line: linea, ch: k });
+        }
       }
       cm.setCursor({ line: linea, ch: cm.getLine(linea).length });
       return this.dibujar();
