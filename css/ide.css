@@ -398,3 +398,4 @@ svg.memoria .esperado { font-size: 12px; fill: #1a7f37; font-weight: 600; }
 .asistente .chips.parecidas { border-bottom: 1px dashed var(--borde); padding-bottom: 4px; margin-bottom: 4px; }
 svg.memoria .flecha.parent { stroke: var(--mal); stroke-dasharray: 4 3; stroke-width: 1.3; } svg.memoria .punta.parent { fill: var(--mal); }
 svg.memoria .mal-texto { fill: var(--mal); font-weight: 600; }
+svg.memoria .clave-arbol { font-size: 17px; }

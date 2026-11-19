@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611191225';
-import { Runner } from './runner.js?v=202611191225';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191225';
-import { traducirMensaje } from './mensajes.js?v=202611191225';
-import { modeloDe } from './modelos.js?v=202611191225';
+import { Editor } from './editor.js?v=202611191241';
+import { Runner } from './runner.js?v=202611191241';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191241';
+import { traducirMensaje } from './mensajes.js?v=202611191241';
+import { modeloDe } from './modelos.js?v=202611191241';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191225';
-import { Asistente } from './asistente.js?v=202611191225';
-import { activarDivisores } from './divisores.js?v=202611191225';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191225';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191241';
+import { Asistente } from './asistente.js?v=202611191241';
+import { activarDivisores } from './divisores.js?v=202611191241';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191241';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

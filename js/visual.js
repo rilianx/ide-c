@@ -6,25 +6,26 @@ const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').re
 const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');   // dirección corta
 
 // Variables que no son punteros a nodos (enteros, contadores, textos, datos) como cajitas amarillas
-// [nombre / valor] en una fila desde (x, y); lo que retorna va en verde. → {svg, ancho}
-export function svgEnteros(vars, x, y) {
+// [nombre / valor] en una fila desde (x, y) (o en columna, con anchoColumna: el ancho de cada una);
+// lo que retorna va en verde. → {svg, ancho, alto}
+export function svgEnteros(vars, x, y, anchoColumna = 0) {
   const vs = (vars ?? []).filter(v => !('ptr' in v));
-  if (!vs.length) return { svg: '', ancho: 0 };
+  if (!vs.length) return { svg: '', ancho: 0, alto: 0 };
   const valor = v => 'valor' in v ? String(v.valor)
     : 'texto' in v ? (v.texto === null ? 'NULL' : v.texto === '?' ? '?' : `"${v.texto.t}"`)
     : v.dato === null ? 'NULL' : v.dato === '?' ? '?' : String(v.dato);
   const out = [];
-  let cx = x;
+  let cx = x, cy = y;
   for (const v of vs) {
     const nombre = v.nombre === 'return' ? '↩ retorna' : 'dato' in v ? `*${v.nombre}` : v.nombre, val = valor(v);   // void *: el valor al que apunta
-    const w = Math.max(40, nombre.length * 7 + 14, val.length * 10 + 14);
-    out.push(`<rect x="${cx}" y="${y}" width="${w}" height="40" rx="3" class="etiqueta${v.nombre === 'return' ? ' retorno' : ''}"/>`);
-    out.push(`<text x="${cx + w / 2}" y="${y + 13}" class="campo">${esc(nombre)}</text>`);
-    out.push(`<text x="${cx + w / 2}" y="${y + 33}" class="dato num">${esc(val)}</text>`);
-    if (v.nombre !== 'return') out.push(`<rect x="${cx}" y="${y}" width="${w}" height="40" class="toque" data-expr="${esc(v.nombre)}"/>`);
-    cx += w + 8;
+    const w = anchoColumna || Math.max(40, nombre.length * 7 + 14, val.length * 10 + 14);
+    out.push(`<rect x="${cx}" y="${cy}" width="${w}" height="40" rx="3" class="etiqueta${v.nombre === 'return' ? ' retorno' : ''}"/>`);
+    out.push(`<text x="${cx + w / 2}" y="${cy + 13}" class="campo">${esc(nombre)}</text>`);
+    out.push(`<text x="${cx + w / 2}" y="${cy + 33}" class="dato num">${esc(val.length > 9 && anchoColumna ? val.slice(0, 8) + '…' : val)}</text>`);
+    if (v.nombre !== 'return') out.push(`<rect x="${cx}" y="${cy}" width="${w}" height="40" class="toque" data-expr="${esc(v.nombre)}"/>`);
+    if (anchoColumna) cy += 46; else cx += w + 8;
   }
-  return { svg: out.join(''), ancho: cx - x };
+  return { svg: out.join(''), ancho: anchoColumna ? anchoColumna : cx - x, alto: anchoColumna ? cy - y : 40 };
 }
 
 // Medidas

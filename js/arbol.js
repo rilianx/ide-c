@@ -1,7 +1,7 @@
 // Modelo «árbol binario de búsqueda» (Lab 4): tests declarativos y dibujo estático de un TreeMap.
 // Cada nodo es una caja [clave / left | right] en la columna de su clave (de menor a mayor, fija durante
 // toda la ejecución) y en la fila de su profundidad; los que no cuelgan de root van abajo, aparte.
-import { svgEnteros } from './visual.js?v=202611191225';
+import { svgEnteros } from './visual.js?v=202611191241';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');
@@ -175,11 +175,13 @@ export function esperadoArbol(estado, salida) {
 }
 
 // ---------- Dibujo ----------
-const CL = 80, AH = 40;                 // campos del TreeMap
-const NW = 56, KH = 24, PH = 16;        // nodo: clave arriba, left | right abajo
+// El TreeMap va a la izquierda, en columna (root, current, lower_than), con las variables debajo;
+// el árbol, a su derecha, parte bien arriba.
+const XL = 6, CW = 108, FH = 30;        // columna izquierda: ancho y alto de cada campo
+const NW = 66, KH = 28, PH = 18;        // nodo: clave arriba, left | right abajo
 const NH = KH + PH;
-const CS = 66, LH = 96;                 // separación entre columnas y entre niveles
-const X0 = 60, YM = 14;
+const CS = 74, LH = 74;                 // separación entre columnas y entre niveles
+const YM = 8, X0 = XL + CW + 34;        // X0: donde empieza el árbol
 
 export function svgArbol(estado, nombre, opciones = {}) {
   const A = estado?.arbol, ns = estado?.nodos ?? [], vars = estado?.vars ?? [];
@@ -208,14 +210,16 @@ export function svgArbol(estado, nombre, opciones = {}) {
     else sueltas.push(`${n} = ${i === null ? 'NULL' : '?'}`);
   }
   const BAJO = 14 + (porNodo.size ? 26 : 0);
-  const YA = YM + AH + 46;
+  const YA = YM + 8;                     // la raíz, arriba
   const yNivel = p => YA + p * LH;
-  const yFuera = YA + Math.max(1, niveles) * LH + 10;
+  const yFuera = YA + Math.max(1, niveles) * LH + 4;
   const pos = new Map();
   ns.forEach((n, i) => pos.set(i, { x: X0 + col.get(i) * CS, y: prof.has(i) ? yNivel(prof.get(i)) : yFuera + 16 }));
-  const enteros = svgEnteros(vars.filter(v => !('par' in v)), X0 + 3 * CL + 56, YM);
-  const ancho = Math.max(X0 + 3 * CL + 64 + enteros.ancho, X0 + Math.max(extra, 1) * CS + 20);
-  const alto = (fuera.length ? yFuera + 16 + NH + BAJO : yNivel(Math.max(niveles, 1) - 1) + NH + BAJO + 6) + (sueltas.length ? 20 : 0) + (esp?.texto ? 20 : 0);
+  const YC = YM + 18;                    // los campos del TreeMap (debajo de su nombre)
+  const enteros = svgEnteros(vars.filter(v => !('par' in v)), XL, YC + 3 * FH + 12, CW);
+  const altoIzq = YC + 3 * FH + 12 + enteros.alto + (esp?.retornoNulo ? 18 : 0);
+  const ancho = X0 + Math.max(extra, 1) * CS + 8;
+  const alto = Math.max(altoIzq, (fuera.length ? yFuera + 16 + NH + BAJO : yNivel(Math.max(niveles, 1) - 1) + NH + BAJO + 4)) + (sueltas.length ? 20 : 0) + (esp?.texto ? 20 : 0);
   const s = [], zonas = [];
   const flecha = (d, clase = 'next', marca = '') => s.push(`<path d="${d}" class="flecha ${clase} ${marca}" marker-end="url(#punta-${marca || clase})"/>`);
   const nulo = (x, y, w, h, marca = '') => s.push(`<line x1="${x + 4}" y1="${y + h - 3}" x2="${x + w - 4}" y2="${y + 3}" class="nulo ${marca}"/>`);
@@ -226,32 +230,38 @@ export function svgArbol(estado, nombre, opciones = {}) {
   const llega = (i, x, y, clase, marca = '') => {   // flecha desde (x, y) hasta arriba del nodo i
     const p = pos.get(i);
     if (!p) return;
-    flecha(`M${x},${y} C${x},${y + 30} ${p.x + NW / 2},${p.y - 30} ${p.x + NW / 2},${p.y - 1}`, clase, marca);
+    flecha(`M${x},${y} C${x},${y + 26} ${p.x + NW / 2},${p.y - 26} ${p.x + NW / 2},${p.y - 1}`, clase, marca);
+  };
+  const deCampo = (i, x, y, clase, marca = '') => {   // desde un campo del TreeMap (a la izquierda): sale hacia la derecha
+    const p = pos.get(i);
+    if (!p) return;
+    flecha(`M${x},${y} C${x + 40},${y} ${p.x + NW / 2},${p.y - 34} ${p.x + NW / 2},${p.y - 1}`, clase, marca);
   };
 
-  // El TreeMap
-  if (!ok) s.push(`<text x="${X0}" y="${YM + 24}" class="nota-svg">${esc(nombre)} ${A === '?' ? 'es basura' : 'aún no existe (NULL)'}</text>`);
+  // El TreeMap, en columna a la izquierda
+  if (!ok) s.push(`<text x="${XL}" y="${YM + 30}" class="nota-svg">${esc(nombre)} ${A === '?' ? 'es basura' : 'es NULL'}</text>`);
   else {
-    s.push(`<text x="${X0 - 8}" y="${YM + 26}" class="nombre" text-anchor="end">${esc(nombre)}</text>`);
-    s.push(`<rect x="${X0}" y="${YM}" width="${3 * CL}" height="${AH}" class="lista"/>`);
+    s.push(`<text x="${XL}" y="${YM + 12}" class="nombre">${esc(nombre)}</text>`);
+    if (!opciones.sinDirecciones && A.dir) s.push(`<text x="${XL + CW}" y="${YM + 12}" class="dir" text-anchor="end">${hex(A.dir)}</text>`);
+    s.push(`<rect x="${XL}" y="${YC}" width="${CW}" height="${3 * FH}" class="lista"/>`);
     ['root', 'current', 'lower_than'].forEach((campo, k) => {
-      const x = X0 + k * CL, mk = marcas[campo === 'lower_than' ? 'lt' : campo] ?? '';
-      if (k) s.push(`<line x1="${x}" y1="${YM}" x2="${x}" y2="${YM + AH}" class="div"/>`);
-      s.push(`<text x="${x + CL / 2}" y="${YM + 13}" class="campo">${campo}</text>`);
-      if (mk) s.push(`<rect x="${x + 2}" y="${YM + 2}" width="${CL - 4}" height="${AH - 4}" class="celda ${mk}"/>`);
-      if (campo === 'lower_than') s.push(`<text x="${x + CL / 2}" y="${YM + 32}" class="${A.lt === 1 ? 'campo' : 'basura'}">${A.lt === 1 ? 'f( )' : A.lt === 0 ? 'NULL' : '?'}</text>`);
+      const y = YC + k * FH, mk = marcas[campo === 'lower_than' ? 'lt' : campo] ?? '';
+      if (k) s.push(`<line x1="${XL}" y1="${y}" x2="${XL + CW}" y2="${y}" class="div"/>`);
+      s.push(`<text x="${XL + 38}" y="${y + 19}" class="campo">${campo}</text>`);
+      if (mk) s.push(`<rect x="${XL + 2}" y="${y + 2}" width="${CW - 4}" height="${FH - 4}" class="celda ${mk}"/>`);
+      const cx = XL + CW - 15, cy = y + FH / 2;   // donde está el valor (a la derecha del campo)
+      if (campo === 'lower_than') s.push(`<text x="${cx}" y="${cy + 5}" class="${A.lt === 1 ? 'campo' : 'basura'}">${A.lt === 1 ? 'f()' : A.lt === 0 ? 'NULL' : '?'}</text>`);
       else {
         const v = A[campo];
-        if (v === undefined) s.push(`<text x="${x + CL / 2}" y="${YM + 32}" class="campo">—</text>`);
-        else if (v === null) nulo(x + 18, YM + 16, CL - 36, AH - 20, mk);
-        else if (v === '?') s.push(`<text x="${x + CL / 2}" y="${YM + 33}" class="basura">?</text>`);
-        else { const ox = x + CL / 2, oy = YM + 28; s.push(`<circle cx="${ox}" cy="${oy}" r="3" class="punto ${campo === 'root' ? 'head' : 'current'}"/>`); llega(v, ox, oy, campo === 'root' ? 'head' : 'current', mk); }
-        if (esp?.campos && campo in esp.campos) s.push(`<text x="${x + CL - 4}" y="${YM + AH - 3}" class="esperado" text-anchor="end">→${esc(esp.campos[campo])}</text>`);
+        if (v === undefined) s.push(`<text x="${cx}" y="${cy + 5}" class="campo">—</text>`);
+        else if (v === null) nulo(cx - 12, y + 6, 24, FH - 12, mk);
+        else if (v === '?') s.push(`<text x="${cx}" y="${cy + 6}" class="basura">?</text>`);
+        else { s.push(`<circle cx="${cx}" cy="${cy}" r="3" class="punto ${campo === 'root' ? 'head' : 'current'}"/>`); deCampo(v, cx, cy, campo === 'root' ? 'head' : 'current', mk); }
+        if (esp?.campos && campo in esp.campos) s.push(`<text x="${XL + CW + 4}" y="${cy + 4}" class="esperado">→${esc(esp.campos[campo])}</text>`);
       }
     });
-    if (!opciones.sinDirecciones && A.dir) s.push(`<text x="${X0 + 3 * CL + 6}" y="${YM + AH - 2}" class="dir" text-anchor="start">${hex(A.dir)}</text>`);
   }
-  if (fuera.length) s.push(`<text x="${X0}" y="${yFuera}" class="nota-svg">fuera del árbol (no cuelgan de root):</text>`);
+  if (fuera.length) s.push(`<text x="${X0}" y="${yFuera + 8}" class="nota-svg">fuera del árbol (no cuelgan de root):</text>`);
 
   // expresiones que llegan a cada nodo (para tocar el dibujo y elegir piezas)
   const nombresDe = new Map();
@@ -266,8 +276,8 @@ export function svgArbol(estado, nombre, opciones = {}) {
     s.push(`<rect x="${x}" y="${y}" width="${NW}" height="${NH}" class="nodo${prof.has(i) ? '' : ' fuera'} ${mk}"/>`);
     s.push(`<line x1="${x}" y1="${y + KH}" x2="${x + NW}" y2="${y + KH}" class="div"/>`);
     s.push(`<line x1="${x + NW / 2}" y1="${y + KH}" x2="${x + NW / 2}" y2="${y + NH}" class="div"/>`);
-    s.push(n.clave === '?' || n.par === '?' ? `<text x="${x + NW / 2}" y="${y + 18}" class="basura">?</text>`
-      : `<text x="${x + NW / 2}" y="${y + 18}" class="clave">${n.par === null ? 'pair NULL' : esc(n.clave)}</text>`);
+    s.push(n.clave === '?' || n.par === '?' ? `<text x="${x + NW / 2}" y="${y + 20}" class="basura">?</text>`
+      : `<text x="${x + NW / 2}" y="${y + 20}" class="clave clave-arbol">${n.par === null ? 'pair NULL' : esc(n.clave)}</text>`);
     const palabra = n.valor && typeof n.valor === 'object' ? n.valor.t : '';
     if (palabra) s.push(`<text x="${x + NW / 2}" y="${y + NH + 11}" class="valor">${esc(palabra)}</text>`);
     // left y right
@@ -297,13 +307,13 @@ export function svgArbol(estado, nombre, opciones = {}) {
     toque(cx - w / 2, ty - 4, w, 18, nombres.filter(n => !n.startsWith('↩')).map(n => n.replace(/ \(par\)$/, '')));
   }
   if (ok) {
-    toque(X0 - 56, YM, 54, AH, [nombre]);
-    ['root', 'current'].forEach((c, k) => toque(X0 + k * CL, YM, CL, AH, [`${nombre}->${c}`]));
+    toque(XL, YM, CW, 16, [nombre]);
+    ['root', 'current'].forEach((c, k) => toque(XL, YC + k * FH, CW, FH, [`${nombre}->${c}`]));
   }
-  if (sueltas.length) s.push(`<text x="${X0}" y="${alto - 8 - (esp?.texto ? 20 : 0)}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
-  if (esp?.texto) s.push(`<text x="${X0}" y="${alto - 8}" class="esperado">${esc(esp.texto)}</text>`);
-  if (esp?.retornoNulo) s.push(`<text x="${X0 + 3 * CL + 8}" y="${YM + AH + 16}" class="esperado">↩ NULL</text>`);
-  if (ok && A.root === null && !ns.length) s.push(`<text x="${X0}" y="${YA + 10}" class="nota-svg">(árbol vacío)</text>`);
+  if (sueltas.length) s.push(`<text x="${XL}" y="${alto - 8 - (esp?.texto ? 20 : 0)}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
+  if (esp?.texto) s.push(`<text x="${XL}" y="${alto - 8}" class="esperado">${esc(esp.texto)}</text>`);
+  if (esp?.retornoNulo) s.push(`<text x="${XL}" y="${altoIzq - 4}" class="esperado">↩ NULL</text>`);
+  if (ok && A.root === null && !ns.length) s.push(`<text x="${X0}" y="${YA + 16}" class="nota-svg">(árbol vacío)</text>`);
   s.push(enteros.svg, ...zonas);
 
   const marca = c => `<marker id="punta-${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta ${c}"/></marker>`;
