@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611191720';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611191731';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -439,8 +439,7 @@ export class Asistente {
     }
     this.caja.innerHTML = html;
     if (!this.armando) this.piezasActuales = null;
-    const sinHueco = !this.armando && !ctx.fuera && ctx.fn && ctx.linea && !ctx.linea.texto.trim();
-    this.alPiezas?.(sinHueco ? ctx.exprs.map(e => e.texto) : this.piezasActuales?.map(p => p.texto) ?? []);
+    this.alPiezas?.(this.piezasActuales?.map(p => p.texto) ?? []);   // se marca solo lo que sirve para un hueco que espera
 
     this.caja.querySelectorAll('.cat').forEach(b => b.onclick = () => { this.cat = b.dataset.cat; this.grupoAbierto = null; this.dibujar(); });
     this.caja.querySelectorAll('[data-grupo]').forEach(b => b.onclick = () => { this.grupoAbierto = b.dataset.grupo || null; this.dibujar(); });
@@ -551,7 +550,8 @@ export class Asistente {
     let opciones = posibles.filter(calza).filter(x => x.texto !== objetivo.texto);
     if (!opciones.length) opciones = posibles;
     opciones = opciones.filter(x => ultimo(x) === ultimo(opciones[0]));
-    const e = opciones[0];   // sin preguntar: es un borrador (se cambia con otro toque o editando la parte)
+    if (opciones.length > 1 && !elegida) return { elegir: opciones.slice(0, 3).map(e => e.texto) };   // varios alias: se escoge
+    const e = opciones[0];
     const sangria = (cm.getLine(b.linea).match(/^\s*/) || [''])[0];
     const poner = texto => { cm.replaceRange(sangria + texto, { line: b.linea, ch: 0 }, { line: b.linea, ch: cm.getLine(b.linea).length }); cm.setCursor({ line: b.linea, ch: cm.getLine(b.linea).length }); };
     this.armando = null;
@@ -588,8 +588,11 @@ export class Asistente {
     const posibles = [...new Map(cands.map(c => ctx.exprs.find(x => x.texto === c)).filter(Boolean).map(e => [e.texto, e])).values()];
     if (!posibles.length) return 'no-sirve';
     const mismos = posibles.filter(x => mismo(x, posibles[0]) && (/->/.test(x.texto) === /->/.test(posibles[0].texto) || x.texto.split('->').pop() === posibles[0].texto.split('->').pop() || !/->/.test(posibles[0].texto)));   // varias formas de lo mismo (aux, tree->root): se escoge
-    // sin preguntar (es un borrador): de preferencia un camino (tree->root → «root»), no copiar una variable (aux2 = aux)
-    const e = mismos.find(x => /->|\[/.test(x.texto)) ?? mismos[0];
+    // varios alias de lo mismo (list->current, aux): se escoge cuál usar
+    const fin = x => /(->\s*\w+|\[[^\]]*\]|^\w+)$/.exec(x.texto)?.[1];
+    const alias = mismos.filter(x => x.texto === mismos[0].texto || (x.base === mismos[0].base && x.ptr === mismos[0].ptr && (fin(x) === fin(mismos[0]) || !/->|\[/.test(x.texto) || !/->|\[/.test(mismos[0].texto))));
+    if (alias.length > 1 && !elegida) return { elegir: alias.slice(0, 3).map(e => e.texto) };
+    const e = alias[0];
     this.insertar([this.declaracion(e, ctx.vars)]);
     this.borrador = { tipo: 'var', linea: this.editor.cm.getCursor().line, primero: e };
     this.dibujar();
