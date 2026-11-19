@@ -385,3 +385,10 @@ svg.memoria .esperado { font-size: 12px; fill: #1a7f37; font-weight: 600; }
 
 /* al editar una línea larga se ve entera (para tocar la parte que se cambia) */
 .asistente .armando .vista { white-space: pre-wrap; word-break: break-word; }
+
+/* partes de una condición (if/while): ◀ ▶ para moverlas, ✕ para quitarlas */
+.asistente .partes-cond { gap: 4px; }
+.asistente .parte-cond { display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--borde); border-radius: 6px; padding: 1px 2px; max-width: 100%; }
+.asistente .parte-cond code { font-family: var(--mono); font-size: 13px; padding: 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.asistente .parte-cond button { padding: 0 6px; font-size: 12px; min-width: 0; }
+.asistente .op-cond { font-family: var(--mono); font-size: 13px; color: var(--suave); }

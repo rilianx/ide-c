@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190225';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190226';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -169,6 +169,26 @@ function partesDe(t, est = {}) {
   return out;
 }
 
+// La condición de un if/while de la línea, partida en sus partes unidas por && o || (solo las de afuera,
+// no las que están entre paréntesis). → {ini, fin, partes: [texto], ops: ['&&', …]} o null
+function condicionDe(linea) {
+  const m = enmascarar(linea), r = /\b(if|while)\s*\(/.exec(m);
+  if (!r) return null;
+  const ini = r.index + r[0].length;
+  let p = 1, k = ini;
+  for (; k < m.length && p; k++) { if (m[k] === '(') p++; else if (m[k] === ')') p--; }
+  if (p) return null;
+  const fin = k - 1;   // la posición del «)» que cierra
+  const partes = [], ops = [];
+  let a = ini; p = 0;
+  for (let j = ini; j < fin; j++) {
+    if (m[j] === '(') p++; else if (m[j] === ')') p--;
+    else if (!p && (m.startsWith('&&', j) || m.startsWith('||', j))) { partes.push(linea.slice(a, j).trim()); ops.push(m.slice(j, j + 2)); a = j + 2; j++; }
+  }
+  partes.push(linea.slice(a, fin).trim());
+  return { ini, fin, partes, ops };
+}
+
 // ¿La línea es una de las plantillas? → {plantilla, textos de sus huecos}. Se compara con la
 // primera línea que arma la plantilla, sin importar los espacios.
 function reconocer(linea, todas) {
@@ -304,6 +324,11 @@ export class Asistente {
           this.condiciones = ['der', 'izq'].flatMap(lado => [['&&', '!='], ['&&', '=='], ['||', '!='], ['||', '==']].map(([o, c]) => [o, c, lado]));
           html += `<div class="fila condicion"><span class="nota">Agregar a la condición:</span>${this.condiciones.map(([o, c, lado], i) =>
             `<button class="chip" data-cond="${i}">${lado === 'der' ? `… ${o} _ ${c} NULL` : `_ ${c} NULL ${o} …`}</button>`).join('')}</div>`;
+          // las partes de la condición: moverlas a la izquierda o a la derecha, o quitarlas
+          const cond = condicionDe(this.editor.cm.getLine(sel.ini));
+          if (cond && cond.partes.length > 1) html += `<div class="fila partes-cond"><span class="nota">Partes:</span>${cond.partes.map((t, i) =>
+            `<span class="parte-cond"><button data-tmov="${i}" data-dir="-1" title="Mover a la izquierda (se revisa antes)"${i ? '' : ' disabled'}>◀</button><code>${esc(t)}</code><button data-tmov="${i}" data-dir="1" title="Mover a la derecha"${i < cond.partes.length - 1 ? '' : ' disabled'}>▶</button><button data-tdel="${i}" title="Quitar esta parte">✕</button></span>`
+            + (i < cond.ops.length ? `<b class="op-cond">${esc(cond.ops[i])}</b>` : '')).join('')}</div>`;
         }
       } else this.lineaActual = null;
       const cats = [...new Set(todas.map(p => p.cat))];
@@ -331,6 +356,8 @@ export class Asistente {
       this.empezar({ etiqueta: lado === 'der' ? `… ${op} _ ${cmp} NULL` : `_ ${cmp} NULL ${op} …`, huecos: [{ k: 'expr', tipo: () => null, sinNull: true, soloStructs: true }],
         condicion: { op, cmp, lado, linea: this.editor.cm.getCursor().line }, armar: v => [] });
     });
+    this.caja.querySelectorAll('[data-tmov]').forEach(b => b.onclick = () => this.cambiarCondicion(+b.dataset.tmov, +b.dataset.dir));
+    this.caja.querySelectorAll('[data-tdel]').forEach(b => b.onclick = () => this.cambiarCondicion(+b.dataset.tdel, 0));
     if (q('.deshacer')) q('.deshacer').onclick = () => { this.editor.cm.undo(); this.editor.cm.focus(); };
     const c = this.caja.querySelector('.cancelar'); if (c) c.onclick = () => { this.armando = null; this.dibujar(); };
     // los botones no le quitan el foco al editor
@@ -403,6 +430,29 @@ export class Asistente {
     // para editar, la línea no cuenta su propia declaración
     const ctx = this.contexto();
     this.armando = { plantilla, valores, linea: l.n, editando: primero < 0 ? 0 : primero, ctxLinea: { ...ctx, exprs: l.exprs } };
+    this.dibujar();
+  }
+
+  // Mueve la parte i de la condición a la izquierda (dir -1) o a la derecha (1), o la quita (0).
+  // Los && / || se quedan en su lugar; al quitar, se va con el que la une a la anterior (o a la siguiente).
+  cambiarCondicion(i, dir) {
+    const s = this.seleccion();
+    if (!s) return;
+    const cm = this.editor.cm, n = s.ini, L = cm.getLine(n), c = condicionDe(L);
+    if (!c) return;
+    const partes = [...c.partes], ops = [...c.ops];
+    if (dir) {
+      const j = i + dir;
+      if (j < 0 || j >= partes.length) return;
+      [partes[i], partes[j]] = [partes[j], partes[i]];
+    } else {
+      if (partes.length < 2) return;
+      partes.splice(i, 1);
+      ops.splice(i ? i - 1 : 0, 1);
+    }
+    const texto = partes.map((t, k) => t + (k < ops.length ? ` ${ops[k]} ` : '')).join('');
+    cm.replaceRange(texto, { line: n, ch: c.ini }, { line: n, ch: c.fin });
+    cm.setCursor({ line: n, ch: cm.getLine(n).length });
     this.dibujar();
   }
 
