@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611191320';
-import { Runner } from './runner.js?v=202611191320';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191320';
-import { traducirMensaje } from './mensajes.js?v=202611191320';
-import { modeloDe } from './modelos.js?v=202611191320';
+import { Editor } from './editor.js?v=202611191356';
+import { Runner } from './runner.js?v=202611191356';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191356';
+import { traducirMensaje } from './mensajes.js?v=202611191356';
+import { modeloDe } from './modelos.js?v=202611191356';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191320';
-import { Asistente } from './asistente.js?v=202611191320';
-import { activarDivisores } from './divisores.js?v=202611191320';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191320';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191356';
+import { Asistente } from './asistente.js?v=202611191356';
+import { activarDivisores } from './divisores.js?v=202611191356';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191356';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -137,9 +137,11 @@ function estado(texto, error = false) {
 // En el celular no hay encabezado: el selector de ejercicio va arriba de la pestaña Función
 // y el estado pasa a ser un aviso flotante.
 const angosto = matchMedia('(max-width: 1000px)');
+// La ventana de ejecución (solo el dibujo, los puntos de los tests y ◀ ▶) es la misma en los dos: en el
+// celular va sobre el editor; en el computador, en el panel derecho (en vez de la vista detallada).
 function acomodar() {
-  if (angosto.matches) { $('col-pasos').prepend($('ejercicio')); document.body.append($('estado')); }
-  else { document.querySelector('header h1').after($('ejercicio')); document.querySelector('header').append($('estado')); }
+  if (angosto.matches) { $('col-pasos').prepend($('ejercicio')); document.body.append($('estado')); $('editor').before($('vivo')); }
+  else { document.querySelector('header h1').after($('ejercicio')); document.querySelector('header').append($('estado')); $('vis-resultado').after($('vivo')); }
 }
 angosto.addEventListener('change', acomodar);
 acomodar();
@@ -415,7 +417,7 @@ async function dibujarVisual(soloSiCambio = false, posicion = 'auto') {
       const t1 = m1 ? (traducirMensaje(m1.texto).texto ?? m1.texto) : '';
       const previo = $('vivo-zoom').querySelector('.vivo-fila');
       $('vivo-zoom').innerHTML = `<div class="vivo-error">⚠ No compila${m1?.linea ? ` (línea ${m1.linea})` : ''}: ${esc(t1)}</div>` + (previo ? `<div class="desactualizado">${previo.outerHTML}</div>` : '');
-      $('vivo').classList.remove('pasa'); $('vivo').classList.add('falla');
+      $('vivo').classList.remove('pasa'); $('vivo').classList.add('falla'); $('vivo-nota').innerHTML = '';
       vivoMensaje = true; mostrarVivo();
       resultadoVivo('<span class="res-mal">⚠ No compila: revisa el mensaje.</span>');
       visDibujado = { test: visElegido, codigo: codigoAlumno };
@@ -772,6 +774,7 @@ function mostrarPaso() {
     const ent = MOD().estadoEntrada(vis.test);
     $('vivo-zoom').innerHTML = !ent ? sinEntradaHtml() : `<div class="vivo-fila">${MOD().anotado(ent, sal, E.ej.visual.variable, { sinDirecciones: true })}</div>`;
     $('vivo').classList.remove('pasa', 'falla');
+    $('vivo-nota').innerHTML = '';
     pintarTestsVivo();
     mostrarVivo();
     return;
@@ -782,12 +785,15 @@ function mostrarPaso() {
   } else $('vivo-zoom').innerHTML = `<div class="vivo-fila">${dibujoFinal}</div>`;
   $('vivo').classList.toggle('pasa', !!vis.pasa);
   $('vivo').classList.toggle('falla', !vis.pasa);
+  // bajo el dibujo: por qué se cayó (la línea y el puntero), o el error de ejecución al final
+  $('vivo-nota').innerHTML = c?.error ? htmlDiagnostico(c, dentro) : ultimo && vis.error ? `<p class="error-ej">${esc(vis.error)}</p>` : '';
   pintarTestsVivo();
   mostrarVivo();
 }
 document.addEventListener('keydown', e => {
   if ($('vis-panel').hidden || !vis || /^(SELECT|INPUT|TEXTAREA)$/.test(document.activeElement?.tagName)) return;
-  const a = { ArrowRight: 'siguiente', ArrowLeft: 'atras', ArrowDown: 'entrar', ArrowUp: 'salir', Home: 'inicio', End: 'fin' }[e.key];
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); pasoVivo(e.key === 'ArrowRight' ? 1 : -1); return; }   // como ◀ ▶
+  const a = { Home: 'inicio', End: 'fin' }[e.key];
   if (a) { e.preventDefault(); mover(a); }
 });
 
