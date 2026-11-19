@@ -2,7 +2,7 @@
 // (direccionamiento abierto): el HashMap con sus campos, el arreglo buckets con sus índices
 // y, debajo de cada casilla ocupada, el Pair [key | value]. Un par inválido (key NULL) va gris.
 
-import { svgEnteros } from './visual.js?v=202611190201';
+import { svgEnteros } from './visual.js?v=202611190206';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');
@@ -143,8 +143,9 @@ export function svgTabla(estado, nombre, opciones = {}) {
     if (Number.isInteger(v.ptr)) { if (!porPar.has(v.ptr)) porPar.set(v.ptr, []); porPar.get(v.ptr).push(n); }
     else sueltas.push(`${n} = ${v.ptr === null ? 'NULL' : '? (basura)'}`);
   }
+  const esp = opciones.esperado;   // lo que se espera al final, como anotaciones pequeñas (→ 7, → gato)
   const ARRIBA = indices.size ? 26 : 0;
-  const FILA = 16 + ARRIBA + CH + 22 + 2 * PH + (porPar.size ? 34 : 8);
+  const FILA = 16 + ARRIBA + CH + 22 + 2 * PH + (porPar.size ? 34 : 8) + (esp?.casillas?.size ? 14 : 0);
   const YA = YM + AH + 34;              // primera fila del arreglo
   const filas = Math.max(1, Math.ceil(cap / POR));
   const enTabla = new Map();             // par → casilla donde se dibuja
@@ -187,8 +188,9 @@ export function svgTabla(estado, nombre, opciones = {}) {
           flecha(`M${ox},${oy} C${ox},${oy + 24} ${X0 + 10},${YA - 10} ${X0 + 10},${YA + ARRIBA + 14}`);
         }
       } else {
-        const v = M[campo];
-        s.push(`<text x="${x + CL / 2}" y="${YM + 33}" class="${v === undefined ? 'campo' : 'dato num'}">${v === undefined ? '—' : esc(v)}</text>`);
+        const v = M[campo], e = esp?.campos?.[campo];
+        s.push(`<text x="${x + CL / 2 - (e !== undefined ? 12 : 0)}" y="${YM + 33}" class="${v === undefined ? 'campo' : 'dato num'}">${v === undefined ? '—' : esc(v)}</text>`);
+        if (e !== undefined) s.push(`<text x="${x + CL - 4}" y="${YM + 33}" class="esperado" text-anchor="end">→${esc(e)}</text>`);
       }
     });
     if (!opciones.sinDirecciones && M.dir) s.push(`<text x="${X0 + 4 * CL + 6}" y="${YM + AH - 2}" class="dir" text-anchor="start">${hex(M.dir)}</text>`);
@@ -233,6 +235,8 @@ export function svgTabla(estado, nombre, opciones = {}) {
       toque(x + CW / 2 - wt / 2, ty, wt, 18, ns);
     }
     toque(x, y, CW, CH, [...(Number.isInteger(p) ? apuntanA(p) : []), ...casillaExprs(i)]);
+    const e = esp?.casillas?.get(i);
+    if (e !== undefined) s.push(`<text x="${x + CW / 2}" y="${Number.isInteger(p) ? y + CH + 22 + 2 * PH + (porPar.has(p) ? 34 : 0) + 12 : y + CH + 14}" class="esperado" text-anchor="middle">→ ${esc(e.length > 8 ? e.slice(0, 7) + '…' : e)}</text>`);
     if (p === null) nulo(x + 16, y + 6, CW - 32, CH - 12, mk);
     else if (p === '?') s.push(`<text x="${x + CW / 2}" y="${y + CH / 2 + 6}" class="basura">?</text>`);
     else {
@@ -256,6 +260,7 @@ export function svgTabla(estado, nombre, opciones = {}) {
     fuera.forEach((i, k) => par(i, X0 + k * (CW + 10), yFuera + 8, ' fuera'));
   }
   if (sueltas.length) s.push(`<text x="${X0}" y="${alto - 8}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
+  if (esp?.retornoNulo) s.push(`<text x="${X0 + 4 * CL + 8}" y="${YM + AH + 14}" class="esperado">↩ NULL</text>`);
   s.push(enteros.svg, ...zonas);
 
   const marca = c => `<marker id="punta-${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta ${c}"/></marker>`;
@@ -325,4 +330,25 @@ export function htmlVariablesTabla(estado) {
   if (otras.length) h += `<table class="tabla-vars"><tr><th>variable</th><th>valor</th></tr>${otras.map(v =>
     `<tr><td><code>${esc(v.nombre)}</code></td><td><code>${esc(valor(v))}</code></td></tr>`).join('')}</table>`;
   return h;
+}
+
+// Lo que se espera al final de un test, como anotaciones sobre el dibujo de la entrada: el valor final
+// de size, capacity y current (si cambia), qué queda en cada casilla que cambia y qué par retorna.
+export function esperadoTabla(estado, salida) {
+  const M = estado?.mapa, pares = estado?.pares ?? [], esp = salida.tabla ?? [];
+  const campos = {}, casillas = new Map();
+  const ok = M && typeof M === 'object';
+  const size = salida.size ?? esp.filter(valida).length;
+  if (!ok || M.size !== size) campos.size = size;
+  if (!ok || M.capacity !== esp.length) campos.capacity = esp.length;
+  if ('current' in salida && (!ok || M.current !== salida.current)) campos.current = salida.current;
+  const b = ok && Array.isArray(M.buckets) ? M.buckets : [];
+  if (b.length === esp.length) b.forEach((p, i) => {   // (si cambia la capacidad, basta con «capacity →»)
+    const ahora = p === null ? null : Number.isInteger(p) ? (pares[p]?.key == null ? '~' : claveDe(pares[p])) : '?';
+    const quiere = esp[i] == null ? null : valida(esp[i]) ? esp[i] : '~';
+    if (ahora !== quiere) casillas.set(i, quiere === null ? '-' : quiere === '~' ? 'key NULL' : quiere);
+  });
+  const r = salida.retornos?.[0];
+  const retorno = typeof r === 'string' ? pares.findIndex(p => claveDe(p) === r) : -1;
+  return { campos, casillas, retorno, retornoNulo: (salida.retornos ?? []).length > 0 && r === null };
 }

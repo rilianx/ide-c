@@ -1,11 +1,12 @@
 // Lo que cambia según la estructura del ejercicio (ej.modelo): cómo se dibuja la memoria,
 // cómo se arma el estado de la entrada y la salida esperada de un test, cómo se compara y
 // cómo se explica un error. «lista» (Lab 2) es el modelo por omisión; «tabla» es la tabla hash (Lab 3).
-import { svgLista, estadoDeLista, compararConEsperado, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611190201';
-import { svgTabla, estadoEntradaTabla, estadoSalidaTabla, textoEsperadoTabla, compararTabla, nombresFallasTabla, diagnosticarTabla, htmlVariablesTabla, vaciaTabla } from './tabla.js?v=202611190201';
+import { svgLista, esperadoLista, estadoDeLista, compararConEsperado, lugaresDe, diagnosticar, htmlVariables } from './visual.js?v=202611190206';
+import { svgTabla, estadoEntradaTabla, estadoSalidaTabla, textoEsperadoTabla, esperadoTabla, compararTabla, nombresFallasTabla, diagnosticarTabla, htmlVariablesTabla, vaciaTabla } from './tabla.js?v=202611190206';
 
 const esc = x => String(x ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const LISTA = {
+  esperado: esperadoLista,
   textoEsperado: t => (t.salida?.retornos ?? []).map(r => `<span class="ret">↩ ${esc(r === null ? 'NULL' : r)}</span>`).join(' '),
   svg: svgLista,
   sinEntrada: 'sin lista',
@@ -20,7 +21,8 @@ const LISTA = {
   opcionesMini: { porFila: 5 },
 };
 const TABLA = {
-  textoEsperado: textoEsperadoTabla,
+  esperado: esperadoTabla,
+  textoEsperado: textoEsperadoTabla, esperadoTabla,
   svg: svgTabla,
   sinEntrada: 'sin tabla',
   estadoEntrada: estadoEntradaTabla,
@@ -33,4 +35,13 @@ const TABLA = {
   vacio: vaciaTabla,
   opcionesMini: { porFila: 10 },
 };
+// El dibujo de un estado con lo que se espera al final anotado encima (sin un segundo dibujo).
+const anotado = M => (estado, salida, nombre, opciones = {}) => {
+  const esp = M.esperado(estado, salida);
+  let e = estado;
+  if (Number.isInteger(esp.retorno) && esp.retorno >= 0) e = { ...estado, vars: [...(estado.vars ?? []).filter(v => v.nombre !== 'return'), { nombre: 'return', ptr: esp.retorno }] };
+  return M.svg(e, nombre, { ...opciones, esperado: esp });
+};
+LISTA.anotado = anotado(LISTA);
+TABLA.anotado = anotado(TABLA);
 export const modeloDe = ej => ej?.modelo === 'tabla' ? TABLA : LISTA;

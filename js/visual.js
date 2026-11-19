@@ -115,7 +115,8 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   const yUltima = YN + (filas - 1) * ALTO_FILA;
   const enteros = svgEnteros(vars, X0 + 3 * CL + 56, YL);   // contadores, enteros… al lado de la List
   const ancho = Math.max(X0 + 3 * CL + 120, X0 + Math.min(Math.max(maxLugar + 1, 1), POR_FILA) * (AN + SEP) + 30, X0 + 3 * CL + 64 + enteros.ancho);
-  const alto = lugares.size ? yUltima + AL + 62 + BAJO + (sueltas.length ? 22 : 0) : YL + AL + 46 + (sueltas.length ? 22 : 0);
+  const esp = opciones.esperado;   // lo que se espera al final, como anotaciones pequeñas (→ 3, → [1, 9, 2])
+  const alto = (lugares.size ? yUltima + AL + 62 + BAJO + (sueltas.length ? 22 : 0) : YL + AL + 46 + (sueltas.length ? 22 : 0)) + (esp?.texto ? 20 : 0);
   const s = [];
 
   // Flecha con punta
@@ -149,6 +150,7 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
       s.push(`<circle cx="${ox}" cy="${oy}" r="3" class="punto ${campo}"/>`);
       flecha(`M${ox},${oy} C${ox},${oy + 50} ${dx},${dy - 50} ${dx},${dy}`, campo, mk);
     }
+    if (esp && campo in (esp.campos ?? {})) s.push(`<text x="${x + CL - 4}" y="${YL + AL + 2}" class="esperado" text-anchor="end">→${esc(esp.campos[campo])}</text>`);
   });
   if (!opciones.sinDirecciones) s.push(`<text x="${X0 + 3 * CL + 6}" y="${YL + AL + 4}" class="dir">${hex(L.dir)}</text>`);
   }
@@ -230,6 +232,7 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   if (sueltas.length) s.push(`<text x="${X0}" y="${alto - 10}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
   s.push(enteros.svg);
   if (!nodos.length) s.push(`<text x="${X0}" y="${YL + AL + 30}" class="nota-svg">(sin nodos)</text>`);
+  if (esp?.texto) s.push(`<text x="${X0}" y="${alto - 8}" class="esperado">${esc(esp.texto)}</text>`);
   // Zonas para tocar: cada parte del dibujo con las expresiones que la nombran (para elegir piezas del asistente)
   const toque = (x, y, w, h, cands) => {
     cands = [...new Set(cands.filter(Boolean))];
@@ -313,4 +316,21 @@ export function htmlVariables(estado) {
   if (otras.length) h += `<table class="tabla-vars"><tr><th>variable</th><th>valor</th></tr>${otras.map(v =>
     `<tr><td><code>${esc(v.nombre)}</code></td><td><code>${esc(valor(v))}</code></td></tr>`).join('')}</table>`;
   return h;
+}
+
+// Lo que se espera al final de un test, como anotaciones sobre el dibujo de la entrada: el dato al que
+// deben quedar apuntando head, tail y current (solo los que cambian), la lista final y lo que retorna.
+export function esperadoLista(estado, salida) {
+  const L = estado?.lista, ns = estado?.nodos ?? [], esp = salida.lista ?? [];
+  const datoDe = i => Number.isInteger(i) ? ns[i]?.dato : null;
+  const campos = {};
+  const quiere = { head: esp.length ? esp[0] : null, tail: esp.length ? esp.at(-1) : null };
+  if ('current' in salida) quiere.current = salida.current;
+  for (const [c, v] of Object.entries(quiere)) if (!L || typeof L !== 'object' || datoDe(L[c]) !== v) campos[c] = v === null ? 'NULL' : v;
+  const actual = [];
+  for (let i = L?.head, k = 0; Number.isInteger(i) && k < 60; i = ns[i]?.next, k++) actual.push(ns[i]?.dato);
+  const partes = [];
+  if (actual.join(',') !== esp.join(',')) partes.push(`→ [${esp.join(', ')}]`);
+  for (const r of salida.retornos ?? []) partes.push(`↩ ${r === null ? 'NULL' : r}`);
+  return { campos, texto: partes.join('   ') };
 }

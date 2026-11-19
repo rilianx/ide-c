@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611190201';
-import { Runner } from './runner.js?v=202611190201';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611190201';
-import { traducirMensaje } from './mensajes.js?v=202611190201';
-import { modeloDe } from './modelos.js?v=202611190201';
+import { Editor } from './editor.js?v=202611190206';
+import { Runner } from './runner.js?v=202611190206';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611190206';
+import { traducirMensaje } from './mensajes.js?v=202611190206';
+import { modeloDe } from './modelos.js?v=202611190206';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611190201';
-import { Asistente } from './asistente.js?v=202611190201';
-import { activarDivisores } from './divisores.js?v=202611190201';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611190201';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611190206';
+import { Asistente } from './asistente.js?v=202611190206';
+import { activarDivisores } from './divisores.js?v=202611190206';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611190206';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -758,21 +758,22 @@ function mostrarPaso() {
   // celular: solo el dibujo; en la línea de definición de la función, también la salida esperada
   const esEntrada = c?.dentro && !c.condicion && !c.error && c.linea === c.fn?.cabecera;
   const sal = vis.test.salida;
-  const mini = { sinDirecciones: true, escala: 0.5, ...MOD().opcionesMini };
-  const esperadoMini = esEntrada && sal ? `<div class="esperado-mini"><span class="rot">→ se espera</span>${MOD().svg(MOD().estadoSalida(vis.test), c.fn.lista, mini)}<div>${MOD().textoEsperado(vis.test)}</div></div>` : '';
-  const entradaVacia = esEntrada && MOD().vacio(c.estado);
-  const entradaHtml = esEntrada ? `<div class="entrada-mini"><span class="rot">entrada</span>${entradaVacia ? `<code>${esc(c.fn.nombre)}()</code><span class="nota">${MOD().sinEntrada}</span>` : dibujoFinal}</div>` : dibujoFinal;
-  if (vis.sinEscribir && sal) {   // la función del paso aún no está escrita: la entrada del test y lo que se espera
-    const fn0 = E.ej.pasos[vis.paso].funciones[0], ent = MOD().estadoEntrada(vis.test);
-    const dibEnt = !ent ? `<code>${esc(fn0)}()</code><span class="nota">${MOD().sinEntrada}</span>` : MOD().svg(ent, E.ej.visual.variable, mini);
-    const dibEsp = MOD().svg(MOD().estadoSalida(vis.test), E.ej.visual.variable, mini)
-      + `<div>${MOD().textoEsperado(vis.test)}</div>`;
-    $('vivo-zoom').innerHTML = `<div class="vivo-fila"><div class="entrada-mini"><span class="rot">entrada</span>${dibEnt}</div><div class="esperado-mini"><span class="rot">→ se espera</span>${dibEsp}</div></div>`;
+  // en la entrada (la línea de definición, o si la función aún no está escrita): un solo dibujo, el de la
+  // entrada, con lo que se espera al final anotado encima (→ 7, → gato, ↩); si no hay entrada (createMap),
+  // la llamada y el dibujo de lo que debe quedar
+  const sinEntradaHtml = () => `<div class="vivo-fila"><code class="llamada-vivo">${esc(d?.llamadas ?? '')}</code><span class="flecha-vivo">→</span>${MOD().svg(MOD().estadoSalida(vis.test), E.ej.visual.variable, { sinDirecciones: true })}</div>`;
+  if (vis.sinEscribir && sal) {   // la función del paso aún no está escrita
+    const ent = MOD().estadoEntrada(vis.test);
+    $('vivo-zoom').innerHTML = !ent ? sinEntradaHtml() : `<div class="vivo-fila">${MOD().anotado(ent, sal, E.ej.visual.variable, { sinDirecciones: true })}</div>`;
     $('vivo').classList.remove('pasa', 'falla');
+    pintarTestsVivo();
     mostrarVivo();
     return;
   }
-  $('vivo-zoom').innerHTML = `<div class="vivo-fila">${entradaHtml}${esperadoMini}</div>`;
+  if (esEntrada && sal) {
+    $('vivo-zoom').innerHTML = MOD().vacio(c.estado) ? sinEntradaHtml()
+      : `<div class="vivo-fila">${MOD().anotado(c.estado, sal, c.fn.lista, { lugares: vis.lugares })}</div>`;
+  } else $('vivo-zoom').innerHTML = `<div class="vivo-fila">${dibujoFinal}</div>`;
   $('vivo').classList.toggle('pasa', !!vis.pasa);
   $('vivo').classList.toggle('falla', !vis.pasa);
   pintarTestsVivo();

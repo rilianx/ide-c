@@ -377,3 +377,8 @@ svg.memoria .toque.tocado { fill: color-mix(in srgb, #1a7f37 30%, transparent); 
 /* controles de la ventana, en su propia fila (no tapan el dibujo) */
 .vivo-controles { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 2px; min-height: 26px; }
 .vivo-pasos button { padding: 1px 10px; }
+
+/* Lo que se espera, anotado sobre el dibujo de la entrada */
+svg.memoria .esperado { font-size: 12px; fill: #1a7f37; font-weight: 600; }
+.llamada-vivo { font-family: var(--mono); font-size: 15px; white-space: nowrap; }
+.flecha-vivo { color: var(--suave); }
