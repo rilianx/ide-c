@@ -464,3 +464,7 @@ svg.memoria path.toque.linea.camino { stroke: color-mix(in srgb, #d4730f 35%, tr
 .menu-dibujo button { text-align: left; padding: 5px 10px; }
 .menu-dibujo code { font-family: var(--mono); }
 svg.memoria .toque.apuntado { fill: color-mix(in srgb, #2f6fd6 18%, transparent); stroke: #2f6fd6; stroke-width: 1.4; }
+/* Computador: el asistente (abajo del código) de alto fijo, para que el código no cambie de tamaño */
+@media (min-width: 1001px) {
+  .asistente { height: 30vh; max-height: none; flex: none; }
+}
