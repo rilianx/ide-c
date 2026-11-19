@@ -1,7 +1,7 @@
 // Modelo «árbol binario de búsqueda» (Lab 4): tests declarativos y dibujo estático de un TreeMap.
 // Cada nodo es una caja [clave / left | right] en la columna de su clave (de menor a mayor, fija durante
 // toda la ejecución) y en la fila de su profundidad; los que no cuelgan de root van abajo, aparte.
-import { svgEnteros } from './visual.js?v=202611191246';
+import { svgEnteros } from './visual.js?v=202611191247';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');
@@ -218,7 +218,7 @@ export function svgArbol(estado, nombre, opciones = {}) {
   const YC = YM + 18;                    // los campos del TreeMap (debajo de su nombre)
   const enteros = svgEnteros(vars.filter(v => !('par' in v)), XL, YC + 3 * FH + 12, CW);
   const altoIzq = YC + 3 * FH + 12 + enteros.alto + (esp?.retornoNulo ? 18 : 0);
-  const ancho = X0 + Math.max(extra, 1) * CS + 8;
+  const ancho = Math.max(X0 + Math.max(extra, 1) * CS + 8, X0 + 120);   // (que quepa «(árbol vacío)»)
   const alto = Math.max(altoIzq, (fuera.length ? yFuera + 16 + NH + BAJO : yNivel(Math.max(niveles, 1) - 1) + NH + BAJO + 4)) + (sueltas.length ? 20 : 0) + (esp?.texto ? 20 : 0);
   const s = [], zonas = [];
   const flecha = (d, clase = 'next', marca = '') => s.push(`<path d="${d}" class="flecha ${clase} ${marca}" marker-end="url(#punta-${marca || clase})"/>`);
