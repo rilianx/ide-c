@@ -1,4 +1,5 @@
 [
   { "id": "lab2-lista", "titulo": "Lab 2. Lista enlazada" },
-  { "id": "lab3-hash", "titulo": "Lab 3. Tabla hash" }
+  { "id": "lab3-hash", "titulo": "Lab 3. Tabla hash" },
+  { "id": "lab4-arbol", "titulo": "Lab 4. Árbol binario de búsqueda" }
 ]

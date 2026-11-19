@@ -2,7 +2,7 @@
 // se elige la función que se implementa y se arman líneas eligiendo piezas
 // (variables y campos que existen en ese punto, del tipo que corresponde).
 // También se puede escribir con el teclado: el asistente solo inserta líneas.
-import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190250';
+import { funcionEn, funcionesDelArchivo, variablesEn, funcionesDefinidas, agregarPlantilla, enmascarar, tipoCampo } from './proyecto.js?v=202611190258';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const T = (base, ptr = 1) => ({ base, ptr });
@@ -56,7 +56,7 @@ const juntar = (...listas) => [...new Set(listas.flat())];
 
 // Plantillas: huecos que se llenan en orden; cada uno sabe qué piezas acepta.
 //   nombre: un nombre nuevo · lval: algo asignable · expr: una expresión (de tipo dado) · ret: lo que retorna la función
-function plantillas(est, ctors, retorno, nombres = {}, llamadas = []) {
+function plantillas(est, ctors, retorno, nombres = {}, llamadas = [], comandos = []) {
   const structs = Object.keys(est);
   const out = [];
   // ¿hay campos enteros o arreglos (tabla hash)? → plantillas para índices, hash, calloc…
@@ -120,6 +120,15 @@ function plantillas(est, ctors, retorno, nombres = {}, llamadas = []) {
       armar: v => [`for (long i = ${v[0].texto}; i < ${v[1].texto}; i++) {`, '', '}'], dentro: 1 });
     out.push({ cat: 'Control', etiqueta: 'if (_ > 0.7 * _) { … }', huecos: [{ k: 'expr', tipo: LONG }, { k: 'expr', tipo: LONG }],
       armar: v => [`if (${v[0].texto} > 0.7 * ${v[1].texto}) {`, '', '}'], dentro: 1 });
+  }
+  // comandos propios del ejercicio (ejercicio.json → comandos): «if (is_equal(⟨TreeMap *⟩, ⟨void *⟩, ⟨void *⟩)) {»
+  // cada ⟨tipo⟩ es un hueco de ese tipo; con bloque, se cierra con }
+  for (const c of comandos) {
+    const partes = c.texto.split(/⟨([^⟩]*)⟩/), tipos = partes.filter((_, i) => i % 2);
+    const huecos = tipos.map(t => { const tp = tipoCampo(t, est) ?? T(t); return { k: 'expr', tipo: () => tp }; });
+    const llenar = v => partes.map((p, i) => i % 2 ? v[(i - 1) / 2].texto : p).join('');
+    out.push({ cat: c.cat ?? 'Control', etiqueta: partes.map((p, i) => i % 2 ? '_' : p).join('') + (c.bloque ? ' … }' : ''), huecos,
+      armar: v => c.bloque ? [llenar(v), '', '}'] : [llenar(v)], ...(c.bloque ? { dentro: 1 } : {}) });
   }
   // llamadas a otras funciones del ejercicio (enlarge(map), insertMap(map, k, v), searchMap…)
   for (const f of llamadas) {
@@ -334,7 +343,7 @@ export class Asistente {
         this.nombres = nombresDelCodigo(textos, [...Object.keys(ctx.est), 'void'], campos);
         this.nombresDe = ej.id;
       }
-      const todas = plantillas(ctx.est, ej.constructores ?? [], ctx.fn.retorno, this.nombres, (ej.llamadas ?? []).filter(f => f.nombre !== ctx.fn.nombre));
+      const todas = plantillas(ctx.est, ej.constructores ?? [], ctx.fn.retorno, this.nombres, (ej.llamadas ?? []).filter(f => f.nombre !== ctx.fn.nombre), ej.comandos ?? []);
       // al tocar una línea queda en modo edición (sus partes se tocan para cambiarlas); en una línea vacía,
       // los comandos para escribir una nueva. Mientras se arma un comando nuevo, no hay barra de la línea.
       const construyendo = this.armando && this.armando.editando == null;

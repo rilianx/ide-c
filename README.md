@@ -27,6 +27,7 @@ js/tests.js        correr los tests y mostrar esperado vs. obtenido
 js/modelos.js      lo que depende de la estructura del ejercicio (lista o tabla hash): dibujo, entrada/salida de los tests, comparación, diagnóstico
 js/visual.js       dibujo de una lista doble (Lab 2)
 js/tabla.js        tests declarativos y dibujo de una tabla hash (Lab 3)
+js/arbol.js        tests declarativos y dibujo de un árbol binario de búsqueda (Lab 4)
 js/runner.js       habla con el worker y lo reinicia si algo se cuelga
 js/worker.js       compila y ejecuta con xcc-wasm (en un Web Worker)
 js/ejercicios.js   carga los ejercicios y guarda lo del estudiante (localStorage)
@@ -44,7 +45,7 @@ Son módulos ES nativos, sin paso de compilación: la carpeta se publica tal cua
    - `oculto/<ref>.c`: la implementación completa, con cada función de la interfaz entre `#ifndef ALUMNO_<funcion>` … `#endif`;
    - `oculto/ayudas.c` (opcional): funciones para los tests, que usan solo la interfaz;
    - `ejercicio.json`: archivos (cuáles se pueden editar), funciones de la interfaz, `estructuras` (los campos de cada struct y su tipo, para las piezas del asistente), `constructores` (como `createNode`) y pasos. Cada paso tiene su enunciado, la plantilla de cada función y sus tests (`nombre`, `codigo`, `esperado`). Opcional: `migrar`, pares [antes, después] que se reemplazan en lo que el estudiante tiene guardado (por ejemplo, si cambia el nombre de un .h).
-   - `modelo` (opcional): `"tabla"` para una tabla hash; si no, es una lista. Con `visual.textos` se muestran también las variables `char *`. Los campos de `estructuras` pueden ser `"Node"` (puntero, forma corta), `"Pair **"`, `"long"`, `"char *"`…; con campos enteros o arreglos el asistente agrega plantillas para índices (`long pos = hash(_, _);`, `_ = (_ + 1) % _;`, `calloc`, `is_equal`, `for`). `constructores` puede tener varios parámetros (`params`) y `llamadas` lista otras funciones que se pueden llamar desde el asistente (`enlarge(map)`, `searchMap`…).
+   - `modelo` (opcional): `"tabla"` para una tabla hash, `"arbol"` para un árbol binario de búsqueda; si no, es una lista. Con `visual.textos` se muestran también las variables `char *`. Los campos de `estructuras` pueden ser `"Node"` (puntero, forma corta), `"Pair **"`, `"long"`, `"char *"`…; con campos enteros o arreglos el asistente agrega plantillas para índices (`long pos = hash(_, _);`, `_ = (_ + 1) % _;`, `calloc`, `is_equal`, `for`). `constructores` puede tener varios parámetros (`params`) y `llamadas` lista otras funciones que se pueden llamar desde el asistente (`enlarge(map)`, `searchMap`…).
 2. Agregarlo a `ejercicios/index.json`.
 3. Validarlo con gcc: `node herramientas/probar-nativo.mjs ejercicios/<id>` (con la referencia deben pasar todos). Con un archivo de estudiante como segundo argumento se puede ver qué tests fallan.
 
@@ -70,6 +71,17 @@ Cada test se describe con datos, no con código (en `ejercicio.json`):
 - `salida`: lo que retorna cada llamada que retorna algo, cómo queda la lista (head y tail se deducen) y dónde queda current (si se omite, no se revisa). Siempre se revisa que los enlaces `prev`/`next` sean consistentes.
 
 `prepararTests` (`js/proyecto.js`) genera el código C del test (con `listaCon`, `irA`, `retorno` y `resultado` de `ayudas.c`) y la salida esperada; en la app se muestran como Entrada / Llamada / Se espera. También se puede escribir un test con `codigo` y `esperado` directamente.
+
+### Lab 4 (árbol binario de búsqueda)
+
+```json
+{ "nombre": "900 queda a la izquierda de 1273",
+  "entrada": { "arbol": [5239, 1273, 8213, 6980] },
+  "llamadas": [["insertTreeMap", 900]],
+  "salida": { "arbol": [5239, 1273, 900, 8213, 6980], "current": 900 } }
+```
+
+El árbol se da por sus claves en preorden (insertarlas en ese orden arma el mismo árbol; `[]` es vacío y `null`, que lo crea `createTreeMap`). Un argumento de texto es un nodo: `["minimum", "root->left"]` llama a `minimum(tree->root->left)`. Se revisan la forma del árbol (`5239(1273(900, -), 8213(6980, -))`), que cada `parent` apunte a su padre, `lower_than` y `current` (si viene). En el dibujo cada nodo va en la columna de su clave (fija durante toda la ejecución) y en la fila de su profundidad; un `parent` solo se dibuja si está mal (en rojo). Los tests se generan con `node herramientas/generar-lab4.mjs`. `comandos` en `ejercicio.json` agrega comandos propios al asistente: `{"cat": "Control", "texto": "if (is_equal(⟨TreeMap *⟩, ⟨void *⟩, ⟨void *⟩)) {", "bloque": true}` (cada ⟨tipo⟩ es un hueco).
 
 ### Lab 3 (tabla hash)
 

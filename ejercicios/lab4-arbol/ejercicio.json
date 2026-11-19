@@ -1,0 +1,1003 @@
+{
+  "id": "lab4-arbol",
+  "titulo": "Lab 4. Árbol binario de búsqueda (mapa ordenado)",
+  "descripcion": "Implementa un mapa ordenado con un árbol binario de búsqueda, una función a la vez en treemap.c. Las que no escribas usan la implementación del curso, así puedes probar cada una por separado. createTreeNode, is_equal y eraseTreeMap están en treemap.h. En los tests las claves son int y los valores, palabras.",
+  "archivos": [
+    {
+      "nombre": "treemap.c",
+      "editable": true
+    },
+    {
+      "nombre": "treemap.h",
+      "editable": false
+    },
+    {
+      "nombre": "ayudas.c",
+      "editable": false
+    }
+  ],
+  "ocultos": [
+    "oculto/treemap_ref.c.enc",
+    "oculto/vis.c"
+  ],
+  "alumno": "treemap.c",
+  "referencia": "oculto/treemap_ref.c.enc",
+  "ayudas": "ayudas.c",
+  "modelo": "arbol",
+  "estructuras": {
+    "TreeMap": {
+      "root": "TreeNode",
+      "current": "TreeNode"
+    },
+    "TreeNode": {
+      "pair": "Pair",
+      "left": "TreeNode",
+      "right": "TreeNode",
+      "parent": "TreeNode"
+    },
+    "Pair": {
+      "key": "void *",
+      "value": "void *"
+    }
+  },
+  "constructores": [
+    {
+      "nombre": "createTreeNode",
+      "tipo": "TreeNode",
+      "params": [
+        "void *",
+        "void *"
+      ]
+    }
+  ],
+  "llamadas": [
+    {
+      "nombre": "minimum",
+      "params": [
+        "TreeNode *"
+      ],
+      "retorno": "TreeNode *"
+    },
+    {
+      "nombre": "removeNode",
+      "params": [
+        "TreeMap *",
+        "TreeNode *"
+      ]
+    },
+    {
+      "nombre": "searchTreeMap",
+      "params": [
+        "TreeMap *",
+        "void *"
+      ],
+      "retorno": "Pair *"
+    }
+  ],
+  "comandos": [
+    {
+      "cat": "Control",
+      "texto": "if (is_equal(⟨TreeMap *⟩, ⟨void *⟩, ⟨void *⟩)) {",
+      "bloque": true
+    },
+    {
+      "cat": "Control",
+      "texto": "if (⟨TreeMap *⟩->lower_than(⟨void *⟩, ⟨void *⟩)) {",
+      "bloque": true
+    },
+    {
+      "cat": "Control",
+      "texto": "while (⟨TreeNode *⟩->left != NULL) {",
+      "bloque": true
+    },
+    {
+      "cat": "Asignar",
+      "texto": "⟨TreeMap *⟩->lower_than = lower_than;"
+    }
+  ],
+  "funciones": [
+    "createTreeMap",
+    "searchTreeMap",
+    "insertTreeMap",
+    "minimum",
+    "removeNode",
+    "firstTreeMap",
+    "nextTreeMap",
+    "upperBound"
+  ],
+  "visual": {
+    "archivo": "oculto/vis.c",
+    "variable": "tree",
+    "tipo": "TreeMap",
+    "textos": true,
+    "clases": {
+      "Pair": 5
+    }
+  },
+  "solucion": "oculto/solucion.enc",
+  "pasos": [
+    {
+      "titulo": "1. createTreeMap",
+      "funciones": [
+        "createTreeMap"
+      ],
+      "enunciado": "Implementa `TreeMap * createTreeMap(int (*lower_than)(void * key1, void * key2))`: reserva memoria para un `TreeMap`, deja `root` y `current` en `NULL`, guarda la función de comparación (`map->lower_than = lower_than;`) y retorna el mapa.",
+      "tests": [
+        {
+          "nombre": "crea un árbol vacío que guarda lower_than",
+          "entrada": {
+            "arbol": null
+          },
+          "llamadas": [
+            [
+              "createTreeMap"
+            ]
+          ],
+          "salida": {
+            "arbol": [],
+            "current": null
+          }
+        }
+      ],
+      "plantillas": {
+        "createTreeMap": "TreeMap * createTreeMap(int (*lower_than) (void * key1, void * key2)) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "2. searchTreeMap",
+      "funciones": [
+        "searchTreeMap"
+      ],
+      "enunciado": "Implementa `Pair * searchTreeMap(TreeMap * tree, void * key)`: busca el nodo con esa clave y retorna su `pair`, dejando `current` en ese nodo. Si no está, retorna `NULL`.\n\nDesde `root`: si la clave es igual (`is_equal(tree, key, aux->pair->key)`), la encontraste; si es menor (`tree->lower_than(key, aux->pair->key)`), sigue por `left`; si no, por `right`.",
+      "tests": [
+        {
+          "nombre": "encuentra la clave de la raíz (5239)",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "searchTreeMap",
+              5239
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              5239
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": 5239
+          }
+        },
+        {
+          "nombre": "encuentra 8213 (a la derecha)",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "searchTreeMap",
+              8213
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              8213
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": 8213
+          }
+        },
+        {
+          "nombre": "encuentra 6980 (derecha y luego izquierda)",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "searchTreeMap",
+              6980
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              6980
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": 6980
+          }
+        },
+        {
+          "nombre": "7010 no está: retorna NULL",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "searchTreeMap",
+              7010
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          }
+        }
+      ],
+      "plantillas": {
+        "searchTreeMap": "Pair * searchTreeMap(TreeMap * tree, void * key) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "3. insertTreeMap",
+      "funciones": [
+        "insertTreeMap"
+      ],
+      "enunciado": "Implementa `void insertTreeMap(TreeMap * tree, void * key, void * value)`: busca dónde va la clave (como en searchTreeMap, recordando el último nodo visitado), crea el nodo (`createTreeNode`), lo enlaza con su padre (también `nuevo->parent`) y deja `current` en él. Si la clave ya existe, no hace nada. Si el árbol está vacío, el nodo nuevo es la raíz.",
+      "tests": [
+        {
+          "nombre": "900 queda a la izquierda de 1273",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "insertTreeMap",
+              900
+            ]
+          ],
+          "salida": {
+            "arbol": [
+              5239,
+              1273,
+              900,
+              8213,
+              6980
+            ],
+            "current": 900
+          }
+        },
+        {
+          "nombre": "7000 queda a la derecha de 6980",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "insertTreeMap",
+              7000
+            ]
+          ],
+          "salida": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980,
+              7000
+            ],
+            "current": 7000
+          }
+        },
+        {
+          "nombre": "la clave 5239 ya existe: no se inserta",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "insertTreeMap",
+              5239
+            ]
+          ],
+          "salida": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          }
+        },
+        {
+          "nombre": "en un árbol vacío, el nodo nuevo es la raíz",
+          "entrada": {
+            "arbol": []
+          },
+          "llamadas": [
+            [
+              "insertTreeMap",
+              50
+            ]
+          ],
+          "salida": {
+            "arbol": [
+              50
+            ],
+            "current": 50
+          }
+        }
+      ],
+      "plantillas": {
+        "insertTreeMap": "void insertTreeMap(TreeMap * tree, void * key, void * value) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "4. minimum",
+      "funciones": [
+        "minimum"
+      ],
+      "enunciado": "Implementa `TreeNode * minimum(TreeNode * x)`: retorna el nodo con la menor clave del subárbol que parte en `x`, bajando por `left` hasta el final. Si `x` no tiene hijo izquierdo, retorna `x`.",
+      "tests": [
+        {
+          "nombre": "el mínimo de todo el árbol es 1273",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "minimum",
+              "root"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              1273
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          }
+        },
+        {
+          "nombre": "el mínimo del subárbol de 8213 es 6980",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "minimum",
+              "root->right"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              6980
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          }
+        },
+        {
+          "nombre": "1273 no tiene hijo izquierdo: retorna el mismo nodo",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "minimum",
+              "root->left"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              1273
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          }
+        },
+        {
+          "nombre": "con 100 en el árbol, el mínimo es 100",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980,
+              100
+            ]
+          },
+          "llamadas": [
+            [
+              "minimum",
+              "root"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              100
+            ],
+            "arbol": [
+              5239,
+              1273,
+              100,
+              8213,
+              6980
+            ]
+          }
+        }
+      ],
+      "plantillas": {
+        "minimum": "TreeNode * minimum(TreeNode * x) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "5. removeNode",
+      "funciones": [
+        "removeNode"
+      ],
+      "enunciado": "Implementa `void removeNode(TreeMap * tree, TreeNode * node)`: saca `node` del árbol (los tests usan `eraseTreeMap`, que busca el nodo y llama a tu removeNode).\n\n- **Sin hijos**: el padre deja de apuntarlo (o `root` queda en `NULL`).\n- **Un hijo**: el hijo toma su lugar (y su `parent` pasa a ser el padre de `node`; si `node` era la raíz, el hijo es la nueva `root`).\n- **Dos hijos**: busca el menor del subárbol derecho (`minimum(node->right)`), copia su clave y valor en `node` y elimina ese nodo (con removeNode).",
+      "tests": [
+        {
+          "nombre": "nodo sin hijos (1273)",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "eraseTreeMap",
+              1273
+            ]
+          ],
+          "salida": {
+            "arbol": [
+              5239,
+              8213,
+              6980
+            ]
+          }
+        },
+        {
+          "nombre": "nodo con un hijo (8213): 6980 toma su lugar",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "eraseTreeMap",
+              8213
+            ]
+          ],
+          "salida": {
+            "arbol": [
+              5239,
+              1273,
+              6980
+            ]
+          }
+        },
+        {
+          "nombre": "nodo con dos hijos (5239): queda 6980 en la raíz",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "eraseTreeMap",
+              5239
+            ]
+          ],
+          "salida": {
+            "arbol": [
+              6980,
+              1273,
+              8213
+            ]
+          }
+        },
+        {
+          "nombre": "la raíz con un solo hijo: el hijo es la nueva raíz",
+          "entrada": {
+            "arbol": [
+              5239,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "eraseTreeMap",
+              5239
+            ]
+          ],
+          "salida": {
+            "arbol": [
+              8213,
+              6980
+            ]
+          }
+        },
+        {
+          "nombre": "el único nodo: el árbol queda vacío",
+          "entrada": {
+            "arbol": [
+              5239
+            ]
+          },
+          "llamadas": [
+            [
+              "eraseTreeMap",
+              5239
+            ]
+          ],
+          "salida": {
+            "arbol": []
+          }
+        }
+      ],
+      "plantillas": {
+        "removeNode": "void removeNode(TreeMap * tree, TreeNode * node) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "6. firstTreeMap",
+      "funciones": [
+        "firstTreeMap"
+      ],
+      "enunciado": "Implementa `Pair * firstTreeMap(TreeMap * tree)`: retorna el par con la menor clave (el nodo mínimo del árbol) y deja `current` en ese nodo. Si el árbol está vacío, retorna `NULL`.",
+      "tests": [
+        {
+          "nombre": "retorna 1273, la menor clave",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "firstTreeMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              1273
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": 1273
+          }
+        },
+        {
+          "nombre": "con 100 en el árbol, retorna 100",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980,
+              100
+            ]
+          },
+          "llamadas": [
+            [
+              "firstTreeMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              100
+            ],
+            "arbol": [
+              5239,
+              1273,
+              100,
+              8213,
+              6980
+            ],
+            "current": 100
+          }
+        },
+        {
+          "nombre": "en un árbol vacío retorna NULL",
+          "entrada": {
+            "arbol": []
+          },
+          "llamadas": [
+            [
+              "firstTreeMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "arbol": []
+          }
+        }
+      ],
+      "plantillas": {
+        "firstTreeMap": "Pair * firstTreeMap(TreeMap * tree) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "7. nextTreeMap",
+      "funciones": [
+        "nextTreeMap"
+      ],
+      "enunciado": "Implementa `Pair * nextTreeMap(TreeMap * tree)`: retorna el par siguiente (la menor clave mayor que la de `current`) y deja `current` en ese nodo.\n\n- Si `current` tiene hijo derecho: el siguiente es el mínimo de ese subárbol.\n- Si no: sube por `parent` hasta llegar a un padre desde su hijo izquierdo; ese padre es el siguiente.\n\nSi no hay siguiente, retorna `NULL`.",
+      "tests": [
+        {
+          "nombre": "con hijo derecho: desde 1273 va a 2000",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980,
+              2000
+            ],
+            "current": 1273
+          },
+          "llamadas": [
+            [
+              "nextTreeMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              2000
+            ],
+            "arbol": [
+              5239,
+              1273,
+              2000,
+              8213,
+              6980
+            ],
+            "current": 2000
+          }
+        },
+        {
+          "nombre": "desde la raíz (5239) va a 6980",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": 5239
+          },
+          "llamadas": [
+            [
+              "nextTreeMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              6980
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": 6980
+          }
+        },
+        {
+          "nombre": "sin hijo derecho: desde 2000 sube a 5239",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980,
+              2000
+            ],
+            "current": 2000
+          },
+          "llamadas": [
+            [
+              "nextTreeMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              5239
+            ],
+            "arbol": [
+              5239,
+              1273,
+              2000,
+              8213,
+              6980
+            ],
+            "current": 5239
+          }
+        },
+        {
+          "nombre": "desde 8213, la mayor: retorna NULL",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": 8213
+          },
+          "llamadas": [
+            [
+              "nextTreeMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": null
+          }
+        }
+      ],
+      "plantillas": {
+        "nextTreeMap": "Pair * nextTreeMap(TreeMap * tree) {\n\n}\n"
+      }
+    },
+    {
+      "titulo": "8. upperBound",
+      "funciones": [
+        "upperBound"
+      ],
+      "enunciado": "Implementa `Pair * upperBound(TreeMap * tree, void * key)`: retorna el par con esa clave; si no está, el de la menor clave mayor que key (o `NULL` si no hay).\n\nHaz una búsqueda normal y usa un nodo auxiliar `ub_node` que guarde el último nodo donde bajaste por la izquierda (su clave es mayor que key).",
+      "tests": [
+        {
+          "nombre": "6980 está: retorna 6980",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "upperBound",
+              6980
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              6980
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          }
+        },
+        {
+          "nombre": "6979 no está: retorna 6980",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "upperBound",
+              6979
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              6980
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          }
+        },
+        {
+          "nombre": "6981 no está: retorna 8213",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "upperBound",
+              6981
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              8213
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          }
+        },
+        {
+          "nombre": "1000 no está: retorna 1273",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "upperBound",
+              1000
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              1273
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          }
+        },
+        {
+          "nombre": "8214 es mayor que todas: retorna NULL",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "upperBound",
+              8214
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          }
+        }
+      ],
+      "plantillas": {
+        "upperBound": "Pair * upperBound(TreeMap * tree, void * key) {\n\n}\n"
+      }
+    }
+  ]
+}

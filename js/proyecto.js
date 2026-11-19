@@ -1,7 +1,8 @@
 // Lógica pura del proyecto (sin DOM): qué funciones escribió el estudiante,
 // cómo se arma el programa que se compila y cómo se comparan las salidas.
 // Se puede importar desde node para probarla.
-import { generarTestTabla, describirTestTabla } from './tabla.js?v=202611190250';
+import { generarTestArbol, describirTestArbol } from './arbol.js?v=202611190258';
+import { generarTestTabla, describirTestTabla } from './tabla.js?v=202611190258';
 
 // Tipo de un campo de struct en ej.estructuras: «Node» (puntero a Node, forma corta), «Pair **»,
 // «long», «char *»… → {base, ptr}.
@@ -45,11 +46,13 @@ export function funcionesDelArchivo(texto) {
     if (m[i] === '{') {
       if (prof === 0) {
         const antes = m.slice(0, i);
-        const f = /([A-Za-z_][\w \t\*]*?[\s\*])([A-Za-z_]\w*)\s*\(([^()]*)\)\s*$/.exec(antes);
+        const f = /([A-Za-z_][\w \t\*]*?[\s\*])([A-Za-z_]\w*)\s*\(((?:[^()]|\([^()]*\))*)\)\s*$/.exec(antes);   // (un nivel de paréntesis adentro: int (*f)(void *))
         if (f) {
           let j = i + 1, p = 1;
           while (j < m.length && p) { if (m[j] === '{') p++; else if (m[j] === '}') p--; j++; }
-          const params = !f[3].trim() || f[3].trim() === 'void' ? [] : f[3].split(',').map(s => {
+          const params = !f[3].trim() || f[3].trim() === 'void' ? [] : f[3].split(/,(?![^()]*\))/).map(s => {
+            const fp = /\(\s*\*\s*([A-Za-z_]\w*)\s*\)/.exec(s);   // puntero a función: int (*lower_than)(…)
+            if (fp) return { nombre: fp[1], base: 'funcion', ptr: 0 };
             const q = /^(.*?)([A-Za-z_]\w*)\s*$/.exec(s.trim());
             return q ? { nombre: q[2], ...tipo(q[1]) } : null;
           }).filter(Boolean);
@@ -88,7 +91,7 @@ export function variablesEn(texto, fn, pos) {
 // Funciones de la lista `nombres` que están definidas (con cuerpo) en el texto.
 export function funcionesDefinidas(texto, nombres) {
   const limpio = sinComentarios(texto);
-  return nombres.filter(n => new RegExp(`\\b${n}\\s*\\([^;{}()]*\\)\\s*\\{`).test(limpio));
+  return nombres.filter(n => new RegExp(`\\b${n}\\s*\\((?:[^;{}()]|\\([^;{}()]*\\))*\\)\\s*\\{`).test(limpio));
 }
 
 // Funciones que el estudiante realmente escribió: definidas y con un cuerpo distinto
@@ -230,6 +233,8 @@ function conVolcado(L, m, dv, pre = '', ret = null) {
   const ini = m.length - m.trimStart().length, fin = m.trimEnd().length;
   if (t.endsWith('}') && !t.endsWith(';')) {   // termina un bloque: el volcado va después
     let p = 0; for (const ch of m) { if (ch === '{') p++; else if (ch === '}') p--; }
+    // un bloque en una línea («if (c) { a; b; }»): el volcado va adentro, antes de la } (después podría venir un else)
+    if (p === 0 && m.includes('{') && t !== '}') return `${L.slice(0, fin - 1)}${dv} ${L.slice(fin - 1)}`;
     return p === 0 || t === '}' ? `${L.slice(0, fin)} ${dv}${L.slice(fin)}` : null;
   }
   if (!t.endsWith(';')) return null;
@@ -350,11 +355,13 @@ export function instrumentarFuncion(texto, nombre, ej, revisar = true, soloRevis
   const lineaDe = pos => texto.slice(0, pos).split('\n').length - 1;   // 0-based
   const l0 = lineaDe(fn.cuerpo), l1 = lineaDe(fn.fin);
   // variables visibles: [{nombre, tipo, prof, clase}]; clase: lista, nodo, dato (void *), int, double
-  const clase = (base, ptr) => ptr === 1 ? (base === v.tipo ? 'lista' : base === nodo ? 'nodo' : base === 'void' ? 'dato' : base === 'char' && v.textos ? 'texto' : null)
+  const extra = v.clases ?? {};   // otros punteros que se vuelcan con su propio código (Pair * en el árbol: 5)
+  const clase = (base, ptr) => ptr === 1 ? (base === v.tipo ? 'lista' : base === nodo ? 'nodo' : extra[base] != null ? `extra:${base}` : base === 'void' ? 'dato' : base === 'char' && v.textos ? 'texto' : null)
     : ptr === 0 ? (/^(int|long|short|char|unsigned|signed)$/.test(base) ? 'int' : /^(double|float)$/.test(base) ? 'double' : null) : null;
   let vars = fn.params.map(q => ({ nombre: q.nombre, tipo: q.base, prof: 0, clase: clase(q.base, q.ptr) })).filter(x => x.clase);
   const CODIGO = { nodo: 0, dato: 1, int: 2, double: 3, texto: 4 };
-  const arg = (x, valor = x.nombre) => `, ${CODIGO[x.clase]}, "${x.nombre}", ${x.clase === 'int' ? `(long)(${valor})` : x.clase === 'double' ? `(double)(${valor})` : `(void *)(${valor})`}`;
+  const codigo = c => c.startsWith('extra:') ? extra[c.slice(6)] : CODIGO[c];
+  const arg = (x, valor = x.nombre) => `, ${codigo(x.clase)}, "${x.nombre}", ${x.clase === 'int' ? `(long)(${valor})` : x.clase === 'double' ? `(double)(${valor})` : `(void *)(${valor})`}`;
   const volcado = (n, extra = []) => {   // una expresión (sirve también dentro de una condición)
     const lista = [...vars].reverse().find(x => x.clase === 'lista')?.nombre ?? `(${v.tipo} *)0`;
     const vs = vars.filter(x => x.clase !== 'lista').slice(-14);
@@ -363,7 +370,7 @@ export function instrumentarFuncion(texto, nombre, ej, revisar = true, soloRevis
   // lo que retorna la función: se guarda en __r y se muestra como «return»
   const r = fn.retorno, claseRet = clase(r.base, r.ptr);
   const tipoRet = claseRet && claseRet !== 'lista' ? `${r.base} ${'*'.repeat(r.ptr)}`.trim() : null;
-  const decl = new RegExp(`\\b(?:const\\s+|unsigned\\s+|signed\\s+)?(${v.tipo}|${nodo}|void|int|long|short|char|double|float)\\s*(\\**)\\s*([A-Za-z_]\\w*)\\s*(?=[=;,])`, 'g');
+  const decl = new RegExp(`\\b(?:const\\s+|unsigned\\s+|signed\\s+)?(${[v.tipo, nodo, ...Object.keys(extra)].join('|')}|void|int|long|short|char|double|float)\\s*(\\**)\\s*([A-Za-z_]\\w*)\\s*(?=[=;,])`, 'g');
   if (l0 === l1) {   // toda la función en una línea: solo se revisan sus punteros
     if (!revisar) return texto;
     const ini = fn.cuerpo - (texto.lastIndexOf('\n', fn.cuerpo - 1) + 1), fin = ini + (fn.fin - fn.cuerpo);
@@ -400,7 +407,9 @@ export function instrumentarFuncion(texto, nombre, ej, revisar = true, soloRevis
     for (const ch of linea) { if (ch === '{') prof++; else if (ch === '}') { prof--; vars = vars.filter(x => x.prof <= prof); } }
     vars.push(...nuevas);   // después de la línea que las declara
     const ret = tipoRet ? { tipo: tipoRet, dv: volcado(i + 1, [{ nombre: 'return', clase: claseRet, valor: '__r' }]) + ';' } : null;
-    lineas[i] = soloRevision ? L : conVolcado(L, M, volcado(i + 1) + ';', `__voyf(${i + 1});`, ret) ?? L;
+    // después de una } que sigue con un else en la línea siguiente no se puede poner nada
+    const sigueElse = /\}\s*$/.test(M) && /^\s*else\b/.test(m.slice(i + 1).find(x => x.trim()) ?? '');
+    lineas[i] = soloRevision || sigueElse ? L : conVolcado(L, M, volcado(i + 1) + ';', `__voyf(${i + 1});`, ret) ?? L;
     if (revisar) lineas[i] = conRevision(lineas[i], i + 1, new Map(vars.map(x => [x.nombre, x.tipo])), ej.estructuras ?? {});
   }
   return lineas.join('\n');
@@ -456,7 +465,7 @@ export function leerVolcados(stdout) {
 // Tipo de retorno de cada función del .h: Map nombre → «void», «void *», «List *»…
 export function retornosDelH(h) {
   const m = new Map();
-  for (const r of sinComentarios(h ?? '').matchAll(/(?:^|[;}\n])\s*([A-Za-z_][\w \t*]*?[\s*])([A-Za-z_]\w*)\s*\([^;{)]*\)\s*;/g))
+  for (const r of sinComentarios(h ?? '').matchAll(/(?:^|[;}\n])\s*([A-Za-z_][\w \t*]*?[\s*])([A-Za-z_]\w*)\s*\((?:[^;{()]|\([^;{()]*\))*\)\s*;/g))
     m.set(r[2], r[1].replace(/\s+/g, ' ').replace(/\s*\*\s*/g, ' *').trim());
   return m;
 }
@@ -495,7 +504,7 @@ export function generarTest(t, retornos, variable = 'L') {
 export function prepararTests(ej, archivos) {
   const h = Object.entries(archivos).find(([n]) => n.endsWith('.h'))?.[1];
   const retornos = retornosDelH(h);
-  const gen = ej.modelo === 'tabla' ? generarTestTabla : generarTest;
+  const gen = ej.modelo === 'tabla' ? generarTestTabla : ej.modelo === 'arbol' ? generarTestArbol : generarTest;
   for (const p of ej.pasos) for (const t of p.tests) if (t.llamadas) Object.assign(t, gen(t, retornos, ej.visual?.variable ?? 'L'), { modelo: ej.modelo ?? 'lista', variable: ej.visual?.variable ?? 'L' });
 }
 
@@ -503,6 +512,7 @@ export function prepararTests(ej, archivos) {
 export function describirTest(t, ej = null) {
   if (!t.llamadas) return null;
   if ((ej?.modelo ?? t.modelo) === 'tabla') return describirTestTabla(t);
+  if ((ej?.modelo ?? t.modelo) === 'arbol') return describirTestArbol(t);
   const e = t.entrada ?? {}, s = t.salida ?? {};
   const lista = l => `[${(l ?? []).join(', ')}]`;
   const entrada = e.lista === null || e.lista === undefined ? 'sin lista'
