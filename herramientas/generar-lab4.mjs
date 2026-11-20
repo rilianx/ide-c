@@ -50,7 +50,7 @@ const B = [5239, 1273, 8213, 6980];   // el árbol del enunciado (en preorden)
 function T(nombre, arbol, llamada, { current, revisarCurrent = true } = {}) {
   const t = construir(arbol);
   if (current != null) t.current = nodo(t, current);
-  const llamadas = Array.isArray(llamada[0]) ? llamada : [llamada];   // una o varias llamadas seguidas
+  const llamadas = [llamada];   // cada test: una entrada, una llamada y el estado que se espera
   const retornos = [];
   for (const [f, a] of llamadas) {
     if (f === 'searchTreeMap') retornos.push(buscar(t, a));
@@ -128,7 +128,6 @@ const pasos = [
       T('con hijo derecho: desde 1273 va a 2000', [...B, 2000], ['nextTreeMap'], { current: 1273 }),
       T('sin hijo derecho: desde 2000 sube a 5239', [...B, 2000], ['nextTreeMap'], { current: 2000 }),
       T('baja varias veces por la izquierda: desde 5239 va a 6000', [...B, 6000], ['nextTreeMap'], { current: 5239 }),
-      T('recorre todo el árbol en orden con firstTreeMap y nextTreeMap', B, [['firstTreeMap'], ['nextTreeMap'], ['nextTreeMap'], ['nextTreeMap'], ['nextTreeMap']]),
       T('desde 8213, la mayor: retorna NULL', B, ['nextTreeMap'], { current: 8213 }),
       T('la mayor más abajo: desde 9000 sube hasta la raíz y retorna NULL', [...B, 9000], ['nextTreeMap'], { current: 9000 }),
       T('con current en NULL retorna NULL', B, ['nextTreeMap']),

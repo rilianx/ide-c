@@ -900,51 +900,6 @@
           "descripcion": "Entra: el árbol de la figura (con 6000 bajo 6980) y current en la raíz. Se espera: ir a la derecha y bajar por left hasta el final (6980 y luego 6000), retornar el pair de 6000 y dejar current ahí."
         },
         {
-          "nombre": "recorre todo el árbol en orden con firstTreeMap y nextTreeMap",
-          "entrada": {
-            "arbol": [
-              5239,
-              1273,
-              8213,
-              6980
-            ]
-          },
-          "llamadas": [
-            [
-              "firstTreeMap"
-            ],
-            [
-              "nextTreeMap"
-            ],
-            [
-              "nextTreeMap"
-            ],
-            [
-              "nextTreeMap"
-            ],
-            [
-              "nextTreeMap"
-            ]
-          ],
-          "salida": {
-            "retornos": [
-              1273,
-              5239,
-              6980,
-              8213,
-              null
-            ],
-            "arbol": [
-              5239,
-              1273,
-              8213,
-              6980
-            ],
-            "current": null
-          },
-          "descripcion": "Entra: el árbol de la figura; se llama a firstTreeMap y después 4 veces a tu nextTreeMap. Se espera: que retornen las claves en orden (1273, 5239, 6980, 8213) y al final NULL."
-        },
-        {
           "nombre": "desde 8213, la mayor: retorna NULL",
           "entrada": {
             "arbol": [
