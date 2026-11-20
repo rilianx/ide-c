@@ -774,6 +774,36 @@
           "descripcion": "Entra: el árbol de la figura con current en la raíz. Se espera: ir al mínimo del subárbol derecho (6980), retornar su pair y dejar current ahí."
         },
         {
+          "nombre": "sin hijo derecho, hijo izquierdo: desde 6980 sube a 8213",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": 6980
+          },
+          "llamadas": [
+            [
+              "nextTreeMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              8213
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": 8213
+          },
+          "descripcion": "Entra: el árbol de la figura con current en 6980, que no tiene hijo derecho y es hijo izquierdo de 8213. Se espera: subir un solo nivel, retornar el pair de 8213 y dejar current ahí."
+        },
+        {
           "nombre": "con hijo derecho: desde 1273 va a 2000",
           "entrada": {
             "arbol": [
@@ -838,6 +868,83 @@
           "descripcion": "Entra: el árbol de la figura con current en 2000, sin hijo derecho. Se espera: subir por parent hasta llegar a un padre desde su izquierda (5239) y dejar current ahí."
         },
         {
+          "nombre": "baja varias veces por la izquierda: desde 5239 va a 6000",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980,
+              6000
+            ],
+            "current": 5239
+          },
+          "llamadas": [
+            [
+              "nextTreeMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              6000
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980,
+              6000
+            ],
+            "current": 6000
+          },
+          "descripcion": "Entra: el árbol de la figura (con 6000 bajo 6980) y current en la raíz. Se espera: ir a la derecha y bajar por left hasta el final (6980 y luego 6000), retornar el pair de 6000 y dejar current ahí."
+        },
+        {
+          "nombre": "recorre todo el árbol en orden con firstTreeMap y nextTreeMap",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "firstTreeMap"
+            ],
+            [
+              "nextTreeMap"
+            ],
+            [
+              "nextTreeMap"
+            ],
+            [
+              "nextTreeMap"
+            ],
+            [
+              "nextTreeMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              1273,
+              5239,
+              6980,
+              8213,
+              null
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": null
+          },
+          "descripcion": "Entra: el árbol de la figura; se llama a firstTreeMap y después 4 veces a tu nextTreeMap. Se espera: que retornen las claves en orden (1273, 5239, 6980, 8213) y al final NULL."
+        },
+        {
           "nombre": "desde 8213, la mayor: retorna NULL",
           "entrada": {
             "arbol": [
@@ -866,6 +973,67 @@
             "current": null
           },
           "descripcion": "Entra: el árbol de la figura con current en 8213, la mayor clave. Se espera: subir hasta la raíz sin encontrar uno mayor y retornar NULL."
+        },
+        {
+          "nombre": "la mayor más abajo: desde 9000 sube hasta la raíz y retorna NULL",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980,
+              9000
+            ],
+            "current": 9000
+          },
+          "llamadas": [
+            [
+              "nextTreeMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980,
+              9000
+            ],
+            "current": null
+          },
+          "descripcion": "Entra: el árbol de la figura (con 9000 a la derecha de 8213) y current en 9000, la mayor. Se espera: subir dos niveles siempre desde la derecha, llegar a parent NULL y retornar NULL."
+        },
+        {
+          "nombre": "con current en NULL retorna NULL",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "nextTreeMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": null
+          },
+          "descripcion": "Entra: el árbol de la figura con current en NULL (por ejemplo, tras una búsqueda fallida). Se espera: retornar NULL sin caerse (cuidado con current->right)."
         }
       ],
       "plantillas": {

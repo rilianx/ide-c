@@ -2,7 +2,7 @@
 // La lista sale de los textos que trae el compilador (cc.wasm); se traduce aquí, sin conexión.
 // Cada entrada: [expresión regular sobre el mensaje en inglés, función que arma el texto].
 
-import TODOS from './mensajes-xcc.js?v=202611201354';
+import TODOS from './mensajes-xcc.js?v=202611201356';
 
 const q = s => `«${s}»`;
 const REGLAS = [

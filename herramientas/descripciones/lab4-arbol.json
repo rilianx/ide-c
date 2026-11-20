@@ -28,5 +28,10 @@
  "6979 no está: retorna 6980": "Entra: el árbol de la figura y la clave 6979, que no está. Se espera: retornar el de la menor clave mayor que ella: 6980.",
  "6981 no está: retorna 8213": "Entra: el árbol de la figura y la clave 6981, que no está. Se espera: retornar el de la menor clave mayor que ella: 8213.",
  "1000 no está: retorna 1273": "Entra: el árbol de la figura y la clave 1000, menor que todas. Se espera: retornar el pair de 1273.",
- "8214 es mayor que todas: retorna NULL": "Entra: el árbol de la figura y la clave 8214, mayor que todas. Se espera: retornar NULL."
+ "8214 es mayor que todas: retorna NULL": "Entra: el árbol de la figura y la clave 8214, mayor que todas. Se espera: retornar NULL.",
+ "sin hijo derecho, hijo izquierdo: desde 6980 sube a 8213": "Entra: el árbol de la figura con current en 6980, que no tiene hijo derecho y es hijo izquierdo de 8213. Se espera: subir un solo nivel, retornar el pair de 8213 y dejar current ahí.",
+ "baja varias veces por la izquierda: desde 5239 va a 6000": "Entra: el árbol de la figura (con 6000 bajo 6980) y current en la raíz. Se espera: ir a la derecha y bajar por left hasta el final (6980 y luego 6000), retornar el pair de 6000 y dejar current ahí.",
+ "recorre todo el árbol en orden con firstTreeMap y nextTreeMap": "Entra: el árbol de la figura; se llama a firstTreeMap y después 4 veces a tu nextTreeMap. Se espera: que retornen las claves en orden (1273, 5239, 6980, 8213) y al final NULL.",
+ "la mayor más abajo: desde 9000 sube hasta la raíz y retorna NULL": "Entra: el árbol de la figura (con 9000 a la derecha de 8213) y current en 9000, la mayor. Se espera: subir dos niveles siempre desde la derecha, llegar a parent NULL y retornar NULL.",
+ "con current en NULL retorna NULL": "Entra: el árbol de la figura con current en NULL (por ejemplo, tras una búsqueda fallida). Se espera: retornar NULL sin caerse (cuidado con current->right)."
 }

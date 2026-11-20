@@ -50,22 +50,24 @@ const B = [5239, 1273, 8213, 6980];   // el árbol del enunciado (en preorden)
 function T(nombre, arbol, llamada, { current, revisarCurrent = true } = {}) {
   const t = construir(arbol);
   if (current != null) t.current = nodo(t, current);
-  const [f, a] = llamada;
-  let r, retorna = true;
-  if (f === 'searchTreeMap') r = buscar(t, a);
-  else if (f === 'insertTreeMap') { insertar(t, a); retorna = false; }
-  else if (f === 'eraseTreeMap') { borrar(t, a); retorna = false; }
-  else if (f === 'minimum') r = minimo(camino(t, 'root' + a.replace(/^root/, '')))?.k ?? null;
-  else if (f === 'firstTreeMap') r = primero(t);
-  else if (f === 'nextTreeMap') r = siguiente(t);
-  else if (f === 'upperBound') r = cota(t, a);
+  const llamadas = Array.isArray(llamada[0]) ? llamada : [llamada];   // una o varias llamadas seguidas
+  const retornos = [];
+  for (const [f, a] of llamadas) {
+    if (f === 'searchTreeMap') retornos.push(buscar(t, a));
+    else if (f === 'insertTreeMap') insertar(t, a);
+    else if (f === 'eraseTreeMap') borrar(t, a);
+    else if (f === 'minimum') retornos.push(minimo(camino(t, 'root' + a.replace(/^root/, '')))?.k ?? null);
+    else if (f === 'firstTreeMap') retornos.push(primero(t));
+    else if (f === 'nextTreeMap') retornos.push(siguiente(t));
+    else if (f === 'upperBound') retornos.push(cota(t, a));
+  }
   const entrada = { arbol };
   if (current != null) entrada.current = current;
   const salida = {};
-  if (retorna) salida.retornos = [r];
+  if (retornos.length) salida.retornos = retornos;
   salida.arbol = preorden(t.root);
-  if (revisarCurrent && f !== 'minimum') salida.current = t.current ? t.current.k : null;
-  return { nombre, entrada, llamadas: [llamada], salida };
+  if (revisarCurrent && !llamadas.some(([f]) => f === 'minimum')) salida.current = t.current ? t.current.k : null;
+  return { nombre, entrada, llamadas, salida };
 }
 
 const pasos = [
@@ -122,9 +124,14 @@ const pasos = [
     enunciado: 'Implementa `Pair * nextTreeMap(TreeMap * tree)`: retorna el par siguiente (la menor clave mayor que la de `current`) y deja `current` en ese nodo.\n\n- Si `current` tiene hijo derecho: el siguiente es el mínimo de ese subárbol.\n- Si no: sube por `parent` hasta llegar a un padre desde su hijo izquierdo; ese padre es el siguiente.\n\nSi no hay siguiente, retorna `NULL`.',
     tests: [
       T('desde la raíz (5239) va a 6980', B, ['nextTreeMap'], { current: 5239 }),
+      T('sin hijo derecho, hijo izquierdo: desde 6980 sube a 8213', B, ['nextTreeMap'], { current: 6980 }),
       T('con hijo derecho: desde 1273 va a 2000', [...B, 2000], ['nextTreeMap'], { current: 1273 }),
       T('sin hijo derecho: desde 2000 sube a 5239', [...B, 2000], ['nextTreeMap'], { current: 2000 }),
+      T('baja varias veces por la izquierda: desde 5239 va a 6000', [...B, 6000], ['nextTreeMap'], { current: 5239 }),
+      T('recorre todo el árbol en orden con firstTreeMap y nextTreeMap', B, [['firstTreeMap'], ['nextTreeMap'], ['nextTreeMap'], ['nextTreeMap'], ['nextTreeMap']]),
       T('desde 8213, la mayor: retorna NULL', B, ['nextTreeMap'], { current: 8213 }),
+      T('la mayor más abajo: desde 9000 sube hasta la raíz y retorna NULL', [...B, 9000], ['nextTreeMap'], { current: 9000 }),
+      T('con current en NULL retorna NULL', B, ['nextTreeMap']),
     ],
     plantillas: { nextTreeMap: 'Pair * nextTreeMap(TreeMap * tree) {\n\n}\n' } },
   { titulo: '8. upperBound', funciones: ['upperBound'],
