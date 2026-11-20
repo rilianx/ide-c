@@ -475,3 +475,5 @@ svg.memoria .toque.apuntado { fill: color-mix(in srgb, #2f6fd6 18%, transparent)
 .vivo-desc.completa { display: block; max-height: 7em; overflow: auto; }
 .vivo-desc:empty { display: none; }
 .desc-test { font-size: 13px; color: var(--suave); margin: 2px 0 6px; }
+/* en el computador hay espacio: la descripción del test se ve completa */
+#vis-panel .vivo-desc { display: block; max-height: none; font-size: 13px; }
