@@ -468,3 +468,9 @@ svg.memoria .toque.apuntado { fill: color-mix(in srgb, #2f6fd6 18%, transparent)
 @media (min-width: 1001px) {
   .asistente { height: 30vh; max-height: none; flex: none; }
 }
+
+/* qué prueba el test que se ve (entre los puntos y los botones) */
+.vivo-desc { flex: 1; min-width: 0; font-size: 12px; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.vivo-desc.completa { white-space: normal; }
+.vivo-desc:empty { display: none; }
+.vivo-pasos { flex: none; }

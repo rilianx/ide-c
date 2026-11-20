@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611191758';
-import { Runner } from './runner.js?v=202611191758';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611191758';
-import { traducirMensaje } from './mensajes.js?v=202611191758';
-import { modeloDe } from './modelos.js?v=202611191758';
+import { Editor } from './editor.js?v=202611201313';
+import { Runner } from './runner.js?v=202611201313';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611201313';
+import { traducirMensaje } from './mensajes.js?v=202611201313';
+import { modeloDe } from './modelos.js?v=202611201313';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611191758';
-import { Asistente, NOMBRES_SUGERIDOS } from './asistente.js?v=202611191758';
-import { activarDivisores } from './divisores.js?v=202611191758';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611191758';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611201313';
+import { Asistente, NOMBRES_SUGERIDOS } from './asistente.js?v=202611201313';
+import { activarDivisores } from './divisores.js?v=202611201313';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611201313';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -640,7 +640,7 @@ function pintarTestsVivo() {
   const { estados } = estadosVivo, actual = visElegido && +visElegido.split('.')[0] === paso ? +visElegido.split('.')[1] : -1;
   const ok = estados.filter(e => e === 'ok').length;
   caja.innerHTML = `<b class="${ok === estados.length ? 'res-bien' : ''}">${ok}/${estados.length}</b>`
-    + estados.map((e, i) => `<button class="punto-test ${e === 'ok' ? 'ok' : 'mal'}${i === actual ? ' actual' : ''}" data-t="${i}" title="Test ${i + 1}${e === 'ok' ? ': pasa' : ': no pasa'}"></button>`).join('');
+    + estados.map((e, i) => `<button class="punto-test ${e === 'ok' ? 'ok' : 'mal'}${i === actual ? ' actual' : ''}" data-t="${i}" title="Test ${i + 1}${e === 'ok' ? ' (pasa)' : ' (no pasa)'}: ${esc(E.ej.pasos[paso].tests[i]?.nombre ?? '').replace(/"/g, '&quot;')}"></button>`).join('');
   caja.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { irAEntrada = true; abrirVisual(`${paso}.${b.dataset.t}`); });
 }
 // El resultado del test, en el panel y en la ventana sobre el editor.
@@ -889,6 +889,8 @@ function mostrarPaso() {
   // la ventana de ejecución sobre el editor (celular): el resultado, el paso y el dibujo
   const d = describirTest(vis.test);
   $('vivo-info').innerHTML = `${esc(vis.test.nombre)} · ${quePaso}`;
+  $('vivo-desc').textContent = vis.test.nombre;   // qué se quiere probar (en una línea; tocar: completo)
+  $('vivo-desc').title = vis.test.nombre;
   $('vis-test-desc').innerHTML = htmlTest(vis.test);
   // celular: solo el dibujo; en la línea de definición de la función, también la salida esperada
   const esEntrada = c?.dentro && !c.condicion && !c.error && c.linea === c.fn?.cabecera;
@@ -1019,3 +1021,6 @@ async function revisarVersion() {
 }
 revisarVersion();
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') revisarVersion(); });
+
+// La descripción del test: si no cabe, al tocarla se ve completa (y otra vez, en una línea)
+$('vivo-desc').onclick = () => $('vivo-desc').classList.toggle('completa');
