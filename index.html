@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>IDE C · Estructuras de Datos</title>
 <link rel="stylesheet" href="vendor/codemirror/codemirror.css">
-<link rel="stylesheet" href="css/ide.css?v=202611201433">
+<link rel="stylesheet" href="css/ide.css?v=202611202011">
 <script src="vendor/codemirror/codemirror.js"></script>
 <script src="vendor/codemirror/clike.js"></script>
 <script src="vendor/codemirror/matchbrackets.js"></script>
@@ -20,7 +20,7 @@
   addEventListener('error', e => errorInicio(e.message || 'no se pudo cargar ' + (e.target && (e.target.src || e.target.href) || 'un archivo')), true);
   addEventListener('unhandledrejection', e => errorInicio(String(e.reason && e.reason.message || e.reason)));
 </script>
-<script type="module" src="js/main.js?v=202611201433"></script>
+<script type="module" src="js/main.js?v=202611202011"></script>
 </head>
 <body>
 <header>
@@ -64,7 +64,7 @@
       <div id="vivo-nota" class="vivo-nota"></div>
       <div class="vivo-controles">
         <span id="vivo-tests" class="vivo-tests"></span>
-        <span class="vivo-pasos"><button id="vivo-atras" title="Paso anterior">◀</button><button id="vivo-sig" title="Paso siguiente">▶</button><button id="vivo-menu" title="Mostrar u ocultar las barras de arriba">☰</button><button id="vivo-cerrar" title="Cerrar">✕</button></span>
+        <span class="vivo-pasos"><span class="casete"><button id="vivo-inicio" title="Desde el comienzo"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M2 2h2.2v12H2zM15 2v12L9.5 8zM9.5 2v12L4 8z"/></svg></button><button id="vivo-atras" title="Retroceder un paso (←)"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M3 2h2.2v12H3zM14 2v12L6 8z"/></svg></button><button id="vivo-sig" title="Avanzar un paso (→)"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M2 2v12l8-6zM10.8 2H13v12h-2.2z"/></svg></button><button id="vivo-fin" title="Avanzar hasta el final"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M1 2v12l5.5-6zM6.5 2v12L12 8zM12 2h2.2v12H12z"/></svg></button><button id="vivo-hasta" title="Avanzar hasta la línea del cursor (si pasa por ahí)"><svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M1 3v10l6.5-5z"/><path d="M10 2h5M10 14h5M12.5 2v12" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button></span><button id="vivo-menu" title="Mostrar u ocultar las barras de arriba">☰</button><button id="vivo-cerrar" title="Cerrar">✕</button></span>
       </div>
     </div>
     <div id="editor" class="editor"></div>
@@ -88,7 +88,6 @@
         <div class="vis-cabecera">
           <select id="vis-test-sel" title="Test que se ejecuta"></select>
           <button id="vis-siguiente-test" title="Siguiente test">»</button>
-          <label class="auto" title="Avance automático: al escribir se vuelve a ejecutar y avanza solo hasta donde llega tu función"><input type="checkbox" id="vis-auto" checked> auto</label>
           <button id="vis-dibujar" title="Volver a ejecutar">↻</button>
           <button id="vis-volver" title="Lista de tests (probar todos, ver resultados)">📋 Tests</button>
         </div>

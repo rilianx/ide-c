@@ -28,6 +28,11 @@ export function svgEnteros(vars, x, y, anchoColumna = 0) {
   return { svg: out.join(''), ancho: anchoColumna ? anchoColumna : cx - x, alto: anchoColumna ? cy - y : 40 };
 }
 
+// Leyenda del color de lo que retorna la función (en la línea del return): ■ retorna
+export function leyendaRetorno(x, y, texto = 'retorna') {
+  return `<rect x="${x}" y="${y}" width="14" height="14" rx="2" class="retornado"/><text x="${x + 20}" y="${y + 12}" class="leyenda">${esc(texto)}</text>`;
+}
+
 // Medidas
 const CP = 26, CD = 46, CN = 26;        // celdas prev, dato, next
 const AN = CP + CD + CN, AL = 38;       // ancho y alto de un nodo
@@ -95,10 +100,15 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
 
   // variables (nuevo, aux…): etiquetas amarillas debajo de su nodo
   const porNodo = new Map(), sueltas = [];
+  let retNodo = null;
+  // un dato que retorna (void *): se pinta en el nodo que lo tiene (de preferencia uno que no esté liberado)
+  const rd = vars.find(v => v.nombre === 'return' && 'dato' in v)?.dato;
+  const retDato = rd == null || rd === '?' ? -1 : [...nodos.keys()].sort((a, b) => (nodos[a].libre ? 1 : 0) - (nodos[b].libre ? 1 : 0)).find(i => nodos[i].dato === rd) ?? -1;
   for (const v of vars) {
     if (!('ptr' in v)) continue;   // enteros y datos: van en la tabla (fuera del dibujo)
     const nombre = v.nombre === 'return' ? '↩ retorna' : v.nombre;
-    if (Number.isInteger(v.ptr)) { if (!porNodo.has(v.ptr)) porNodo.set(v.ptr, []); porNodo.get(v.ptr).push(nombre); }
+    if (Number.isInteger(v.ptr) && v.nombre === 'return') retNodo = v.ptr;   // se pinta el nodo (ver la leyenda)
+    else if (Number.isInteger(v.ptr)) { if (!porNodo.has(v.ptr)) porNodo.set(v.ptr, []); porNodo.get(v.ptr).push(nombre); }
     else sueltas.push(`${nombre} = ${v.ptr === null ? 'NULL' : '? (basura)'}`);
   }
   const conVars = porNodo.size > 0, BAJO = conVars ? 44 : 0;
@@ -160,7 +170,8 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
   nodos.forEach((n, i) => {
     const { x, y } = pos.get(i);
     const s = n.libre ? sLib : tgtBase;
-    s.push(`<rect x="${x}" y="${y}" width="${AN}" height="${AL}" class="nodo${n.libre ? ' liberado' : fuera.has(i) ? ' fuera' : ''} ${marcas.nodos?.get(i) ?? ''}"/>`);
+    s.push(`<rect x="${x}" y="${y}" width="${AN}" height="${AL}" class="nodo${retNodo === i ? ' retornado' : ''}${n.libre ? ' liberado' : fuera.has(i) ? ' fuera' : ''} ${marcas.nodos?.get(i) ?? ''}"/>`);
+    if (retDato === i) s.push(`<rect x="${x + CP + 3}" y="${y + 3}" width="${CD - 6}" height="${AL - 6}" rx="3" class="retornado"/>`);
     if (n.libre) s.push(`<text x="${x + AN / 2}" y="${y - 5}" class="liberado">liberado</text>`);
     s.push(`<line x1="${x + CP}" y1="${y}" x2="${x + CP}" y2="${y + AL}" class="div"/>`);
     s.push(`<line x1="${x + CP + CD}" y1="${y}" x2="${x + CP + CD}" y2="${y + AL}" class="div"/>`);
@@ -231,6 +242,7 @@ export function svgLista(estado, nombre = 'L', opciones = {}) {
     s.push(`<text x="${cx}" y="${ty + 10}" class="var">${esc(nombres.join(', '))}</text>`);
   }
   if (sueltas.length) s.push(`<text x="${X0}" y="${alto - 10}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
+  if (retNodo !== null || retDato >= 0) s.push(leyendaRetorno(X0 + 3 * CL + 56, YL + 48));   // bajo las variables, al lado de la List
   s.push(enteros.svg);
   if (!nodos.length) s.push(`<text x="${X0}" y="${YL + AL + 30}" class="nota-svg">(sin nodos)</text>`);
   if (esp?.texto) s.push(`<text x="${X0}" y="${alto - 8}" class="esperado">${esc(esp.texto)}</text>`);

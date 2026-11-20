@@ -1,7 +1,7 @@
 // Modelo «árbol binario de búsqueda» (Lab 4): tests declarativos y dibujo estático de un TreeMap.
 // Cada nodo es una caja [clave / left | right] en la columna de su clave (de menor a mayor, fija durante
 // toda la ejecución) y en la fila de su profundidad; los que no cuelgan de root van abajo, aparte.
-import { svgEnteros } from './visual.js?v=202611201433';
+import { svgEnteros, leyendaRetorno } from './visual.js?v=202611202011';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');
@@ -178,9 +178,9 @@ export function esperadoArbol(estado, salida) {
 // El TreeMap va a la izquierda, en columna (root, current, lower_than), con las variables debajo;
 // el árbol, a su derecha, parte bien arriba.
 const XL = 6, CW = 108, FH = 30;        // columna izquierda: ancho y alto de cada campo
-const NW = 66, KH = 28, PH = 18;        // nodo: clave arriba, left | right abajo
+const NW = 66, KH = 40, PH = 18;        // nodo: su pair arriba (key y value), left | right abajo
 const NH = KH + PH;
-const CS = 74, LH = 74;                 // separación entre columnas y entre niveles
+const CS = 74, LH = NH + 28;            // separación entre columnas y entre niveles
 const YM = 8, X0 = XL + CW + 34;        // X0: donde empieza el árbol
 
 export function svgArbol(estado, nombre, opciones = {}) {
@@ -199,17 +199,21 @@ export function svgArbol(estado, nombre, opciones = {}) {
   const niveles = Math.max(0, ...[...prof.values()].map(p => p + 1));
   const fuera = ns.map((n, i) => i).filter(i => !prof.has(i));
   // variables que apuntan a nodos (TreeNode *) o a pares (Pair *: al nodo que tiene ese par)
+  // lo que retorna la función (en la línea del return) no lleva etiqueta: se pinta de su color (ver la leyenda)
   const porNodo = new Map(), sueltas = [];
+  let retNodo = null, retPar = null;
   for (const v of vars) {
     const n = v.nombre === 'return' ? '↩ retorna' : v.nombre;
     let i = null;
     if ('ptr' in v) i = v.ptr;
     else if ('par' in v) i = v.par === null ? null : Number.isInteger(v.par) ? ns.findIndex(x => x.par === v.par) : '?';
     else continue;
-    if (Number.isInteger(i) && i >= 0) { if (!porNodo.has(i)) porNodo.set(i, []); porNodo.get(i).push('par' in v ? `${n} (par)` : n); }
+    if (Number.isInteger(i) && i >= 0 && v.nombre === 'return') { if ('par' in v) retPar = i; else retNodo = i; }
+    else if (Number.isInteger(i) && i >= 0) { if (!porNodo.has(i)) porNodo.set(i, []); porNodo.get(i).push('par' in v ? `${n} (par)` : n); }
     else sueltas.push(`${n} = ${i === null ? 'NULL' : '?'}`);
   }
-  const BAJO = 14 + (porNodo.size ? 26 : 0);
+  const hayRetorno = retNodo !== null || retPar !== null;
+  const BAJO = 6 + (porNodo.size ? 26 : 0);
   const YA = YM + 8;                     // la raíz, arriba
   const yNivel = p => YA + p * LH;
   const yFuera = YA + Math.max(1, niveles) * LH + 4;
@@ -217,7 +221,8 @@ export function svgArbol(estado, nombre, opciones = {}) {
   ns.forEach((n, i) => pos.set(i, { x: X0 + col.get(i) * CS, y: prof.has(i) ? yNivel(prof.get(i)) : yFuera + 16 }));
   const YC = YM + 18;                    // los campos del TreeMap (debajo de su nombre)
   const enteros = svgEnteros(vars.filter(v => !('par' in v)), XL, YC + 3 * FH + 12, CW);
-  const altoIzq = YC + 3 * FH + 12 + enteros.alto + (esp?.retornoNulo ? 18 : 0);
+  const yLeyenda = YC + 3 * FH + 12 + enteros.alto + 4;
+  const altoIzq = YC + 3 * FH + 12 + enteros.alto + (esp?.retornoNulo ? 18 : 0) + (hayRetorno ? 24 : 0);
   const ancho = Math.max(X0 + Math.max(extra, 1) * CS + 8, X0 + 120);   // (que quepa «(árbol vacío)»)
   const alto = Math.max(altoIzq, (fuera.length ? yFuera + 16 + NH + BAJO : yNivel(Math.max(niveles, 1) - 1) + NH + BAJO + 4)) + (sueltas.length ? 20 : 0) + (esp?.texto ? 20 : 0);
   const s = [], zonas = [];
@@ -277,13 +282,18 @@ export function svgArbol(estado, nombre, opciones = {}) {
   // Los nodos
   ns.forEach((n, i) => {
     const { x, y } = pos.get(i), mk = marcas.nodos?.get(i) ?? '';
-    s.push(`<rect x="${x}" y="${y}" width="${NW}" height="${NH}" class="nodo${prof.has(i) ? '' : ' fuera'} ${mk}"/>`);
+    s.push(`<rect x="${x}" y="${y}" width="${NW}" height="${NH}" class="nodo${prof.has(i) ? '' : ' fuera'}${retNodo === i ? ' retornado' : ''} ${mk}"/>`);
     s.push(`<line x1="${x}" y1="${y + KH}" x2="${x + NW}" y2="${y + KH}" class="div"/>`);
     s.push(`<line x1="${x + NW / 2}" y1="${y + KH}" x2="${x + NW / 2}" y2="${y + NH}" class="div"/>`);
-    s.push(n.clave === '?' || n.par === '?' ? `<text x="${x + NW / 2}" y="${y + 20}" class="basura">?</text>`
-      : `<text x="${x + NW / 2}" y="${y + 20}" class="clave clave-arbol">${n.par === null ? 'pair NULL' : esc(n.clave)}</text>`);
-    const palabra = n.valor && typeof n.valor === 'object' ? n.valor.t : '';
-    if (palabra) s.push(`<text x="${x + NW / 2}" y="${y + NH + 11}" class="valor">${esc(palabra)}</text>`);
+    // su pair: una caja adentro con la clave (key) y el valor (value)
+    if (n.par === null) s.push(`<text x="${x + NW / 2}" y="${y + 25}" class="campo">pair NULL</text>`);
+    else if (n.clave === '?' || n.par === '?') s.push(`<text x="${x + NW / 2}" y="${y + 26}" class="basura">?</text>`);
+    else {
+      s.push(`<rect x="${x + 4}" y="${y + 4}" width="${NW - 8}" height="${KH - 8}" rx="3" class="par-nodo${retPar === i ? ' retornado' : ''}"/>`);
+      s.push(`<text x="${x + NW / 2}" y="${y + 20}" class="clave clave-arbol">${esc(n.clave)}</text>`);
+      const palabra = n.valor && typeof n.valor === 'object' ? n.valor.t : n.valor === null ? 'NULL' : n.valor === '?' ? '?' : '';
+      if (palabra) s.push(`<text x="${x + NW / 2}" y="${y + 32}" class="valor">${esc(palabra)}</text>`);
+    }
     // left y right
     [['left', x, x + NW / 4], ['right', x + NW / 2, x + 3 * NW / 4]].forEach(([c, cx, ox]) => {
       const v = n[c], oy = y + KH + PH / 2;
@@ -299,14 +309,18 @@ export function svgArbol(estado, nombre, opciones = {}) {
     } else if (malo) s.push(`<text x="${x}" y="${y - 4}" class="nota-svg mal-texto">parent = ${n.parent === null ? 'NULL' : '?'} ✗</text>`);
     const es = nombresDe.get(i) ?? [];
     // el nodo (todas sus formas); de respaldo, su par o su clave (si el hueco pide eso)
-    toque(x, y, NW, KH, [...es, '¦', ...es.map(e => `${e}->pair`), ...es.map(e => `${e}->pair->key`)]);
+    toque(x, y, NW, KH, [...es, '¦', ...es.map(e => `${e}->pair`)]);
+    if (Number.isInteger(n.par)) {   // dentro del pair: su clave y su valor (de respaldo, el pair y el nodo)
+      toque(x + 10, y + 7, NW - 20, 15, [...es.map(e => `${e}->pair->key`), '¦', ...es.map(e => `${e}->pair`), '¦', ...es]);
+      toque(x + 10, y + 23, NW - 20, 11, [...es.map(e => `${e}->pair->value`), '¦', ...es.map(e => `${e}->pair`), '¦', ...es]);
+    }
     toque(x, y + KH, NW / 2, PH, [...(es.length ? alias(n.left, `${es[0]}->left`) : []), '¦', ...es]);
     toque(x + NW / 2, y + KH, NW / 2, PH, [...(es.length ? alias(n.right, `${es[0]}->right`) : []), '¦', ...es]);
   });
   // etiquetas de variables bajo su nodo
   for (const [i, nombres] of porNodo) {
-    const { x, y } = pos.get(i), cx = x + NW / 2, ty = y + NH + 26, w = Math.max(30, nombres.join(', ').length * 7.5 + 12);
-    s.push(`<path d="M${cx},${ty - 4} L${cx},${y + NH + 14}" class="flecha var" marker-end="url(#punta-var)"/>`);
+    const { x, y } = pos.get(i), cx = x + NW / 2, ty = y + NH + 16, w = Math.max(30, nombres.join(', ').length * 7.5 + 12);
+    s.push(`<path d="M${cx},${ty - 4} L${cx},${y + NH + 3}" class="flecha var" marker-end="url(#punta-var)"/>`);
     s.push(`<rect x="${cx - w / 2}" y="${ty - 4}" width="${w}" height="18" rx="3" class="etiqueta${nombres.some(n => n.startsWith('↩')) ? ' retorno' : ''}"/>`);
     s.push(`<text x="${cx}" y="${ty + 9}" class="var">${esc(nombres.join(', '))}</text>`);
     toque(cx - w / 2, ty - 4, w, 18, nombres.filter(n => !n.startsWith('↩')).map(n => n.replace(/ \(par\)$/, '')));
@@ -319,6 +333,7 @@ export function svgArbol(estado, nombre, opciones = {}) {
   if (esp?.texto) s.push(`<text x="${XL}" y="${alto - 8}" class="esperado">${esc(esp.texto)}</text>`);
   if (esp?.retornoNulo) s.push(`<text x="${XL}" y="${altoIzq - 4}" class="esperado">↩ NULL</text>`);
   if (ok && A.root === null && !ns.length) s.push(`<text x="${X0}" y="${YA + 16}" class="nota-svg">(árbol vacío)</text>`);
+  if (hayRetorno) s.push(leyendaRetorno(XL, yLeyenda));
   s.push(enteros.svg, ...zonas);
 
   const marca = c => `<marker id="punta-${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta ${c}"/></marker>`;

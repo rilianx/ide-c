@@ -2,7 +2,7 @@
 // (direccionamiento abierto): el HashMap con sus campos, el arreglo buckets con sus índices
 // y, debajo de cada casilla ocupada, el Pair [key | value]. Un par inválido (key NULL) va gris.
 
-import { svgEnteros } from './visual.js?v=202611201433';
+import { svgEnteros, leyendaRetorno } from './visual.js?v=202611202011';
 
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const hex = d => '0x' + (Number(d) % 0x10000).toString(16).padStart(3, '0');
@@ -137,10 +137,12 @@ export function svgTabla(estado, nombre, opciones = {}) {
   }
   // pares apuntados por variables (Pair *)
   const porPar = new Map(), sueltas = [];
+  let retPar = null;
   for (const v of vars) {
     if (!('ptr' in v)) continue;
     const n = v.nombre === 'return' ? '↩ retorna' : v.nombre;
-    if (Number.isInteger(v.ptr)) { if (!porPar.has(v.ptr)) porPar.set(v.ptr, []); porPar.get(v.ptr).push(n); }
+    if (Number.isInteger(v.ptr) && v.nombre === 'return') retPar = v.ptr;   // el par que retorna: pintado (ver la leyenda)
+    else if (Number.isInteger(v.ptr)) { if (!porPar.has(v.ptr)) porPar.set(v.ptr, []); porPar.get(v.ptr).push(n); }
     else sueltas.push(`${n} = ${v.ptr === null ? 'NULL' : '? (basura)'}`);
   }
   const esp = opciones.esperado;   // lo que se espera al final, como anotaciones pequeñas (→ 7, → gato)
@@ -203,7 +205,7 @@ export function svgTabla(estado, nombre, opciones = {}) {
   // Un Pair [key / value] en (x, y)
   const par = (i, x, y, extra = '') => {
     const p = pares[i], w = CW - 8, invalido = p.key == null;
-    s.push(`<rect x="${x}" y="${y}" width="${w}" height="${2 * PH}" class="nodo par${invalido ? ' invalido' : ''}${extra}"/>`);
+    s.push(`<rect x="${x}" y="${y}" width="${w}" height="${2 * PH}" class="nodo par${invalido ? ' invalido' : ''}${retPar === i ? ' retornado' : ''}${extra}"/>`);
     s.push(`<line x1="${x}" y1="${y + PH}" x2="${x + w}" y2="${y + PH}" class="div"/>`);
     const k = claveDe(p);
     s.push(k === '?' ? `<text x="${x + w / 2}" y="${y + 16}" class="basura">?</text>`
@@ -263,6 +265,7 @@ export function svgTabla(estado, nombre, opciones = {}) {
   }
   if (sueltas.length) s.push(`<text x="${X0}" y="${alto - 8}" class="nota-svg">${esc(sueltas.join('   '))}</text>`);
   if (esp?.retornoNulo) s.push(`<text x="${X0 + 4 * CL + 8}" y="${YM + AH + 14}" class="esperado">↩ NULL</text>`);
+  if (retPar !== null) s.push(leyendaRetorno(X0 + 4 * CL + 56, YM + 48));   // bajo las variables, al lado del HashMap
   s.push(enteros.svg, ...zonas);
 
   const marca = c => `<marker id="punta-${c}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta ${c}"/></marker>`;

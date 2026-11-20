@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611201433';
-import { Runner } from './runner.js?v=202611201433';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611201433';
-import { traducirMensaje } from './mensajes.js?v=202611201433';
-import { modeloDe } from './modelos.js?v=202611201433';
+import { Editor } from './editor.js?v=202611202011';
+import { Runner } from './runner.js?v=202611202011';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611202011';
+import { traducirMensaje } from './mensajes.js?v=202611202011';
+import { modeloDe } from './modelos.js?v=202611202011';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611201433';
-import { Asistente, NOMBRES_SUGERIDOS } from './asistente.js?v=202611201433';
-import { activarDivisores } from './divisores.js?v=202611201433';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611201433';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611202011';
+import { Asistente, NOMBRES_SUGERIDOS } from './asistente.js?v=202611202011';
+import { activarDivisores } from './divisores.js?v=202611202011';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611202011';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -27,8 +27,7 @@ runner.listo.then(() => estado('Compilador listo.'), e => estado('No se pudo car
 let tSelector = null, tVisual = null;
 // Avance automático (por defecto): al escribir se vuelve a ejecutar y se avanza hasta donde llega la
 // función. Sin él, se ejecuta con ↻ y se avanza a mano desde el comienzo.
-let avanceAuto = true;
-try { avanceAuto = localStorage.getItem('ide-c:auto') !== 'no'; } catch { /* sin almacenamiento */ }
+const avanceAuto = true;   // al escribir se vuelve a ejecutar solo (los botones de la ventana mueven el paso)
 const editor = new Editor($('editor'), $('pestanas'), {
   alCambiar: (nombre, texto) => {
     archivos[nombre] = texto;
@@ -465,14 +464,6 @@ $('vis-siguiente-test').onclick = () => {   // al siguiente test de la función 
   s.selectedIndex = (s.selectedIndex + 1) % s.options.length;
   abrirVisual(s.value);
 };
-$('vis-auto').checked = avanceAuto;
-$('vis-auto').onchange = e => {
-  avanceAuto = e.target.checked;
-  try { localStorage.setItem('ide-c:auto', avanceAuto ? 'si' : 'no'); } catch { /* sin almacenamiento */ }
-  if (!avanceAuto) return;
-  if (vis && visDibujado?.test === visElegido && visDibujado.codigo === (archivos[E.ej.alumno] ?? '')) { vis.i = pasoAuto(); mostrarPaso(); }
-  else dibujarVisual(true, 'auto');
-};
 function cerrarVisual() { $('vis-panel').hidden = true; $('vista-tests').hidden = false; $('col-tests').classList.remove('visualizando'); editor.marcarEjecucion(null, null); mostrarVivo(); }
 $('vis-volver').onclick = () => { cerrarVisual(); if (testsMostrados !== paso) mostrarTestsSinCorrer(); };
 $('vis-dibujar').onclick = () => dibujarVisual(false, avanceAuto ? 'auto' : 'inicio');
@@ -679,6 +670,25 @@ const pasoVivo = d => {
 };
 $('vivo-atras').onclick = () => pasoVivo(-1);
 $('vivo-sig').onclick = () => pasoVivo(1);
+$('vivo-inicio').onclick = () => vis && pasoVivo(-vis.i);
+// ⏭ hasta el final de la llamada a tu función (su return); si ya está ahí, hasta el final del test
+$('vivo-fin').onclick = () => {
+  if (!vis) return;
+  const C = vis.cuadros, fnsPaso = E.ej.pasos[vis.paso].funciones;
+  let j = C[vis.i]?.dentro ? finDeLlamada(vis.i) : -1;
+  if (j <= vis.i) { const k = C.findIndex((c, k) => k > vis.i && c.dentro && fnsPaso.includes(c.fn?.nombre)); j = k >= 0 ? finDeLlamada(k) : -1; }
+  if (j <= vis.i) j = C.length - 1;
+  pasoVivo(j - vis.i);
+};
+// hasta la línea donde está el cursor: el próximo momento en que la ejecución pasa por ella
+$('vivo-hasta').onclick = () => {
+  if (!vis || vivoMensaje) return;
+  if (editor.actual !== E.ej.alumno) { estado(`Pon el cursor en una línea de ${E.ej.alumno}`); return; }
+  const linea = editor.cm.getCursor().line + 1;
+  const j = vis.cuadros.findIndex((c, k) => k > vis.i && c.dentro && c.linea === linea);
+  if (j < 0) { estado(`La ejecución no pasa por la línea ${linea}${vis.i > 0 ? ' desde aquí' : ''}`); return; }
+  pasoVivo(j - vis.i);
+};
 $('vivo-abrir').onclick = () => { vivoCerrado = false; mostrarVivo(); if (vis) mostrarPaso(); };
 // Gestos en el dibujo: dos dedos acercan/alejan, doble toque vuelve al tamaño normal y deslizar
 // hacia el lado cambia de test (y deja el cursor en la definición de la función: la entrada).
