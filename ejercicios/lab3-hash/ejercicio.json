@@ -120,7 +120,8 @@
             ],
             "size": 0,
             "current": -1
-          }
+          },
+          "descripcion": "Entra: la capacidad 10. Se espera: un HashMap con un arreglo buckets de 10 casillas en NULL, size 0, capacity 10 y current en -1."
         },
         {
           "nombre": "con otra capacidad (5)",
@@ -143,7 +144,8 @@
             ],
             "size": 0,
             "current": -1
-          }
+          },
+          "descripcion": "Entra: la capacidad 5. Se espera: lo mismo pero con 5 casillas, para comprobar que no quedó fijo en 10."
         }
       ],
       "plantillas": {
@@ -195,7 +197,8 @@
             ],
             "size": 7,
             "current": 3
-          }
+          },
+          "descripcion": "Entra: la tabla de 10 casillas con olla(0), case(2), cesa(4), saco(6), carro(7) y casa(8); se inserta «gato», cuyo hash es 3. Se espera: como la casilla 3 está libre, guardar ahí el par nuevo, subir size a 7 y dejar current en 3."
         },
         {
           "nombre": "clave repetida: «case» no se inserta",
@@ -234,7 +237,8 @@
               null
             ],
             "size": 6
-          }
+          },
+          "descripcion": "Entra: la misma tabla y la clave «case», que ya está en la casilla 2. Se espera: no insertar nada; la tabla y size (6) quedan iguales."
         },
         {
           "nombre": "colisión: «mano» (hash 7) avanza hasta la 9",
@@ -274,7 +278,8 @@
             ],
             "size": 7,
             "current": 9
-          }
+          },
+          "descripcion": "Entra: la misma tabla y «mano», cuyo hash es 7. Se espera: como la 7 (carro) y la 8 (casa) están ocupadas, avanzar hasta la 9, guardarlo ahí, size 7 y current en 9."
         },
         {
           "nombre": "circular: «sol» (hash 6) pasa por la 9 y sigue en la 0",
@@ -314,7 +319,8 @@
             ],
             "size": 6,
             "current": 1
-          }
+          },
+          "descripcion": "Entra: una tabla con olla(0), saco(6), carro(7), casa(8) y lago(9); se inserta «sol», con hash 6. Se espera: avanzar 6, 7, 8, 9, volver al comienzo (0 está ocupada) y guardarlo en la 1, con current en 1."
         },
         {
           "nombre": "usa la casilla de un par inválido: «uva» (hash 4)",
@@ -354,7 +360,8 @@
             ],
             "size": 6,
             "current": 4
-          }
+          },
+          "descripcion": "Entra: la tabla base, pero con «cesa» (casilla 4) borrada, o sea un par inválido (key NULL); se inserta «uva», con hash 4. Se espera: reutilizar la casilla 4, size 6 y current en 4."
         },
         {
           "nombre": "con más de 0.7 de carga llama a enlarge",
@@ -403,7 +410,8 @@
               null
             ],
             "size": 8
-          }
+          },
+          "descripcion": "Entra: la tabla base con «gato» además (7 de 10 ocupadas); se inserta «mano». Se espera: que al pasar a 8 pares (más de 0.7·10) se llame a enlarge: la tabla queda de 20 casillas con los 8 pares reubicados."
         }
       ],
       "plantillas": {
@@ -457,7 +465,8 @@
             ],
             "size": 6,
             "current": 7
-          }
+          },
+          "descripcion": "Entra: la tabla base y la clave «carro», con hash 7. Se espera: encontrarla en la casilla 7, retornar su par y dejar current en 7."
         },
         {
           "nombre": "encuentra «mano» después de una colisión (casilla 9)",
@@ -499,7 +508,8 @@
             ],
             "size": 7,
             "current": 9
-          }
+          },
+          "descripcion": "Entra: la tabla base con «mano» en la 9 (su hash es 7). Se espera: revisar la 7 y la 8, encontrarla en la 9, retornar su par y dejar current en 9."
         },
         {
           "nombre": "«holo» (hash 2) no está: retorna NULL",
@@ -540,7 +550,8 @@
               null
             ],
             "size": 6
-          }
+          },
+          "descripcion": "Entra: la tabla base y «holo», con hash 2. Se espera: revisar la 2 (case), llegar a la 3 vacía, detenerse y retornar NULL."
         },
         {
           "nombre": "pasa sobre un par inválido y encuentra «mano»",
@@ -582,7 +593,8 @@
             ],
             "size": 6,
             "current": 9
-          }
+          },
+          "descripcion": "Entra: la tabla base con «casa» (8) borrada y «mano» en la 9. Se espera: no detenerse en el par inválido de la 8 (no es una casilla vacía), seguir a la 9, retornar el par de «mano» y dejar current en 9."
         },
         {
           "nombre": "circular: «sol» (hash 6) está en la casilla 1",
@@ -624,7 +636,8 @@
             ],
             "size": 6,
             "current": 1
-          }
+          },
+          "descripcion": "Entra: una tabla con olla(0), sol(1), saco(6), carro(7), casa(8) y lago(9); se busca «sol», con hash 6. Se espera: avanzar 6 a 9, dar la vuelta, encontrarla en la 1 y dejar current en 1."
         }
       ],
       "plantillas": {
@@ -674,7 +687,8 @@
               null
             ],
             "size": 5
-          }
+          },
+          "descripcion": "Entra: la tabla base y la clave «olla». Se espera: buscarla y marcar su par como inválido (key en NULL), sin vaciar la casilla, y bajar size a 5."
         },
         {
           "nombre": "invalida «mano», que está después de una colisión",
@@ -712,7 +726,8 @@
               "~"
             ],
             "size": 6
-          }
+          },
+          "descripcion": "Entra: la tabla base con «mano» en la 9 (hash 7). Se espera: encontrarla en la 9, invalidar ese par y que size quede en 6."
         },
         {
           "nombre": "«holo» no está: la tabla no cambia",
@@ -750,7 +765,8 @@
               null
             ],
             "size": 6
-          }
+          },
+          "descripcion": "Entra: la tabla base y «holo», que no está. Se espera: no cambiar nada (size sigue en 6) y no caerse."
         }
       ],
       "plantillas": {
@@ -803,7 +819,8 @@
             ],
             "size": 6,
             "current": 0
-          }
+          },
+          "descripcion": "Entra: la tabla base. Se espera: recorrer desde la casilla 0, retornar el primer par válido («olla», en la 0) y dejar current en 0."
         },
         {
           "nombre": "salta un par inválido: retorna «case» (casilla 2)",
@@ -844,7 +861,8 @@
             ],
             "size": 5,
             "current": 2
-          }
+          },
+          "descripcion": "Entra: la tabla base con «olla» (0) borrada. Se espera: saltar la 0 (inválida) y la 1 (vacía), retornar «case» de la 2 y dejar current en 2."
         },
         {
           "nombre": "en una tabla vacía retorna NULL",
@@ -885,7 +903,8 @@
             ],
             "size": 0,
             "current": -1
-          }
+          },
+          "descripcion": "Entra: una tabla de 10 casillas, todas vacías. Se espera: recorrerla entera, retornar NULL y no caerse."
         }
       ],
       "plantillas": {
@@ -939,7 +958,8 @@
             ],
             "size": 6,
             "current": 2
-          }
+          },
+          "descripcion": "Entra: la tabla base con current en 0. Se espera: buscar desde la casilla 1 en adelante, retornar «case» (la 2) y dejar current en 2."
         },
         {
           "nombre": "desde la casilla 7 retorna «casa» (casilla 8)",
@@ -981,7 +1001,8 @@
             ],
             "size": 6,
             "current": 8
-          }
+          },
+          "descripcion": "Entra: la tabla base con current en 7 (carro). Se espera: retornar «casa», de la casilla 8, y dejar current en 8."
         },
         {
           "nombre": "desde la última ocupada (8) retorna NULL",
@@ -1023,7 +1044,8 @@
             ],
             "size": 6,
             "current": 8
-          }
+          },
+          "descripcion": "Entra: la tabla base con current en 8, el último par. Se espera: revisar la 9 (vacía), llegar al final sin dar la vuelta y retornar NULL."
         },
         {
           "nombre": "salta un par inválido: desde la 2 retorna «saco» (casilla 6)",
@@ -1065,7 +1087,8 @@
             ],
             "size": 5,
             "current": 6
-          }
+          },
+          "descripcion": "Entra: la tabla base con «cesa» (4) borrada y current en 2. Se espera: saltar la 3 (vacía), la 4 (inválida) y la 5, retornar «saco» de la 6 y dejar current en 6."
         }
       ],
       "plantillas": {
@@ -1124,7 +1147,8 @@
               null
             ],
             "size": 6
-          }
+          },
+          "descripcion": "Entra: la tabla base de 10 casillas con 6 pares. Se espera: un arreglo nuevo de 20 casillas donde cada par se reinserta según su hash con capacidad 20 (por ejemplo «case» pasa a la 12), con size 6."
         },
         {
           "nombre": "los pares inválidos no se reinsertan",
@@ -1171,7 +1195,8 @@
               null
             ],
             "size": 5
-          }
+          },
+          "descripcion": "Entra: la tabla base con «cesa» (4) borrada. Se espera: al agrandar a 20 casillas, reinsertar solo los 5 pares válidos (el de la 4 desaparece) y dejar size en 5."
         }
       ],
       "plantillas": {

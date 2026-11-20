@@ -469,8 +469,9 @@ svg.memoria .toque.apuntado { fill: color-mix(in srgb, #2f6fd6 18%, transparent)
   .asistente { height: 30vh; max-height: none; flex: none; }
 }
 
-/* qué prueba el test que se ve (entre los puntos y los botones) */
-.vivo-desc { flex: 1; min-width: 0; font-size: 12px; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
-.vivo-desc.completa { white-space: normal; }
+/* qué prueba el test que se ve: qué entra y qué se espera (dos líneas; tocar: completa) */
+.vivo-desc { flex: none; font-size: 12px; line-height: 1.35; color: var(--suave); cursor: pointer; padding: 2px 0 0;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.vivo-desc.completa { display: block; max-height: 7em; overflow: auto; }
 .vivo-desc:empty { display: none; }
-.vivo-pasos { flex: none; }
+.desc-test { font-size: 13px; color: var(--suave); margin: 2px 0 6px; }

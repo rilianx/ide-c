@@ -2,6 +2,7 @@
 // simulando la referencia; después se valida con: node herramientas/probar-nativo.mjs ejercicios/lab4-arbol).
 // Uso: node herramientas/generar-lab4.mjs
 import { writeFileSync } from 'node:fs';
+import { describir } from './describir.mjs';
 
 // árbol con padres, desde las claves en preorden
 function construir(claves) {
@@ -161,5 +162,5 @@ const ej = {
   solucion: 'oculto/solucion.enc',
   pasos,
 };
-writeFileSync(process.argv[2] ?? new URL('../ejercicios/lab4-arbol/ejercicio.json', import.meta.url), JSON.stringify(ej, null, 2) + '\n');
+writeFileSync(process.argv[2] ?? new URL('../ejercicios/lab4-arbol/ejercicio.json', import.meta.url), JSON.stringify(describir(ej, 'lab4-arbol'), null, 2) + '\n');
 for (const p of pasos) for (const t of p.tests) console.log(p.titulo, '|', t.nombre, '|', JSON.stringify(t.salida));

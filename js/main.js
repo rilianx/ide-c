@@ -1,14 +1,14 @@
 // IDE C: arranque, ejercicios, pasos, ▶ Play y tests.
-import { Editor } from './editor.js?v=202611201313';
-import { Runner } from './runner.js?v=202611201313';
-import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611201313';
-import { traducirMensaje } from './mensajes.js?v=202611201313';
-import { modeloDe } from './modelos.js?v=202611201313';
+import { Editor } from './editor.js?v=202611201318';
+import { Runner } from './runner.js?v=202611201318';
+import { listaEjercicios, cargarEjercicio, archivosGuardados, guardar, borrarGuardado, MODO_PROFESOR, cargarSolucion } from './ejercicios.js?v=202611201318';
+import { traducirMensaje } from './mensajes.js?v=202611201318';
+import { modeloDe } from './modelos.js?v=202611201318';
 const MOD = () => modeloDe(E?.ej);   // cómo se dibuja y compara la estructura del ejercicio
-import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611201313';
-import { Asistente, NOMBRES_SUGERIDOS } from './asistente.js?v=202611201313';
-import { activarDivisores } from './divisores.js?v=202611201313';
-import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611201313';
+import { prepararTests, describirTest, armarTests, mismaSalida, solucionCompleta, agregarPlantilla, funcionesDefinidas, funcionesPropias, funcionesDelArchivo, armarVisual, leerVolcados, mensajes as mensajesCompilador } from './proyecto.js?v=202611201318';
+import { Asistente, NOMBRES_SUGERIDOS } from './asistente.js?v=202611201318';
+import { activarDivisores } from './divisores.js?v=202611201318';
+import { correrTests, htmlResultados, htmlTest } from './tests.js?v=202611201318';
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -889,8 +889,8 @@ function mostrarPaso() {
   // la ventana de ejecución sobre el editor (celular): el resultado, el paso y el dibujo
   const d = describirTest(vis.test);
   $('vivo-info').innerHTML = `${esc(vis.test.nombre)} · ${quePaso}`;
-  $('vivo-desc').textContent = vis.test.nombre;   // qué se quiere probar (en una línea; tocar: completo)
-  $('vivo-desc').title = vis.test.nombre;
+  // qué entra y qué se espera (escrita a mano en el ejercicio); si no cabe, al tocarla se ve completa
+  $('vivo-desc').textContent = vis.test.descripcion ?? vis.test.nombre;
   $('vis-test-desc').innerHTML = htmlTest(vis.test);
   // celular: solo el dibujo; en la línea de definición de la función, también la salida esperada
   const esEntrada = c?.dentro && !c.condicion && !c.error && c.linea === c.fn?.cabecera;

@@ -2,6 +2,7 @@
 // simulando la referencia; después se valida con: node herramientas/probar-nativo.mjs ejercicios/lab3-hash).
 // Uso: node herramientas/generar-lab3.mjs
 import { writeFileSync } from 'node:fs';
+import { describir } from './describir.mjs';
 const h = (k, c) => { let x = 0n; for (const ch of k) x = (x * 33n + BigInt(ch.toLowerCase().charCodeAt(0))) & ((1n << 64n) - 1n); return Number(x % BigInt(c)); };
 // simulación de la referencia sobre {t: claves ('~' inválido, null), size, current}
 const valido = k => k != null && k !== '~' && !k.startsWith('~');
@@ -114,5 +115,5 @@ const ej = {
   solucion: 'oculto/solucion.enc',
   pasos,
 };
-writeFileSync(process.argv[2] ?? new URL('../ejercicios/lab3-hash/ejercicio.json', import.meta.url), JSON.stringify(ej, null, 2) + '\n');
+writeFileSync(process.argv[2] ?? new URL('../ejercicios/lab3-hash/ejercicio.json', import.meta.url), JSON.stringify(describir(ej, 'lab3-hash'), null, 2) + '\n');
 for (const p of pasos) for (const t of p.tests) console.log(p.titulo, '|', t.nombre, '|', JSON.stringify(t.salida));

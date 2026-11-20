@@ -57,7 +57,8 @@ Antes de cada commit que se publica, conviene correr `node herramientas/version.
 
 ## Tests declarativos
 
-Cada test se describe con datos, no con código (en `ejercicio.json`):
+Cada test se describe con datos, no con código (en `ejercicio.json`) y lleva una `descripcion` escrita a mano: qué entra y qué se espera que haga la función (se muestra bajo el dibujo y en la lista de tests). Las descripciones están en `herramientas/descripciones/<lab>.json` (clave: el nombre del test, o `función|nombre` si se repite); los generadores de Lab 3 y 4 las agregan y fallan si a un test le falta la suya. Para Lab 2: `node herramientas/describir.mjs lab2-lista`.
+
 
 ```json
 { "nombre": "elimina un nodo del medio y retorna su dato",
