@@ -47,10 +47,10 @@ const pasos = [
     enunciado: 'Implementa `void insertMap(HashMap * map, char * key, void * value)`: inserta el par (key, value) y deja `current` en su posición.\n\n1. Calcula la posición con `hash(key, map->capacity)`.\n2. Si la casilla está ocupada por un par válido, avanza a la siguiente (el arreglo es **circular**: después de la última viene la 0). Una casilla está disponible si es `NULL` o si tiene un par inválido (`key == NULL`).\n3. Pon ahí el par nuevo (`createPair`) y aumenta `size`.\n\nNo insertes claves repetidas (usa `is_equal`). Si después de insertar `size > 0.7 * capacity`, llama a `enlarge(map)`.',
     tests: [
       T('sin colisión: «gato» (hash 3) va a la casilla 3', B(), ['insertMap', 'gato', 7]),
-      T('clave repetida: «case» no se inserta', B(), ['insertMap', 'case', 9], { revisarCurrent: false }),
       T('colisión: «mano» (hash 7) avanza hasta la 9', B(), ['insertMap', 'mano', 7]),
-      T('circular: «sol» (hash 6) pasa por la 9 y sigue en la 0', ['olla', null, null, null, null, null, 'saco', 'carro', 'casa', 'lago'], ['insertMap', 'sol', 7]),
+      T('clave repetida: «case» no se inserta', B(), ['insertMap', 'case', 9], { revisarCurrent: false }),
       T('usa la casilla de un par inválido: «uva» (hash 4)', con({ 4: '~cesa' }), ['insertMap', 'uva', 7]),
+      T('circular: «sol» (hash 6) pasa por la 9 y sigue en la 0', ['olla', null, null, null, null, null, 'saco', 'carro', 'casa', 'lago'], ['insertMap', 'sol', 7]),
       T('con más de 0.7 de carga llama a enlarge', con({ 3: 'gato' }), ['insertMap', 'mano', 8], { revisarCurrent: false }),
     ],
     plantillas: { insertMap: 'void insertMap(HashMap * map, char * key, void * value) {\n\n}\n' } },
@@ -85,8 +85,8 @@ const pasos = [
     tests: [
       T('desde la casilla 0 retorna «case» (casilla 2)', B(), ['nextMap'], { current: 0 }),
       T('desde la casilla 7 retorna «casa» (casilla 8)', B(), ['nextMap'], { current: 7 }),
-      T('desde la última ocupada (8) retorna NULL', B(), ['nextMap'], { current: 8 }),
       T('salta un par inválido: desde la 2 retorna «saco» (casilla 6)', con({ 4: '~cesa' }), ['nextMap'], { current: 2 }),
+      T('desde la última ocupada (8) retorna NULL', B(), ['nextMap'], { current: 8 }),
     ],
     plantillas: { nextMap: 'Pair * nextMap(HashMap * map) {\n\n}\n' } },
   { titulo: '7. enlarge', funciones: ['enlarge'],

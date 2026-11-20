@@ -152,7 +152,7 @@
       "enunciado": "Implementa `Pair * searchTreeMap(TreeMap * tree, void * key)`: busca el nodo con esa clave y retorna su `pair`, dejando `current` en ese nodo. Si no está, retorna `NULL`.\n\nDesde `root`: si la clave es igual (`is_equal(tree, key, aux->pair->key)`), la encontraste; si es menor (`tree->lower_than(key, aux->pair->key)`), sigue por `left`; si no, por `right`.",
       "tests": [
         {
-          "nombre": "encuentra la clave de la raíz (5239)",
+          "nombre": "encuentra 6980 (derecha y luego izquierda)",
           "entrada": {
             "arbol": [
               5239,
@@ -164,12 +164,12 @@
           "llamadas": [
             [
               "searchTreeMap",
-              5239
+              6980
             ]
           ],
           "salida": {
             "retornos": [
-              5239
+              6980
             ],
             "arbol": [
               5239,
@@ -177,9 +177,9 @@
               8213,
               6980
             ],
-            "current": 5239
+            "current": 6980
           },
-          "descripcion": "Entra: el árbol de la figura y la clave 5239. Se espera: encontrarla en la raíz sin bajar, retornar su pair y dejar current ahí."
+          "descripcion": "Entra: el árbol de la figura y la clave 6980. Se espera: bajar a la derecha y luego a la izquierda, retornar el pair de 6980 y dejar current ahí."
         },
         {
           "nombre": "encuentra 8213 (a la derecha)",
@@ -212,7 +212,7 @@
           "descripcion": "Entra: el árbol de la figura y la clave 8213. Se espera: bajar una vez a la derecha (8213 > 5239), retornar su pair y dejar current en ese nodo."
         },
         {
-          "nombre": "encuentra 6980 (derecha y luego izquierda)",
+          "nombre": "encuentra la clave de la raíz (5239)",
           "entrada": {
             "arbol": [
               5239,
@@ -224,12 +224,12 @@
           "llamadas": [
             [
               "searchTreeMap",
-              6980
+              5239
             ]
           ],
           "salida": {
             "retornos": [
-              6980
+              5239
             ],
             "arbol": [
               5239,
@@ -237,9 +237,9 @@
               8213,
               6980
             ],
-            "current": 6980
+            "current": 5239
           },
-          "descripcion": "Entra: el árbol de la figura y la clave 6980. Se espera: bajar a la derecha y luego a la izquierda, retornar el pair de 6980 y dejar current ahí."
+          "descripcion": "Entra: el árbol de la figura y la clave 5239. Se espera: encontrarla en la raíz sin bajar, retornar su pair y dejar current ahí."
         },
         {
           "nombre": "7010 no está: retorna NULL",
@@ -283,34 +283,6 @@
       "enunciado": "Implementa `void insertTreeMap(TreeMap * tree, void * key, void * value)`: busca dónde va la clave (como en searchTreeMap, recordando el último nodo visitado), crea el nodo (`createTreeNode`), lo enlaza con su padre (también `nuevo->parent`) y deja `current` en él. Si la clave ya existe, no hace nada. Si el árbol está vacío, el nodo nuevo es la raíz.",
       "tests": [
         {
-          "nombre": "900 queda a la izquierda de 1273",
-          "entrada": {
-            "arbol": [
-              5239,
-              1273,
-              8213,
-              6980
-            ]
-          },
-          "llamadas": [
-            [
-              "insertTreeMap",
-              900
-            ]
-          ],
-          "salida": {
-            "arbol": [
-              5239,
-              1273,
-              900,
-              8213,
-              6980
-            ],
-            "current": 900
-          },
-          "descripcion": "Entra: el árbol de la figura y la clave nueva 900. Se espera: colgar el nodo nuevo como hijo izquierdo de 1273, con parent en 1273 y current en el nuevo."
-        },
-        {
           "nombre": "7000 queda a la derecha de 6980",
           "entrada": {
             "arbol": [
@@ -337,6 +309,34 @@
             "current": 7000
           },
           "descripcion": "Entra: el árbol de la figura y la clave nueva 7000. Se espera: colgar el nodo nuevo como hijo derecho de 6980, con parent en 6980 y current en el nuevo."
+        },
+        {
+          "nombre": "900 queda a la izquierda de 1273",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "insertTreeMap",
+              900
+            ]
+          ],
+          "salida": {
+            "arbol": [
+              5239,
+              1273,
+              900,
+              8213,
+              6980
+            ],
+            "current": 900
+          },
+          "descripcion": "Entra: el árbol de la figura y la clave nueva 900. Se espera: colgar el nodo nuevo como hijo izquierdo de 1273, con parent en 1273 y current en el nuevo."
         },
         {
           "nombre": "la clave 5239 ya existe: no se inserta",
@@ -395,6 +395,37 @@
       ],
       "enunciado": "Implementa `TreeNode * minimum(TreeNode * x)`: retorna el nodo con la menor clave del subárbol que parte en `x`, bajando por `left` hasta el final. Si `x` no tiene hijo izquierdo, retorna `x`.",
       "tests": [
+        {
+          "nombre": "con 100 en el árbol, el mínimo es 100",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980,
+              100
+            ]
+          },
+          "llamadas": [
+            [
+              "minimum",
+              "root"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              100
+            ],
+            "arbol": [
+              5239,
+              1273,
+              100,
+              8213,
+              6980
+            ]
+          },
+          "descripcion": "Entra: la raíz del árbol de la figura (con 100 bajo 1273). Se espera: bajar por left dos veces y retornar el nodo 100."
+        },
         {
           "nombre": "el mínimo de todo el árbol es 1273",
           "entrada": {
@@ -481,37 +512,6 @@
             ]
           },
           "descripcion": "Entra: el nodo 1273 de la figura, que no tiene hijo izquierdo. Se espera: retornar ese mismo nodo, sin bajar."
-        },
-        {
-          "nombre": "con 100 en el árbol, el mínimo es 100",
-          "entrada": {
-            "arbol": [
-              5239,
-              1273,
-              8213,
-              6980,
-              100
-            ]
-          },
-          "llamadas": [
-            [
-              "minimum",
-              "root"
-            ]
-          ],
-          "salida": {
-            "retornos": [
-              100
-            ],
-            "arbol": [
-              5239,
-              1273,
-              100,
-              8213,
-              6980
-            ]
-          },
-          "descripcion": "Entra: la raíz del árbol de la figura (con 100 bajo 1273). Se espera: bajar por left dos veces y retornar el nodo 100."
         }
       ],
       "plantillas": {
@@ -654,35 +654,6 @@
       "enunciado": "Implementa `Pair * firstTreeMap(TreeMap * tree)`: retorna el par con la menor clave (el nodo mínimo del árbol) y deja `current` en ese nodo. Si el árbol está vacío, retorna `NULL`.",
       "tests": [
         {
-          "nombre": "retorna 1273, la menor clave",
-          "entrada": {
-            "arbol": [
-              5239,
-              1273,
-              8213,
-              6980
-            ]
-          },
-          "llamadas": [
-            [
-              "firstTreeMap"
-            ]
-          ],
-          "salida": {
-            "retornos": [
-              1273
-            ],
-            "arbol": [
-              5239,
-              1273,
-              8213,
-              6980
-            ],
-            "current": 1273
-          },
-          "descripcion": "Entra: el árbol de la figura. Se espera: retornar el pair de la menor clave (1273) y dejar current en ese nodo."
-        },
-        {
           "nombre": "con 100 en el árbol, retorna 100",
           "entrada": {
             "arbol": [
@@ -712,6 +683,35 @@
             "current": 100
           },
           "descripcion": "Entra: el árbol de la figura (con 100 bajo 1273). Se espera: retornar el pair de 100 y dejar current en ese nodo."
+        },
+        {
+          "nombre": "retorna 1273, la menor clave",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "firstTreeMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              1273
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": 1273
+          },
+          "descripcion": "Entra: el árbol de la figura. Se espera: retornar el pair de la menor clave (1273) y dejar current en ese nodo."
         },
         {
           "nombre": "en un árbol vacío retorna NULL",
@@ -744,6 +744,36 @@
       "enunciado": "Implementa `Pair * nextTreeMap(TreeMap * tree)`: retorna el par siguiente (la menor clave mayor que la de `current`) y deja `current` en ese nodo.\n\n- Si `current` tiene hijo derecho: el siguiente es el mínimo de ese subárbol.\n- Si no: sube por `parent` hasta llegar a un padre desde su hijo izquierdo; ese padre es el siguiente.\n\nSi no hay siguiente, retorna `NULL`.",
       "tests": [
         {
+          "nombre": "desde la raíz (5239) va a 6980",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": 5239
+          },
+          "llamadas": [
+            [
+              "nextTreeMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              6980
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ],
+            "current": 6980
+          },
+          "descripcion": "Entra: el árbol de la figura con current en la raíz. Se espera: ir al mínimo del subárbol derecho (6980), retornar su pair y dejar current ahí."
+        },
+        {
           "nombre": "con hijo derecho: desde 1273 va a 2000",
           "entrada": {
             "arbol": [
@@ -774,36 +804,6 @@
             "current": 2000
           },
           "descripcion": "Entra: el árbol de la figura con current en 1273, que tiene hijo derecho. Se espera: ir al mínimo de ese subárbol (2000), retornar su pair y dejar current ahí."
-        },
-        {
-          "nombre": "desde la raíz (5239) va a 6980",
-          "entrada": {
-            "arbol": [
-              5239,
-              1273,
-              8213,
-              6980
-            ],
-            "current": 5239
-          },
-          "llamadas": [
-            [
-              "nextTreeMap"
-            ]
-          ],
-          "salida": {
-            "retornos": [
-              6980
-            ],
-            "arbol": [
-              5239,
-              1273,
-              8213,
-              6980
-            ],
-            "current": 6980
-          },
-          "descripcion": "Entra: el árbol de la figura con current en la raíz. Se espera: ir al mínimo del subárbol derecho (6980), retornar su pair y dejar current ahí."
         },
         {
           "nombre": "sin hijo derecho: desde 2000 sube a 5239",
@@ -880,35 +880,6 @@
       "enunciado": "Implementa `Pair * upperBound(TreeMap * tree, void * key)`: retorna el par con esa clave; si no está, el de la menor clave mayor que key (o `NULL` si no hay).\n\nHaz una búsqueda normal y usa un nodo auxiliar `ub_node` que guarde el último nodo donde bajaste por la izquierda (su clave es mayor que key).",
       "tests": [
         {
-          "nombre": "6980 está: retorna 6980",
-          "entrada": {
-            "arbol": [
-              5239,
-              1273,
-              8213,
-              6980
-            ]
-          },
-          "llamadas": [
-            [
-              "upperBound",
-              6980
-            ]
-          ],
-          "salida": {
-            "retornos": [
-              6980
-            ],
-            "arbol": [
-              5239,
-              1273,
-              8213,
-              6980
-            ]
-          },
-          "descripcion": "Entra: el árbol de la figura y la clave 6980, que está. Se espera: retornar su pair."
-        },
-        {
           "nombre": "6979 no está: retorna 6980",
           "entrada": {
             "arbol": [
@@ -965,6 +936,35 @@
             ]
           },
           "descripcion": "Entra: el árbol de la figura y la clave 6981, que no está. Se espera: retornar el de la menor clave mayor que ella: 8213."
+        },
+        {
+          "nombre": "6980 está: retorna 6980",
+          "entrada": {
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "llamadas": [
+            [
+              "upperBound",
+              6980
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              6980
+            ],
+            "arbol": [
+              5239,
+              1273,
+              8213,
+              6980
+            ]
+          },
+          "descripcion": "Entra: el árbol de la figura y la clave 6980, que está. Se espera: retornar su pair."
         },
         {
           "nombre": "1000 no está: retorna 1273",

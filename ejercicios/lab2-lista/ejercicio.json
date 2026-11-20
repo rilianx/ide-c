@@ -553,25 +553,6 @@
       "enunciado": "Implementa `void pushFront(List * list, void * data)`: agrega un nodo con el dato al comienzo de la lista. Actualiza `head` (y `tail` si la lista estaba vacía) y enlaza `next` y `prev`. Puedes usar `Node * createNode(void * data)`, que crea un nodo con `next` y `prev` en `NULL`.",
       "tests": [
         {
-          "nombre": "en una lista vacía: head y tail apuntan al nodo nuevo",
-          "entrada": {
-            "lista": []
-          },
-          "llamadas": [
-            [
-              "pushFront",
-              7
-            ]
-          ],
-          "salida": {
-            "lista": [
-              7
-            ],
-            "current": null
-          },
-          "descripcion": "Entra: una lista vacía y el dato 7. Se espera: un nodo nuevo al que apuntan head y tail."
-        },
-        {
           "nombre": "agrega al comienzo, actualiza head y enlaza prev",
           "entrada": {
             "lista": [
@@ -616,6 +597,25 @@
             "current": null
           },
           "descripcion": "Entra: la lista de la figura (un solo nodo) y el dato 2. Se espera: el nuevo queda primero (head) y tail sigue en el que estaba."
+        },
+        {
+          "nombre": "en una lista vacía: head y tail apuntan al nodo nuevo",
+          "entrada": {
+            "lista": []
+          },
+          "llamadas": [
+            [
+              "pushFront",
+              7
+            ]
+          ],
+          "salida": {
+            "lista": [
+              7
+            ],
+            "current": null
+          },
+          "descripcion": "Entra: una lista vacía y el dato 7. Se espera: un nodo nuevo al que apuntan head y tail."
         }
       ],
       "plantillas": {

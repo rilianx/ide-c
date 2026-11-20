@@ -201,46 +201,6 @@
           "descripcion": "Entra: la tabla de la figura y la clave «gato» (hash 3). Se espera: guardarla en la casilla 3, que está libre, con size 7 y current en 3."
         },
         {
-          "nombre": "clave repetida: «case» no se inserta",
-          "entrada": {
-            "tabla": [
-              "olla",
-              null,
-              "case",
-              null,
-              "cesa",
-              null,
-              "saco",
-              "carro",
-              "casa",
-              null
-            ]
-          },
-          "llamadas": [
-            [
-              "insertMap",
-              "case",
-              9
-            ]
-          ],
-          "salida": {
-            "tabla": [
-              "olla",
-              null,
-              "case",
-              null,
-              "cesa",
-              null,
-              "saco",
-              "carro",
-              "casa",
-              null
-            ],
-            "size": 6
-          },
-          "descripcion": "Entra: la tabla de la figura y «case», que ya está. Se espera: no insertar nada; la tabla y size quedan iguales."
-        },
-        {
           "nombre": "colisión: «mano» (hash 7) avanza hasta la 9",
           "entrada": {
             "tabla": [
@@ -282,45 +242,44 @@
           "descripcion": "Entra: la tabla de la figura y «mano» (hash 7). Se espera: como la 7 y la 8 están ocupadas, guardarla en la 9, con current en 9."
         },
         {
-          "nombre": "circular: «sol» (hash 6) pasa por la 9 y sigue en la 0",
+          "nombre": "clave repetida: «case» no se inserta",
           "entrada": {
             "tabla": [
               "olla",
               null,
+              "case",
               null,
-              null,
-              null,
+              "cesa",
               null,
               "saco",
               "carro",
               "casa",
-              "lago"
+              null
             ]
           },
           "llamadas": [
             [
               "insertMap",
-              "sol",
-              7
+              "case",
+              9
             ]
           ],
           "salida": {
             "tabla": [
               "olla",
-              "sol",
               null,
+              "case",
               null,
-              null,
+              "cesa",
               null,
               "saco",
               "carro",
               "casa",
-              "lago"
+              null
             ],
-            "size": 6,
-            "current": 1
+            "size": 6
           },
-          "descripcion": "Entra: la tabla de la figura y «sol» (hash 6). Se espera: avanzar hasta el final, volver al comienzo y guardarla en la 1, la primera libre."
+          "descripcion": "Entra: la tabla de la figura y «case», que ya está. Se espera: no insertar nada; la tabla y size quedan iguales."
         },
         {
           "nombre": "usa la casilla de un par inválido: «uva» (hash 4)",
@@ -362,6 +321,47 @@
             "current": 4
           },
           "descripcion": "Entra: la tabla de la figura, con un par inválido en la 4, y «uva» (hash 4). Se espera: reutilizar la casilla 4, con current en 4."
+        },
+        {
+          "nombre": "circular: «sol» (hash 6) pasa por la 9 y sigue en la 0",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              null,
+              null,
+              null,
+              null,
+              "saco",
+              "carro",
+              "casa",
+              "lago"
+            ]
+          },
+          "llamadas": [
+            [
+              "insertMap",
+              "sol",
+              7
+            ]
+          ],
+          "salida": {
+            "tabla": [
+              "olla",
+              "sol",
+              null,
+              null,
+              null,
+              null,
+              "saco",
+              "carro",
+              "casa",
+              "lago"
+            ],
+            "size": 6,
+            "current": 1
+          },
+          "descripcion": "Entra: la tabla de la figura y «sol» (hash 6). Se espera: avanzar hasta el final, volver al comienzo y guardarla en la 1, la primera libre."
         },
         {
           "nombre": "con más de 0.7 de carga llama a enlarge",
@@ -1005,49 +1005,6 @@
           "descripcion": "Entra: la tabla de la figura con current en 7. Se espera: retornar «casa» y dejar current en 8."
         },
         {
-          "nombre": "desde la última ocupada (8) retorna NULL",
-          "entrada": {
-            "tabla": [
-              "olla",
-              null,
-              "case",
-              null,
-              "cesa",
-              null,
-              "saco",
-              "carro",
-              "casa",
-              null
-            ],
-            "current": 8
-          },
-          "llamadas": [
-            [
-              "nextMap"
-            ]
-          ],
-          "salida": {
-            "retornos": [
-              null
-            ],
-            "tabla": [
-              "olla",
-              null,
-              "case",
-              null,
-              "cesa",
-              null,
-              "saco",
-              "carro",
-              "casa",
-              null
-            ],
-            "size": 6,
-            "current": 8
-          },
-          "descripcion": "Entra: la tabla de la figura con current en 8, el último par. Se espera: llegar al final sin dar la vuelta y retornar NULL."
-        },
-        {
           "nombre": "salta un par inválido: desde la 2 retorna «saco» (casilla 6)",
           "entrada": {
             "tabla": [
@@ -1089,6 +1046,49 @@
             "current": 6
           },
           "descripcion": "Entra: la tabla de la figura, con un par inválido en la 4, y current en 2. Se espera: saltar las vacías y la inválida, retornar «saco» y dejar current en 6."
+        },
+        {
+          "nombre": "desde la última ocupada (8) retorna NULL",
+          "entrada": {
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "current": 8
+          },
+          "llamadas": [
+            [
+              "nextMap"
+            ]
+          ],
+          "salida": {
+            "retornos": [
+              null
+            ],
+            "tabla": [
+              "olla",
+              null,
+              "case",
+              null,
+              "cesa",
+              null,
+              "saco",
+              "carro",
+              "casa",
+              null
+            ],
+            "size": 6,
+            "current": 8
+          },
+          "descripcion": "Entra: la tabla de la figura con current en 8, el último par. Se espera: llegar al final sin dar la vuelta y retornar NULL."
         }
       ],
       "plantillas": {
