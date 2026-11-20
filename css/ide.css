@@ -470,10 +470,15 @@ svg.memoria .toque.apuntado { fill: color-mix(in srgb, #2f6fd6 18%, transparent)
 }
 
 /* qué prueba el test que se ve: qué entra y qué se espera (dos líneas; tocar: completa) */
-.vivo-desc { flex: none; font-size: 12px; line-height: 1.35; color: var(--suave); cursor: pointer; padding: 2px 0 0;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.vivo-desc.completa { display: block; max-height: 7em; overflow: auto; }
+.vivo-desc { flex: none; font-size: 12px; line-height: 1.35; color: var(--suave); cursor: pointer; padding: 0 0 3px; }
+.vivo-desc > span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.vivo-desc.completa > span { display: block; max-height: 7em; overflow: auto; }
 .vivo-desc:empty { display: none; }
 .desc-test { font-size: 13px; color: var(--suave); margin: 2px 0 6px; }
 /* en el computador hay espacio: la descripción del test se ve completa */
-#vis-panel .vivo-desc { display: block; max-height: none; font-size: 13px; }
+#vis-panel .vivo-desc { font-size: 13px; }
+#vis-panel .vivo-desc > span { display: block; }
+/* arriba: el nombre del test como título y, en la línea siguiente, qué entra y qué se espera */
+.vivo-titulo { display: block; color: var(--texto, inherit); font-size: 13px; }
+#vis-panel .vivo-desc { padding-right: 0; margin-bottom: 4px; border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent); padding-bottom: 4px; }
+#vis-panel .vivo-titulo { font-size: 14px; }
